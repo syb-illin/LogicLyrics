@@ -1,0 +1,8 @@
+.build/
+*.app
+*.app.zip
+*.xcarchive
+DerivedData/
+.DS_Store
+*.swp
+*.tmp
