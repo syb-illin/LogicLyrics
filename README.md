@@ -2,7 +2,7 @@
 
 Application macOS native qui extrait en lecture seule les Notes de projet d’un paquet Logic Pro `.logicx`.
 
-Version actuelle : **2.1.1 (build 23)**. Le numéro de build est incrémenté à chaque livraison.
+Version actuelle : **2.1.2 (build 24)**. Le numéro de build est incrémenté à chaque livraison.
 
 ## Architecture production
 

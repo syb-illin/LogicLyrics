@@ -13,9 +13,9 @@ APP_ICON="$BUILD_ROOT/AppIcon.icns"
 LAME_SHA256="ddfe36cab873794038ae2c1210557ad34857a4b6bdc515785d1da9e175b1da1e"
 
 fail() {
-    /usr/bin/osascript -e "display alert \"Compilation impossible\" message \"$1\" as critical buttons {\"OK\"}" >/dev/null 2>&1 || true
     print "\nERREUR : $1"
     if [[ "${LOGICLYRICS_NONINTERACTIVE:-0}" != "1" ]]; then
+        /usr/bin/osascript -e "display alert \"Compilation impossible\" message \"$1\" as critical buttons {\"OK\"}" >/dev/null 2>&1 || true
         print "\nTu peux fermer cette fenêtre."
         read -k 1 "?Appuie sur une touche pour terminer."
     fi

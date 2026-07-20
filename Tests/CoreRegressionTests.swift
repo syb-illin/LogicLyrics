@@ -73,7 +73,8 @@ enum CoreRegressionTests {
         )
         let written = try reader.readProject(at: destination)
         try require(written.notes.first?.text == "[Verse 1]\nNew lyrics", "Empty Logic note insertion")
-        try require((try Data(contentsOf: projectData)).count == 98, "Empty Logic source preserved")
+        let originalProjectData = try Data(contentsOf: projectData)
+        try require(originalProjectData.count == 98, "Empty Logic source preserved")
     }
 
     private static func testID3v24RoundTripAndPreservation() throws {

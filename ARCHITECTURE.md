@@ -1,4 +1,4 @@
-# LogicLyrics 2.1.1 — architecture et invariants
+# LogicLyrics 2.1.2 — architecture et invariants
 
 ## Couches
 
