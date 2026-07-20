@@ -133,7 +133,7 @@ struct AudioFileInspector: Sendable {
                 if data.count >= 16 {
                     let code = le16(data[0..<2]); channels = Int(le16(data[2..<4])); sampleRate = Int(le32(data[4..<8]));
                     byteRate = Int(le32(data[8..<12])); depth = Int(le16(data[14..<16]));
-                    codec = code == 1 ? "PCM non compressé" : (code == 3 ? "IEEE Float" : "WAV codec \(code)")
+                    codec = code == 1 ? L10n.text("Uncompressed PCM") : (code == 3 ? "IEEE Float" : L10n.format("WAV codec %d", Int(code)))
                 }
             } else if id == "data" { audioBytes = size }
             try handle.seek(toOffset: paddedEnd)
@@ -238,11 +238,11 @@ enum AudioMetadataError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .unsupportedFormat: "Seuls les fichiers MP3 et WAV sont acceptés."
-        case .invalidMP3: "Le fichier MP3 est invalide ou illisible."
-        case .invalidWAV: "Le fichier WAV est invalide ou illisible."
-        case .fileTooLarge: "Ce fichier dépasse la limite du format RIFF/WAV classique."
-        case .metadataTooLarge: "Les métadonnées sont trop volumineuses pour être écrites en sécurité."
+        case .unsupportedFormat: L10n.text("Only MP3 and WAV files are supported.")
+        case .invalidMP3: L10n.text("The MP3 file is invalid or unreadable.")
+        case .invalidWAV: L10n.text("The WAV file is invalid or unreadable.")
+        case .fileTooLarge: L10n.text("This file exceeds the standard RIFF/WAV size limit.")
+        case .metadataTooLarge: L10n.text("The metadata is too large to be written safely.")
         }
     }
 }
@@ -397,7 +397,7 @@ struct AudioMetadataWriter: Sendable {
         appendTextFrame("TCON", metadata.genre, to: &frames)
         if let bpm = metadata.bpm { appendTextFrame("TBPM", formatBPM(bpm), to: &frames) }
         if let lyrics = metadata.lyrics, !lyrics.isEmpty {
-            var payload = Data([3]); payload.append(Data("fra".utf8)); payload.append(0); payload.append(Data(lyrics.utf8))
+            var payload = Data([3]); payload.append(Data("und".utf8)); payload.append(0); payload.append(Data(lyrics.utf8))
             frames.append(id3Frame("USLT", payload: payload))
         }
         if let artwork = metadata.artwork {

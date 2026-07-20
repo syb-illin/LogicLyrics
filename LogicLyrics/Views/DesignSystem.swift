@@ -18,13 +18,20 @@ enum AppTheme {
 }
 
 struct AppPanel: ViewModifier {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     var radius: CGFloat = 18
     var padding: CGFloat = 18
 
     func body(content: Content) -> some View {
         content
             .padding(padding)
-            .background(.ultraThinMaterial)
+            .background {
+                if reduceTransparency {
+                    Color(red: 0.08, green: 0.08, blue: 0.12)
+                } else {
+                    Rectangle().fill(.ultraThinMaterial)
+                }
+            }
             .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
@@ -59,6 +66,7 @@ struct AccentIcon: View {
             )
             .clipShape(RoundedRectangle(cornerRadius: size * 0.30, style: .continuous))
             .shadow(color: color.opacity(0.32), radius: 10, y: 5)
+            .accessibilityHidden(true)
     }
 }
 
@@ -68,17 +76,20 @@ struct CapsuleStatus: View {
     var color = AppTheme.green
 
     var body: some View {
-        Label(text, systemImage: systemName)
+        Label(L10n.text(text), systemImage: systemName)
             .font(.caption.weight(.semibold))
             .foregroundStyle(color)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(color.opacity(0.13))
             .clipShape(Capsule())
+            .accessibilityElement(children: .combine)
     }
 }
 
 struct ProcessingOverlay: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     let state: OperationState
     var cancel: (() -> Void)?
 
@@ -95,17 +106,25 @@ struct ProcessingOverlay: View {
                             .foregroundStyle(.secondary)
                     }
                     if let cancel {
-                        Button("Annuler", role: .cancel, action: cancel).buttonStyle(.bordered)
+                        Button("Cancel", role: .cancel, action: cancel).buttonStyle(.bordered)
                     }
                 }
                 .padding(26)
                 .frame(minWidth: 280)
-                .background(.regularMaterial)
+                .background {
+                    if reduceTransparency {
+                        Color(red: 0.08, green: 0.08, blue: 0.12)
+                    } else {
+                        Rectangle().fill(.regularMaterial)
+                    }
+                }
                 .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                 .overlay { RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.12)) }
                 .shadow(color: .black.opacity(0.35), radius: 30, y: 15)
             }
-            .transition(.opacity)
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(L10n.text("Operation in progress"))
+            .transition(reduceMotion ? .identity : .opacity)
             .zIndex(100)
         }
     }

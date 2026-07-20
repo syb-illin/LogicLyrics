@@ -77,7 +77,7 @@ final class AudioMetadataViewModel: ObservableObject {
 
     func loadAudio(_ url: URL) {
         guard ["mp3", "wav", "wave"].contains(url.pathExtension.lowercased()) else {
-            errorMessage = "Choisis un fichier MP3 ou WAV."
+            errorMessage = L10n.text("Choose an MP3 or WAV file.")
             return
         }
         sourceURL = url
@@ -98,20 +98,27 @@ final class AudioMetadataViewModel: ObservableObject {
         operationTask?.cancel()
         let operationID = UUID()
         self.operationID = operationID
-        operationState = .running(message: "Analyse technique et lecture de la pochette…", startedAt: Date())
+        operationState = .running(message: L10n.text("Analyzing technical data and artwork…"), startedAt: Date())
+        let startedAt = Date()
+        AppLog.audio.info("Audio inspection started format=\(url.pathExtension.lowercased(), privacy: .public)")
         let inspector = inspector, metadataReader = metadataReader
-        operationTask = Task.detached(priority: .userInitiated) { [weak self, inspector, metadataReader] in
+        operationTask = Task.detached(priority: .userInitiated) { [weak self, inspector, metadataReader, startedAt] in
             do {
                 let access = url.startAccessingSecurityScopedResource()
                 defer { if access { url.stopAccessingSecurityScopedResource() } }
                 try Task<Never, Never>.checkCancellation()
                 let result = (try inspector.inspect(url), try metadataReader.read(from: url))
                 try Task<Never, Never>.checkCancellation()
+                let durationMilliseconds = Int(Date().timeIntervalSince(startedAt) * 1_000)
+                AppLog.audio.info("Audio inspection succeeded duration_ms=\(durationMilliseconds, privacy: .public)")
                 await self?.completeAudioLoad(result, url: url, operationID: operationID)
             } catch is CancellationError {
+                AppLog.audio.notice("Audio inspection cancelled")
                 await self?.finishOperation(operationID)
             } catch {
-                await self?.failOperation("Analyse technique impossible : \(error.localizedDescription)", operationID: operationID)
+                let errorType = String(describing: type(of: error))
+                AppLog.audio.error("Audio inspection failed error_type=\(errorType, privacy: .public)")
+                await self?.failOperation(L10n.format("Unable to analyze the file: %@", error.localizedDescription), operationID: operationID)
             }
         }
     }
@@ -123,7 +130,7 @@ final class AudioMetadataViewModel: ObservableObject {
         panel.allowedContentTypes = [.jpeg, .png]
         guard panel.runModal() == .OK, let url = panel.url else { return }
         guard let image = NSImage(contentsOf: url) else {
-            errorMessage = "Cette image ne peut pas être décodée. Choisis un PNG ou JPEG valide."
+            errorMessage = L10n.text("This image cannot be decoded. Choose a valid PNG or JPEG file.")
             return
         }
         artworkURL = url
@@ -133,7 +140,7 @@ final class AudioMetadataViewModel: ObservableObject {
             guard data.count <= 20 * 1_024 * 1_024 else {
                 artworkData = nil
                 artworkImage = nil
-                errorMessage = "La pochette dépasse 20 Mo. Choisis une image optimisée."
+                errorMessage = L10n.text("The artwork exceeds 20 MB. Choose an optimized image.")
                 return
             }
             artworkData = data
@@ -141,7 +148,7 @@ final class AudioMetadataViewModel: ObservableObject {
         catch {
             artworkData = nil
             artworkImage = nil
-            errorMessage = "Lecture de la pochette impossible : \(error.localizedDescription)"
+            errorMessage = L10n.format("Unable to read the artwork: %@", error.localizedDescription)
         }
         artworkMIMEType = url.pathExtension.lowercased() == "png" ? "image/png" : "image/jpeg"
     }
@@ -154,19 +161,19 @@ final class AudioMetadataViewModel: ObservableObject {
     }
 
     func write(lyrics: String) {
-        guard let sourceURL else { errorMessage = "Choisis d’abord un export Suno MP3 ou WAV."; return }
+        guard let sourceURL else { errorMessage = L10n.text("Choose a Suno MP3 or WAV export first."); return }
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanArtist = artist.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanTitle.isEmpty, !cleanArtist.isEmpty else {
-            errorMessage = "Le titre et l’artiste sont obligatoires."
+            errorMessage = L10n.text("Title and artist are required.")
             return
         }
         let bpm = Double(bpmText.replacingOccurrences(of: ",", with: "."))
         if !bpmText.isEmpty, bpm.map({ !(20...400).contains($0) }) ?? true {
-            errorMessage = "Le BPM doit être compris entre 20 et 400."
+            errorMessage = L10n.text("BPM must be between 20 and 400.")
             return
         }
-        guard (1000...9999).contains(year) else { errorMessage = "L’année doit contenir quatre chiffres valides."; return }
+        guard (1000...9999).contains(year) else { errorMessage = L10n.text("Year must contain four valid digits."); return }
         if let templateError = filenameTemplateError {
             errorMessage = templateError
             return
@@ -178,7 +185,7 @@ final class AudioMetadataViewModel: ObservableObject {
         panel.allowedContentTypes = [sourceURL.pathExtension.lowercased() == "mp3" ? .mp3 : .wav]
         guard panel.runModal() == .OK, let destination = panel.url else { return }
         guard destination.standardizedFileURL != sourceURL.standardizedFileURL else {
-            errorMessage = "Choisis un autre nom : le fichier original ne sera jamais remplacé."
+            errorMessage = L10n.text("Choose a different name: the original file will never be replaced.")
             return
         }
 
@@ -194,11 +201,13 @@ final class AudioMetadataViewModel: ObservableObject {
         let operationID = UUID()
         self.operationID = operationID
         isWriting = true
-        operationState = .running(message: "Écriture sécurisée des métadonnées…", startedAt: Date())
+        operationState = .running(message: L10n.text("Writing metadata safely…"), startedAt: Date())
         errorMessage = nil
         message = nil
+        let startedAt = Date()
+        AppLog.audio.info("Transactional metadata write started format=\(sourceURL.pathExtension.lowercased(), privacy: .public)")
         let metadataWriter = metadataWriter
-        operationTask = Task.detached(priority: .userInitiated) { [weak self, metadataWriter] in
+        operationTask = Task.detached(priority: .userInitiated) { [weak self, metadataWriter, startedAt] in
             do {
                 let sourceAccess = sourceURL.startAccessingSecurityScopedResource()
                 let destinationAccess = destination.startAccessingSecurityScopedResource()
@@ -208,32 +217,37 @@ final class AudioMetadataViewModel: ObservableObject {
                 }
                 try metadataWriter.write(source: sourceURL, destination: destination, metadata: metadata)
                 try Task<Never, Never>.checkCancellation()
-                await self?.completeWrite(destination, prefix: "Fichier créé", operationID: operationID)
+                let durationMilliseconds = Int(Date().timeIntervalSince(startedAt) * 1_000)
+                AppLog.audio.info("Transactional metadata write succeeded duration_ms=\(durationMilliseconds, privacy: .public)")
+                await self?.completeWrite(destination, prefix: L10n.text("File created"), operationID: operationID)
             } catch is CancellationError {
+                AppLog.audio.notice("Transactional metadata write cancelled")
                 await self?.finishOperation(operationID)
             } catch {
-                await self?.failOperation("Écriture impossible : \(error.localizedDescription)", operationID: operationID)
+                let errorType = String(describing: type(of: error))
+                AppLog.audio.error("Transactional metadata write failed error_type=\(errorType, privacy: .public)")
+                await self?.failOperation(L10n.format("Unable to write metadata: %@", error.localizedDescription), operationID: operationID)
             }
         }
     }
 
     func convertToMP3(lyrics: String) {
         guard let sourceURL, ["wav", "wave"].contains(sourceURL.pathExtension.lowercased()) else {
-            errorMessage = "Choisis un fichier WAV pour effectuer la conversion MP3."
+            errorMessage = L10n.text("Choose a WAV file to perform MP3 conversion.")
             return
         }
         guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               !artist.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            errorMessage = "Le titre et l’artiste sont obligatoires."
+            errorMessage = L10n.text("Title and artist are required.")
             return
         }
         let convertedBPM = Double(bpmText.replacingOccurrences(of: ",", with: "."))
         if !bpmText.isEmpty, convertedBPM.map({ !(20...400).contains($0) }) ?? true {
-            errorMessage = "Le BPM doit être compris entre 20 et 400."
+            errorMessage = L10n.text("BPM must be between 20 and 400.")
             return
         }
         guard (1000...9999).contains(year) else {
-            errorMessage = "L’année doit contenir quatre chiffres valides."
+            errorMessage = L10n.text("Year must contain four valid digits.")
             return
         }
         if let templateError = filenameTemplateError {
@@ -246,7 +260,7 @@ final class AudioMetadataViewModel: ObservableObject {
         panel.allowedContentTypes = [.mp3]
         guard panel.runModal() == .OK, let destination = panel.url else { return }
         guard destination.standardizedFileURL != sourceURL.standardizedFileURL else {
-            errorMessage = "La destination doit être différente du fichier source."
+            errorMessage = L10n.text("The destination must be different from the source file.")
             return
         }
 
@@ -269,9 +283,11 @@ final class AudioMetadataViewModel: ObservableObject {
         let operationID = UUID()
         self.operationID = operationID
         isWriting = true; errorMessage = nil; message = nil
-        operationState = .running(message: "Conversion WAV vers MP3 et écriture des tags…", startedAt: Date())
+        operationState = .running(message: L10n.text("Converting WAV to MP3 and writing tags…"), startedAt: Date())
+        let startedAt = Date()
+        AppLog.audio.info("WAV to MP3 conversion started")
         let mp3Converter = mp3Converter, metadataWriter = metadataWriter
-        operationTask = Task.detached(priority: .userInitiated) { [weak self, mp3Converter, metadataWriter] in
+        operationTask = Task.detached(priority: .userInitiated) { [weak self, mp3Converter, metadataWriter, startedAt] in
             let temporaryBase = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
             let temporaryWAV = temporaryBase.appendingPathExtension("wav")
             let temporaryMP3 = temporaryBase.appendingPathExtension("mp3")
@@ -292,10 +308,15 @@ final class AudioMetadataViewModel: ObservableObject {
                 try Task<Never, Never>.checkCancellation()
                 try metadataWriter.write(source: temporaryMP3, destination: destination, metadata: metadata)
                 try Task<Never, Never>.checkCancellation()
-                await self?.completeWrite(destination, prefix: "MP3 créé", operationID: operationID)
+                let durationMilliseconds = Int(Date().timeIntervalSince(startedAt) * 1_000)
+                AppLog.audio.info("WAV to MP3 conversion succeeded duration_ms=\(durationMilliseconds, privacy: .public)")
+                await self?.completeWrite(destination, prefix: L10n.text("MP3 created"), operationID: operationID)
             } catch is CancellationError {
+                AppLog.audio.notice("WAV to MP3 conversion cancelled")
                 await self?.finishOperation(operationID)
             } catch {
+                let errorType = String(describing: type(of: error))
+                AppLog.audio.error("WAV to MP3 conversion failed error_type=\(errorType, privacy: .public)")
                 await self?.failOperation(error.localizedDescription, operationID: operationID)
             }
         }
@@ -305,7 +326,7 @@ final class AudioMetadataViewModel: ObservableObject {
         guard operationState.isRunning else { return }
         operationTask?.cancel()
         if case .running(_, let startedAt) = operationState {
-            operationState = .running(message: "Annulation en cours…", startedAt: startedAt)
+            operationState = .running(message: L10n.text("Cancelling…"), startedAt: startedAt)
         }
     }
 
@@ -335,7 +356,7 @@ final class AudioMetadataViewModel: ObservableObject {
         var remainder = filenameTemplate
         for token in known { remainder = remainder.replacingOccurrences(of: token, with: "") }
         if remainder.contains("{") || remainder.contains("}") {
-            return "Le format du nom contient un token inconnu. Utilise uniquement : \(known.joined(separator: " "))."
+            return L10n.format("The filename format contains an unknown token. Use only: %@.", known.joined(separator: " "))
         }
         return nil
     }
@@ -366,7 +387,7 @@ final class AudioMetadataViewModel: ObservableObject {
 
     private func completeWrite(_ destination: URL, prefix: String, operationID: UUID) {
         guard self.operationID == operationID else { return }
-        message = "\(prefix) : \(destination.lastPathComponent)"
+        message = L10n.format("%@: %@", prefix, destination.lastPathComponent)
         NSWorkspace.shared.activateFileViewerSelecting([destination])
         finishOperation(operationID)
     }

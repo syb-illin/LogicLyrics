@@ -66,16 +66,16 @@ struct SunoGeneratorView: View {
         HStack(alignment: .top, spacing: 16) {
             AccentIcon(systemName: "sparkles", color: AppTheme.accent, size: 48)
             VStack(alignment: .leading, spacing: 5) {
-                Text("Préparer pour Suno AI")
+                Text("Prepare for Suno AI")
                     .font(.system(size: 30, weight: .bold, design: .rounded))
-                Text("Un prompt complet à envoyer dans ChatGPT ou Gemini, sans clé API.")
+                Text("A complete prompt for ChatGPT or Gemini, with no API key required.")
                     .foregroundStyle(.secondary)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 7) {
-                CapsuleStatus(text: "Voix protégée", systemName: "lock.fill", color: AppTheme.green)
+                CapsuleStatus(text: "Voice protected", systemName: "lock.fill", color: AppTheme.green)
                 CapsuleStatus(
-                    text: "\(lyrics.count) caractères importés",
+                    text: L10n.format("%d characters imported", lyrics.count),
                     systemName: lyrics.isEmpty ? "exclamationmark.triangle.fill" : "text.badge.checkmark",
                     color: lyrics.isEmpty ? AppTheme.coral : AppTheme.cyan
                 )
@@ -85,12 +85,12 @@ struct SunoGeneratorView: View {
 
     private var settingsCard: some View {
         VStack(alignment: .leading, spacing: 18) {
-            cardTitle("Direction artistique", subtitle: "La référence est convertie en caractéristiques musicales générales.", icon: "slider.horizontal.3")
+            cardTitle(L10n.text("Art Direction"), subtitle: L10n.text("The reference is translated into broad musical characteristics."), icon: "slider.horizontal.3")
 
             VStack(alignment: .leading, spacing: 7) {
-                Text("GROUPE OU ARTISTE DE RÉFÉRENCE")
+                Text("REFERENCE BAND OR ARTIST")
                     .font(.caption2.weight(.bold)).tracking(0.7).foregroundStyle(.secondary)
-                TextField("Ex. Phoenix, Tame Impala…", text: $model.referenceArtist)
+                TextField("e.g. Phoenix, Tame Impala…", text: $model.referenceArtist)
                     .textFieldStyle(.plain)
                     .font(.system(size: 16, weight: .medium))
                     .padding(13)
@@ -100,20 +100,20 @@ struct SunoGeneratorView: View {
             }
 
             HStack(spacing: 12) {
-                metadataField("BPM", placeholder: "Ex. 140", text: $bpmText, width: 150)
-                metadataField("TONALITÉ", placeholder: "Ex. C major", text: $musicalKey)
+                metadataField("BPM", placeholder: "e.g. 140", text: $bpmText, width: 150)
+                metadataField("KEY", placeholder: "e.g. C major", text: $musicalKey)
             }
-            Text("Ces deux valeurs sont obligatoires et seront placées au début de Styles.")
+            Text("Both values are required and will be placed at the beginning of Styles.")
                 .font(.caption).foregroundStyle(.secondary)
 
             Toggle(isOn: $model.allowsFemaleBackingVocals) {
                 HStack(spacing: 11) {
                     AccentIcon(systemName: "person.2.wave.2", color: AppTheme.coral, size: 34)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Autoriser des chœurs féminins").font(.subheadline.weight(.semibold))
+                        Text("Allow female backing vocals").font(.subheadline.weight(.semibold))
                         Text(model.allowsFemaleBackingVocals
-                             ? "Harmonies et réponses autorisées, jamais en lead."
-                             : "Back vocals masculines uniquement.")
+                             ? L10n.text("Harmonies and responses are allowed, never as lead.")
+                             : L10n.text("Male backing vocals only."))
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
@@ -125,20 +125,20 @@ struct SunoGeneratorView: View {
 
     private var vocalLockCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            cardTitle("Verrou vocal", subtitle: "Contraintes prioritaires injectées dans chaque génération.", icon: "waveform.badge.checkmark")
+            cardTitle(L10n.text("Vocal Lock"), subtitle: L10n.text("High-priority constraints injected into every generation."), icon: "waveform.badge.checkmark")
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: 10)], spacing: 10) {
-                rule("Baryton naturel", "music.mic", AppTheme.accent)
-                rule("Voix de poitrine", "waveform", AppTheme.cyan)
-                rule("Sans falsetto ni aigus", "arrow.down.right", AppTheme.green)
-                rule("Sans screaming", "speaker.slash", AppTheme.coral)
-                rule("Sans acrobaties", "figure.stand", AppTheme.accent)
-                rule("Même lead de bout en bout", "person.fill.checkmark", AppTheme.cyan)
+                rule(L10n.text("Natural baritone"), "music.mic", AppTheme.accent)
+                rule(L10n.text("Chest voice"), "waveform", AppTheme.cyan)
+                rule(L10n.text("No falsetto or high notes"), "arrow.down.right", AppTheme.green)
+                rule(L10n.text("No screaming"), "speaker.slash", AppTheme.coral)
+                rule(L10n.text("No vocal acrobatics"), "figure.stand", AppTheme.accent)
+                rule(L10n.text("Same lead throughout"), "person.fill.checkmark", AppTheme.cyan)
             }
             Divider().opacity(0.3)
             HStack(spacing: 18) {
-                checklist("Profil Add Voice")
-                checklist("Modèle Voice")
-                checklist("Audio Influence élevé")
+                checklist(L10n.text("Add Voice profile"))
+                checklist(L10n.text("Voice model"))
+                checklist(L10n.text("High Audio Influence"))
             }
         }
         .appPanel(radius: 20, padding: 20)
@@ -146,15 +146,16 @@ struct SunoGeneratorView: View {
 
     private var actionBar: some View {
         HStack(spacing: 12) {
-            Button("Générer le prompt", systemImage: "sparkles") {
+            Button("Generate Prompt", systemImage: "sparkles") {
                 _ = model.generatePrompt(from: lyrics, bpmText: bpmText, musicalKey: musicalKey)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
             .disabled(lyrics.isEmpty)
+            .keyboardShortcut(.return, modifiers: .command)
 
             Spacer()
-            Text("Aucune clé API requise")
+            Text("No API key required")
                 .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
         }
@@ -164,12 +165,12 @@ struct SunoGeneratorView: View {
     @ViewBuilder private var promptResult: some View {
         HStack {
             VStack(alignment: .leading, spacing: 3) {
-                Text("Prompt prêt").font(.title3.weight(.semibold))
-                Text("Le prompt est copié avant l’ouverture du service choisi.")
+                Text("Prompt Ready").font(.title3.weight(.semibold))
+                Text("The prompt is copied before the selected service opens.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
-            Button(model.copiedField == "prompt" ? "Copié" : "Copier", systemImage: "doc.on.doc") {
+            Button(model.copiedField == "prompt" ? "Copied" : "Copy", systemImage: "doc.on.doc") {
                 model.copyPrompt()
             }
             .buttonStyle(.bordered)
@@ -177,13 +178,13 @@ struct SunoGeneratorView: View {
         .padding(.top, 8)
 
         HStack(spacing: 12) {
-            Button("Copier et ouvrir ChatGPT", systemImage: "bubble.left.and.bubble.right.fill") {
+            Button("Copy and Open ChatGPT", systemImage: "bubble.left.and.bubble.right.fill") {
                 model.copyAndOpenChatGPT()
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
 
-            Button("Copier et ouvrir Gemini", systemImage: "sparkle.magnifyingglass") {
+            Button("Copy and Open Gemini", systemImage: "sparkle.magnifyingglass") {
                 model.copyAndOpenGemini()
             }
             .buttonStyle(.bordered)
@@ -194,8 +195,8 @@ struct SunoGeneratorView: View {
             HStack(spacing: 11) {
                 AccentIcon(systemName: "text.quote", color: AppTheme.cyan, size: 36)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("Prompt complet").font(.headline)
-                    Text("Éditable avant copie").font(.caption).foregroundStyle(.secondary)
+                    Text("Complete Prompt").font(.headline)
+                    Text("Editable before copying").font(.caption).foregroundStyle(.secondary)
                 }
             }
             TextEditor(text: $model.generatedPrompt)
@@ -205,6 +206,8 @@ struct SunoGeneratorView: View {
                 .padding(10)
                 .background(Color.black.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .accessibilityLabel(L10n.text("Generated Suno prompt editor"))
+                .accessibilityHint(L10n.text("Review or edit the complete prompt before copying it."))
         }
         .appPanel(radius: 20, padding: 20)
     }
@@ -238,8 +241,8 @@ struct SunoGeneratorView: View {
 
     private func metadataField(_ label: String, placeholder: String, text: Binding<String>, width: CGFloat? = nil) -> some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text(label).font(.caption2.weight(.bold)).tracking(0.7).foregroundStyle(.secondary)
-            TextField(placeholder, text: text)
+            Text(L10n.text(label)).font(.caption2.weight(.bold)).tracking(0.7).foregroundStyle(.secondary)
+            TextField(L10n.text(placeholder), text: text)
                 .textFieldStyle(.plain)
                 .font(.system(size: 15, weight: .semibold, design: .rounded))
                 .padding(12)

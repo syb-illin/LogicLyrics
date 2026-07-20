@@ -36,7 +36,7 @@ struct AudioMetadataView: View {
         }
         .onChange(of: audioURL) { _, value in if let value { model.loadAudio(value) } }
         .overlay { ProcessingOverlay(state: model.operationState, cancel: model.cancelProcessing) }
-        .alert("Métadonnées audio", isPresented: Binding(
+        .alert("Audio Metadata", isPresented: Binding(
             get: { model.errorMessage != nil },
             set: { if !$0 { model.errorMessage = nil } }
         )) { Button("OK", role: .cancel) {} } message: { Text(model.errorMessage ?? "") }
@@ -46,30 +46,30 @@ struct AudioMetadataView: View {
         HStack(spacing: 16) {
             AccentIcon(systemName: "waveform.badge.plus", color: AppTheme.cyan, size: 48)
             VStack(alignment: .leading, spacing: 4) {
-                Text("Métadonnées audio").font(.system(size: 30, weight: .bold, design: .rounded))
-                Text("Taguer un export Suno sans réencoder ni modifier le son.").foregroundStyle(.secondary)
+                Text("Audio Metadata").font(.system(size: 30, weight: .bold, design: .rounded))
+                Text("Tag a Suno export without re-encoding or changing the sound.").foregroundStyle(.secondary)
             }
             Spacer()
-            CapsuleStatus(text: "Original protégé", systemName: "shield.checkered", color: AppTheme.green)
+            CapsuleStatus(text: "Original protected", systemName: "shield.checkered", color: AppTheme.green)
         }
     }
 
     private var formCard: some View {
         VStack(alignment: .leading, spacing: 15) {
-            Label("Informations", systemImage: "tag.fill").font(.headline)
-            metadataField("TITRE", text: $model.title)
-            metadataField("ARTISTE", text: $model.artist)
+            Label("Information", systemImage: "tag.fill").font(.headline)
+            metadataField("TITLE", text: $model.title)
+            metadataField("ARTIST", text: $model.artist)
             HStack(spacing: 10) {
-                metadataField("N° PISTE", text: $model.trackNumber).frame(width: 90)
-                metadataField("FORMAT DU NOM", text: $model.filenameTemplate)
+                metadataField("TRACK NO.", text: $model.trackNumber).frame(width: 90)
+                metadataField("FILENAME FORMAT", text: $model.filenameTemplate)
             }
-            Text("Tokens : {track} {group} {title} {album} {year} {bpm}")
+            Text("Tokens: {track} {group} {title} {album} {year} {bpm}")
                 .font(.caption2).foregroundStyle(.secondary)
             HStack(spacing: 10) {
-                metadataField("ALBUM / PROJET", text: $model.album)
+                metadataField("ALBUM / PROJECT", text: $model.album)
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("ANNÉE").font(.caption2.bold()).foregroundStyle(.secondary)
-                    TextField("Année", value: $model.year, format: .number.grouping(.never))
+                    Text("YEAR").font(.caption2.bold()).foregroundStyle(.secondary)
+                    TextField("Year", value: $model.year, format: .number.grouping(.never))
                         .textFieldStyle(.plain).padding(11).fieldSurface()
                 }.frame(width: 105)
             }
@@ -77,7 +77,7 @@ struct AudioMetadataView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("STYLE / GENRE").font(.caption2.bold()).foregroundStyle(.secondary)
                     HStack(spacing: 4) {
-                        TextField("Style personnalisé", text: $model.genre)
+                        TextField("Custom style", text: $model.genre)
                             .textFieldStyle(.plain)
                         Menu {
                             ForEach(Self.musicGenres, id: \.self) { genre in
@@ -89,15 +89,16 @@ struct AudioMetadataView: View {
                                 .padding(7)
                         }
                         .menuStyle(.borderlessButton)
+                        .accessibilityLabel(L10n.text("Choose a music genre"))
                     }
                     .padding(.leading, 11)
                     .fieldSurface()
                 }
                 metadataField("BPM", text: $model.bpmText).frame(width: 110)
             }
-            Toggle("Inclure les paroles dans le fichier", isOn: $model.includesLyrics)
+            Toggle("Include lyrics in the file", isOn: $model.includesLyrics)
                 .toggleStyle(.switch)
-            Text("La tonalité n’est jamais écrite. Les paroles sont désactivées par défaut.")
+            Text("The musical key is never written. Lyrics are disabled by default.")
                 .font(.caption).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
@@ -106,7 +107,7 @@ struct AudioMetadataView: View {
 
     private var artworkCard: some View {
         VStack(alignment: .leading, spacing: 15) {
-            Label("Pochette", systemImage: "photo.fill").font(.headline)
+            Label("Artwork", systemImage: "photo.fill").font(.headline)
             ZStack {
                 RoundedRectangle(cornerRadius: 16).fill(Color.primary.opacity(0.05))
                 if let image = model.artworkImage {
@@ -114,18 +115,20 @@ struct AudioMetadataView: View {
                 } else {
                     VStack(spacing: 9) {
                         Image(systemName: "photo.badge.plus").font(.system(size: 34)).foregroundStyle(.secondary)
-                        Text("PNG ou JPEG").font(.caption).foregroundStyle(.secondary)
+                        Text("PNG or JPEG").font(.caption).foregroundStyle(.secondary)
                     }
                 }
             }
             .frame(width: 230, height: 230)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay { RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.10)) }
-            Button("Choisir une pochette", systemImage: "photo.on.rectangle") { model.selectArtwork() }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(model.artworkImage == nil ? L10n.text("No embedded artwork") : L10n.text("Artwork preview"))
+            Button("Choose artwork", systemImage: "photo.on.rectangle") { model.selectArtwork() }
                 .buttonStyle(.bordered).frame(maxWidth: .infinity)
             if model.artworkImage != nil {
                 Button(role: .destructive) { model.removeArtwork() } label: {
-                    Label("Retirer la pochette", systemImage: "trash")
+                    Label("Remove artwork", systemImage: "trash")
                 }
                     .buttonStyle(.bordered).frame(maxWidth: .infinity)
             }
@@ -136,13 +139,13 @@ struct AudioMetadataView: View {
     private var actionCard: some View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(model.sourceURL?.lastPathComponent ?? "Aucun export sélectionné").font(.headline).lineLimit(1)
-                Text(model.message ?? "Sortie : \(model.outputFilename) — le fichier original reste intact.")
+                Text(model.sourceURL?.lastPathComponent ?? L10n.text("No export selected")).font(.headline).lineLimit(1)
+                Text(model.message ?? L10n.format("Output: %@ — the original file remains unchanged.", model.outputFilename))
                     .font(.caption).foregroundStyle(model.message == nil ? Color.secondary : AppTheme.green)
             }
             Spacer()
-            Button("Choisir MP3/WAV", systemImage: "waveform") { model.selectAudio() }.buttonStyle(.bordered)
-            Button("Écrire les métadonnées", systemImage: "tag.fill") { model.write(lyrics: lyrics) }
+            Button("Choose MP3/WAV", systemImage: "waveform") { model.selectAudio() }.buttonStyle(.bordered)
+            Button("Write Metadata", systemImage: "tag.fill") { model.write(lyrics: lyrics) }
                 .buttonStyle(.borderedProminent).disabled(model.sourceURL == nil || model.isWriting)
             if model.isWriting { ProgressView().controlSize(.small) }
         }
@@ -151,20 +154,20 @@ struct AudioMetadataView: View {
 
     private var mp3Card: some View {
         VStack(alignment: .leading, spacing: 15) {
-            Label("Conversion MP3", systemImage: "arrow.triangle.2.circlepath").font(.headline)
+            Label("MP3 Conversion", systemImage: "arrow.triangle.2.circlepath").font(.headline)
             HStack(spacing: 12) {
-                settingPicker("MODE", selection: $model.encodingMode, values: MP3EncodingMode.allCases) { $0.rawValue }
+                settingPicker("MODE", selection: $model.encodingMode, values: MP3EncodingMode.allCases) { $0.label }
                 if model.encodingMode == .cbr {
-                    settingPicker("DÉBIT", selection: $model.mp3Bitrate, values: MP3Bitrate.allCases) { $0.label }
+                    settingPicker("BITRATE", selection: $model.mp3Bitrate, values: MP3Bitrate.allCases) { $0.label }
                 } else {
-                    settingPicker("QUALITÉ", selection: $model.vbrQuality, values: MP3VBRQuality.allCases) { $0.label }
+                    settingPicker("QUALITY", selection: $model.vbrQuality, values: MP3VBRQuality.allCases) { $0.label }
                 }
-                settingPicker("FRÉQUENCE", selection: $model.mp3SampleRate, values: MP3SampleRate.allCases) { $0.rawValue }
+                settingPicker("SAMPLE RATE", selection: $model.mp3SampleRate, values: MP3SampleRate.allCases) { $0.label }
             }
             HStack {
-                Text("LAME · joint stereo · qualité d’encodage maximale").font(.caption).foregroundStyle(.secondary)
+                Text("LAME · joint stereo · maximum encoding quality").font(.caption).foregroundStyle(.secondary)
                 Spacer()
-                Button("Convertir en MP3", systemImage: "waveform.badge.plus") { model.convertToMP3(lyrics: lyrics) }
+                Button("Convert to MP3", systemImage: "waveform.badge.plus") { model.convertToMP3(lyrics: lyrics) }
                     .buttonStyle(.borderedProminent).disabled(model.isWriting)
             }
         }.appPanel(radius: 20, padding: 20)
@@ -174,35 +177,37 @@ struct AudioMetadataView: View {
         _ label: String, selection: Binding<Value>, values: Values, title: @escaping (Value) -> String
     ) -> some View where Values.Element == Value {
         VStack(alignment: .leading, spacing: 6) {
-            Text(label).font(.caption2.bold()).foregroundStyle(.secondary)
-            Picker(label, selection: selection) { ForEach(Array(values), id: \.self) { Text(title($0)).tag($0) } }
+            Text(L10n.text(label)).font(.caption2.bold()).foregroundStyle(.secondary)
+            Picker(L10n.text(label), selection: selection) { ForEach(Array(values), id: \.self) { Text(title($0)).tag($0) } }
                 .labelsHidden().frame(maxWidth: .infinity)
         }.frame(maxWidth: .infinity)
     }
 
     private func technicalCard(_ info: AudioTechnicalInfo) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            Label("Informations techniques", systemImage: "waveform.path.ecg").font(.headline)
+            Label("Technical Information", systemImage: "waveform.path.ecg").font(.headline)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 10)], spacing: 10) {
                 technicalValue("FORMAT", info.format)
                 technicalValue("CODEC", info.codec)
-                technicalValue("FRÉQUENCE", info.sampleRate.map { (Self.sampleRateFormatter.string(from: NSNumber(value: $0)) ?? String($0)) + " Hz" } ?? "—")
-                technicalValue("PROFONDEUR", info.bitDepth.map { "\($0) bits" } ?? "Non applicable")
-                technicalValue("DÉBIT", info.bitrateKbps.map { "\($0) kb/s" } ?? "—")
-                technicalValue("CANAUX", info.channels == 1 ? "Mono" : (info.channels == 2 ? "Stéréo" : info.channels.map { String($0) } ?? "—"))
-                technicalValue("DURÉE", info.duration.map(Self.durationString) ?? "—")
-                technicalValue("TAILLE", ByteCountFormatter.string(fromByteCount: info.fileSize, countStyle: .file))
+                technicalValue("SAMPLE RATE", info.sampleRate.map { (Self.sampleRateFormatter.string(from: NSNumber(value: $0)) ?? String($0)) + " Hz" } ?? "—")
+                technicalValue("BIT DEPTH", info.bitDepth.map { L10n.format("%d bits", $0) } ?? L10n.text("Not applicable"))
+                technicalValue("BITRATE", info.bitrateKbps.map { "\($0) kb/s" } ?? "—")
+                technicalValue("CHANNELS", info.channels == 1 ? L10n.text("Mono") : (info.channels == 2 ? L10n.text("Stereo") : info.channels.map { String($0) } ?? "—"))
+                technicalValue("DURATION", info.duration.map(Self.durationString) ?? "—")
+                technicalValue("SIZE", ByteCountFormatter.string(fromByteCount: info.fileSize, countStyle: .file))
             }
         }.appPanel(radius: 20, padding: 20)
     }
 
     private func technicalValue(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(label).font(.system(size: 9, weight: .bold)).tracking(0.5).foregroundStyle(.secondary)
+            Text(L10n.text(label)).font(.system(size: 9, weight: .bold)).tracking(0.5).foregroundStyle(.secondary)
             Text(value).font(.subheadline.weight(.semibold)).lineLimit(2)
         }.frame(maxWidth: .infinity, minHeight: 42, alignment: .leading)
             .padding(10).background(Color.primary.opacity(0.045))
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(L10n.format("%@: %@", L10n.text(label), value))
     }
 
     private static let sampleRateFormatter: NumberFormatter = {
@@ -216,7 +221,7 @@ struct AudioMetadataView: View {
 
     private static let musicGenres = [
         "Alternative", "Alternative Rock", "Ambient", "Americana", "Art Pop", "Art Rock",
-        "Blues", "Blues Rock", "Bossa Nova", "Chanson française", "Chillout", "Classical",
+        "Blues", "Blues Rock", "Bossa Nova", "French Chanson", "Chillout", "Classical",
         "Country", "Dance", "Darkwave", "Disco", "Dream Pop", "Drum & Bass", "Dub", "Dubstep",
         "EDM", "Electro", "Electronic", "Emo", "Experimental", "Folk", "Folk Rock", "Funk",
         "Garage Rock", "Gospel", "Grunge", "Hard Rock", "Heavy Metal", "Hip-Hop", "House",
@@ -229,8 +234,8 @@ struct AudioMetadataView: View {
 
     private func metadataField(_ label: String, text: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(label).font(.caption2.bold()).foregroundStyle(.secondary)
-            TextField(label.capitalized, text: text).textFieldStyle(.plain).padding(11).fieldSurface()
+            Text(L10n.text(label)).font(.caption2.bold()).foregroundStyle(.secondary)
+            TextField(L10n.text(label), text: text).textFieldStyle(.plain).padding(11).fieldSurface()
         }.frame(maxWidth: .infinity)
     }
 }
@@ -253,37 +258,43 @@ struct MetadataSettingsView: View {
 
     var body: some View {
         Form {
-            Section("Métadonnées audio") {
-                TextField("Artiste par défaut", text: $defaultArtist)
-                TextField("Format du nom de fichier", text: $filenameTemplate)
-                Text("Tokens : {track} {group} {title} {album} {year} {bpm}")
+            Section("Audio Metadata") {
+                TextField("Default artist", text: $defaultArtist)
+                TextField("Filename format", text: $filenameTemplate)
+                Text("Tokens: {track} {group} {title} {album} {year} {bpm}")
                     .font(.caption).foregroundStyle(.secondary)
-                LabeledContent("Année par défaut", value: String(Calendar.current.component(.year, from: Date())))
-                Text("L’année suit automatiquement l’année courante.")
+                LabeledContent("Default year", value: String(Calendar.current.component(.year, from: Date())))
+                Text("The year automatically follows the current calendar year.")
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Section("Conversion WAV vers MP3") {
+            Section("WAV to MP3 Conversion") {
                 Picker("Mode", selection: $mp3Mode) {
-                    ForEach(MP3EncodingMode.allCases) { Text($0.rawValue).tag($0.rawValue) }
+                    ForEach(MP3EncodingMode.allCases) { Text($0.label).tag($0.rawValue) }
                 }
                 if mp3Mode == MP3EncodingMode.cbr.rawValue {
-                    Picker("Débit", selection: $mp3Bitrate) {
+                    Picker("Bitrate", selection: $mp3Bitrate) {
                         ForEach(MP3Bitrate.allCases) { Text($0.label).tag($0.rawValue) }
                     }
                 } else {
-                    Picker("Qualité VBR", selection: $mp3VBRQuality) {
+                    Picker("VBR Quality", selection: $mp3VBRQuality) {
                         ForEach(MP3VBRQuality.allCases) { Text($0.label).tag($0.rawValue) }
                     }
                 }
-                Picker("Fréquence", selection: $mp3SampleRate) {
-                    ForEach(MP3SampleRate.allCases) { Text($0.rawValue).tag($0.rawValue) }
+                Picker("Sample Rate", selection: $mp3SampleRate) {
+                    ForEach(MP3SampleRate.allCases) { Text($0.label).tag($0.rawValue) }
                 }
-                LabeledContent("Canaux", value: "Joint stereo")
-                LabeledContent("Qualité d’encodage", value: "Maximale")
+                LabeledContent(L10n.text("Channels"), value: L10n.text("Joint stereo"))
+                LabeledContent(L10n.text("Encoding quality"), value: L10n.text("Maximum"))
             }
         }
         .formStyle(.grouped)
         .padding(20)
         .frame(width: 560, height: 520)
+        .onAppear {
+            if MP3EncodingMode(rawValue: mp3Mode) == nil { mp3Mode = MP3EncodingMode.cbr.rawValue }
+            if MP3Bitrate(rawValue: mp3Bitrate) == nil { mp3Bitrate = MP3Bitrate.kbps320.rawValue }
+            if MP3VBRQuality(rawValue: mp3VBRQuality) == nil { mp3VBRQuality = MP3VBRQuality.v0.rawValue }
+            if MP3SampleRate(rawValue: mp3SampleRate) == nil { mp3SampleRate = MP3SampleRate.source.rawValue }
+        }
     }
 }

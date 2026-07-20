@@ -18,6 +18,6 @@ struct ExtractedNote: Identifiable, Hashable, Sendable {
     }
 
     var title: String {
-        text.split(whereSeparator: \.isNewline).first.map(String.init) ?? "Notes de projet"
+        text.split(whereSeparator: \.isNewline).first.map(String.init) ?? L10n.text("Project Notes")
     }
 }

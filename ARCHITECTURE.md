@@ -1,32 +1,46 @@
-# LogicLyrics 2.1.2 — architecture et invariants
+# Logic Lyrics 2.2.0 — architecture and invariants
 
-## Couches
+## Layers
 
-- `Model`: valeurs immuables ou états métier sans dépendance UI.
-- `Services`: lecture/écriture Logic, inspection/tag audio, conversion MP3 et persistance.
-- `ServiceProtocols`: ports injectables utilisés par les view models.
-- `ViewModel`: état d’écran confiné au `MainActor`, validation et orchestration.
-- `Views`: rendu SwiftUI et interactions utilisateur uniquement.
+- `Model`: immutable values and domain state without UI dependencies.
+- `Services`: Logic parsing/writing, audio inspection/tagging, MP3 conversion, updates, and persistence.
+- `ServiceProtocols`: injectable ports used by view models and regression tests.
+- `ViewModel`: `MainActor`-isolated presentation state, validation, and orchestration.
+- `Views`: SwiftUI rendering and user interaction only.
 
-## Invariants de sûreté
+This is a pragmatic MVVM/service architecture. Protocol-based dependency inversion keeps filesystem and encoder behavior testable, actors serialize persistence, and value types carry parsed data across concurrency boundaries.
 
-1. Un projet Logic source n’est jamais modifié.
-2. Une copie Logic est produite dans un paquet temporaire; source et ancienne destination restent intactes jusqu’au commit.
-3. Une sortie audio est construite dans un fichier temporaire puis publiée en une seule opération.
-4. L’historique est encodé hors du thread UI et écrit atomiquement.
-5. Toute opération remplaçable possède un identifiant; un ancien résultat ne peut pas écraser le plus récent.
-6. Le handle conservé est celui du worker réel; les tâches longues et LAME coopèrent avec son annulation.
-7. Les handles de fichiers et accès security-scoped sont fermés dans des `defer`.
-8. Les scans de `ProjectData` utilisent les données mappées sans copie intégrale en `[UInt8]`.
-9. Les erreurs ayant un impact utilisateur ne sont pas silencieusement ignorées.
-10. L’historique possède un schéma versionné et une identité projet + alternative + note.
-11. Les mises à jour source et LAME sont vérifiées par SHA-256 avant exécution.
+## Safety and performance invariants
 
-## Validation
+1. A source Logic project is never modified.
+2. A Logic copy is assembled in a temporary package; the source and any existing destination remain intact until validation succeeds.
+3. Audio output is produced transactionally and is never published as a partial file.
+4. History is encoded away from UI work and written atomically.
+5. Replaceable operations have an identity; an obsolete result cannot overwrite a newer selection.
+6. Long-running work and the LAME process cooperate with cancellation.
+7. File handles and security-scoped resources close in `defer` blocks.
+8. `ProjectData` scans use mapped `Data` and avoid a full `[UInt8]` duplicate.
+9. User-impacting failures surface through accessible alerts instead of being silently ignored.
+10. History has a versioned schema and a project + alternative + note identity.
+11. Update and LAME archives are verified by SHA-256 before execution.
+12. Unified logs never include user content, filenames, paths, project names, lyrics, prompts, artwork, or tag values.
 
-`BUILD.command` compile avec la vérification stricte de concurrence, signe l’app, vérifie la signature,
-valide `Info.plist`, exécute LAME et refuse toute dépendance Homebrew ou `/usr/local`.
+## Concurrency and lifecycle
 
-La garantie empirique d’absence de fuite nécessite en complément une session Instruments sur macOS
-(`Leaks`, `Allocations`, `Time Profiler`) pendant des cycles répétés de chargement, édition, conversion,
-annulation et fermeture de fenêtre.
+View models own cancelable task handles and capture themselves weakly in detached work. UI mutations return to the main actor. Operation identifiers reject stale completions. Temporary conversion files are removed in `defer`, and transient clipboard feedback tasks are canceled before replacement or view disappearance.
+
+No source review can prove the absence of every runtime leak. Release validation therefore combines strict concurrency compilation and regression tests with recommended Instruments sessions (`Leaks`, `Allocations`, and `Time Profiler`) over repeated open/edit/convert/cancel/window-close cycles.
+
+## Build validation
+
+`BUILD.command`:
+
+- compiles with complete strict-concurrency checking and concurrency warnings;
+- executes core regression tests before building the app;
+- validates English and French localization resources and `Info.plist`;
+- signs the final bundle and verifies its signature;
+- self-tests the bundled LAME binary;
+- rejects LAME dependencies on Homebrew or `/usr/local`;
+- optionally notarizes and staples Developer ID builds.
+
+GitHub Actions runs the same lightweight pipeline on macOS and publishes checksummed app and source archives for tagged releases.

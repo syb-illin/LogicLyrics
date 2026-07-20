@@ -9,10 +9,10 @@ enum LogicProjectError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .notLogicProject: "Dépose un projet Logic Pro au format .logicx."
-        case .alternativesMissing: "Le dossier Alternatives est absent de ce projet."
-        case .noProjectData: "Aucun fichier ProjectData n’a été trouvé."
-        case .unreadableProject: "Le projet ne peut pas être lu."
+        case .notLogicProject: L10n.text("Drop a Logic Pro project in .logicx format.")
+        case .alternativesMissing: L10n.text("This project does not contain an Alternatives folder.")
+        case .noProjectData: L10n.text("No ProjectData file was found.")
+        case .unreadableProject: L10n.text("The project cannot be read.")
         }
     }
 }

@@ -47,20 +47,27 @@ final class ProjectViewModel: ObservableObject {
         let operationID = UUID()
         self.operationID = operationID
         isLoading = true
-        operationState = .running(message: "Analyse du projet Logic…", startedAt: Date())
+        operationState = .running(message: L10n.text("Analyzing Logic project…"), startedAt: Date())
         errorMessage = nil
         writeMessage = nil
+        let startedAt = Date()
+        AppLog.projects.info("Logic project analysis started")
 
         let reader = reader
-        operationTask = Task.detached(priority: .userInitiated) { [weak self, reader] in
+        operationTask = Task.detached(priority: .userInitiated) { [weak self, reader, startedAt] in
             do {
                 try Task<Never, Never>.checkCancellation()
                 let result = try reader.readProject(at: url)
                 try Task<Never, Never>.checkCancellation()
+                let durationMilliseconds = Int(Date().timeIntervalSince(startedAt) * 1_000)
+                AppLog.projects.info("Logic project analysis succeeded duration_ms=\(durationMilliseconds, privacy: .public) notes=\(result.notes.count, privacy: .public)")
                 await self?.completeOpen(result: result, url: url, operationID: operationID)
             } catch is CancellationError {
+                AppLog.projects.notice("Logic project analysis cancelled")
                 await self?.finishOperation(operationID)
             } catch {
+                let errorType = String(describing: type(of: error))
+                AppLog.projects.error("Logic project analysis failed error_type=\(errorType, privacy: .public)")
                 await self?.failOpen(error, operationID: operationID)
             }
         }
@@ -86,9 +93,11 @@ final class ProjectViewModel: ObservableObject {
         operationTask?.cancel()
         let operationID = UUID()
         self.operationID = operationID
-        operationState = .running(message: "Création et vérification de la copie Logic…", startedAt: Date())
+        operationState = .running(message: L10n.text("Creating and validating Logic copy…"), startedAt: Date())
+        let startedAt = Date()
+        AppLog.projects.info("Transactional Logic copy started")
         let writer = writer
-        operationTask = Task.detached(priority: .userInitiated) { [weak self, writer] in
+        operationTask = Task.detached(priority: .userInitiated) { [weak self, writer, startedAt] in
             do {
                 try Task<Never, Never>.checkCancellation()
                 let sourceAccess = projectURL.startAccessingSecurityScopedResource()
@@ -102,10 +111,15 @@ final class ProjectViewModel: ObservableObject {
                     alternative: note.alternative, originalText: note.sourceText, editedText: note.text
                 )
                 try Task<Never, Never>.checkCancellation()
+                let durationMilliseconds = Int(Date().timeIntervalSince(startedAt) * 1_000)
+                AppLog.projects.info("Transactional Logic copy succeeded duration_ms=\(durationMilliseconds, privacy: .public)")
                 await self?.completeWrite(destination: destination, operationID: operationID)
             } catch is CancellationError {
+                AppLog.projects.notice("Transactional Logic copy cancelled")
                 await self?.finishOperation(operationID)
             } catch {
+                let errorType = String(describing: type(of: error))
+                AppLog.projects.error("Transactional Logic copy failed error_type=\(errorType, privacy: .public)")
                 await self?.failOperation(error, operationID: operationID)
             }
         }
@@ -146,7 +160,7 @@ final class ProjectViewModel: ObservableObject {
         guard operationState.isRunning else { return }
         operationTask?.cancel()
         if case .running(_, let startedAt) = operationState {
-            operationState = .running(message: "Annulation en cours…", startedAt: startedAt)
+            operationState = .running(message: L10n.text("Cancelling…"), startedAt: startedAt)
         }
     }
 
@@ -161,8 +175,12 @@ final class ProjectViewModel: ObservableObject {
 
         do {
             try note.text.write(to: destination, atomically: true, encoding: .utf8)
+            let format = asMarkdown ? "markdown" : "text"
+            AppLog.projects.info("Lyrics export succeeded format=\(format, privacy: .public)")
         } catch {
-            errorMessage = "L’export a échoué : \(error.localizedDescription)"
+            let errorType = String(describing: type(of: error))
+            AppLog.projects.error("Lyrics export failed error_type=\(errorType, privacy: .public)")
+            errorMessage = L10n.format("Export failed: %@", error.localizedDescription)
         }
     }
 
@@ -191,7 +209,7 @@ final class ProjectViewModel: ObservableObject {
 
     private func completeWrite(destination: URL, operationID: UUID) {
         guard self.operationID == operationID else { return }
-        writeMessage = "Copie Logic vérifiée : \(destination.lastPathComponent)"
+        writeMessage = L10n.format("Logic copy verified: %@", destination.lastPathComponent)
         NSWorkspace.shared.activateFileViewerSelecting([destination])
         finishOperation(operationID)
     }

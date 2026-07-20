@@ -12,11 +12,11 @@ struct HistoryDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 header
-                historyCard("Paroles", icon: "text.quote", color: AppTheme.cyan, value: entry.lyrics, field: "lyrics")
+                historyCard("Lyrics", icon: "text.quote", color: AppTheme.cyan, value: entry.lyrics, field: "lyrics")
                 if !entry.prompt.isEmpty {
-                    historyCard("Prompt Suno", icon: "sparkles", color: AppTheme.accent, value: entry.prompt, field: "prompt")
+                    historyCard("Suno Prompt", icon: "sparkles", color: AppTheme.accent, value: entry.prompt, field: "prompt")
                 } else {
-                    Label("Aucun prompt généré pour ce morceau", systemImage: "info.circle")
+                    Label("No prompt has been generated for this song", systemImage: "info.circle")
                         .foregroundStyle(.secondary)
                         .appPanel()
                 }
@@ -25,11 +25,11 @@ struct HistoryDetailView: View {
             .padding(30)
             .frame(maxWidth: .infinity)
         }
-        .alert("Supprimer ce morceau de l’historique ?", isPresented: $confirmsDeletion) {
-            Button("Annuler", role: .cancel) {}
-            Button("Supprimer", role: .destructive, action: onDelete)
+        .alert("Delete this song from history?", isPresented: $confirmsDeletion) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive, action: onDelete)
         } message: {
-            Text("Les paroles et le prompt sauvegardés pour « \(entry.projectName) » seront supprimés. Le projet Logic ne sera pas modifié.")
+            Text(L10n.format("The saved lyrics and prompt for “%@” will be deleted. The Logic project will not be modified.", entry.projectName))
         }
         .onDisappear {
             copyFeedbackTask?.cancel()
@@ -56,7 +56,7 @@ struct HistoryDetailView: View {
                         CapsuleStatus(text: key, systemName: "music.quarternote.3", color: AppTheme.accent)
                     }
                     if !entry.alternative.isEmpty {
-                        CapsuleStatus(text: "Alternative \(entry.alternative)", systemName: "square.stack.3d.up", color: AppTheme.cyan)
+                        CapsuleStatus(text: L10n.format("Alternative %@", entry.alternative), systemName: "square.stack.3d.up", color: AppTheme.cyan)
                     }
                     if !entry.referenceArtist.isEmpty {
                         CapsuleStatus(text: entry.referenceArtist, systemName: "music.note", color: AppTheme.accent)
@@ -65,7 +65,7 @@ struct HistoryDetailView: View {
             }
             Spacer()
             Button(role: .destructive) { confirmsDeletion = true } label: {
-                Label("Supprimer", systemImage: "trash")
+                Label("Delete", systemImage: "trash")
             }
             .buttonStyle(.bordered)
         }
@@ -75,9 +75,9 @@ struct HistoryDetailView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 AccentIcon(systemName: icon, color: color, size: 36)
-                Text(title).font(.headline)
+                Text(L10n.text(title)).font(.headline)
                 Spacer()
-                Button(copied == field ? "Copié" : "Copier", systemImage: copied == field ? "checkmark" : "doc.on.doc") {
+                Button(copied == field ? L10n.text("Copied") : L10n.text("Copy"), systemImage: copied == field ? "checkmark" : "doc.on.doc") {
                     copy(value, field: field)
                 }
                 .buttonStyle(.bordered)
@@ -90,6 +90,7 @@ struct HistoryDetailView: View {
                 .padding(15)
                 .background(Color.black.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .accessibilityLabel(L10n.format("%@ content", L10n.text(title)))
         }
         .appPanel(radius: 20, padding: 20)
     }

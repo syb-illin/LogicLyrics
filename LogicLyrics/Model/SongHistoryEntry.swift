@@ -43,7 +43,7 @@ struct SongHistoryEntry: Codable, Identifiable, Hashable, Sendable {
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         id = try values.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
-        projectName = try values.decodeIfPresent(String.self, forKey: .projectName) ?? "Projet Logic"
+        projectName = try values.decodeIfPresent(String.self, forKey: .projectName) ?? L10n.text("Logic Project")
         projectPath = try values.decodeIfPresent(String.self, forKey: .projectPath) ?? ""
         noteKey = try values.decodeIfPresent(String.self, forKey: .noteKey) ?? "legacy"
         alternative = try values.decodeIfPresent(String.self, forKey: .alternative) ?? ""

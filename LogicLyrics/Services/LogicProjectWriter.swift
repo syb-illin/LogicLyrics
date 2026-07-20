@@ -12,17 +12,17 @@ enum LogicProjectWriteError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .sourceEqualsDestination:
-            "La destination correspond au projet Logic original. Choisis obligatoirement un autre nom ou un autre dossier."
+            L10n.text("The destination is the original Logic project. Choose a different name or folder.")
         case .noteNotFound:
-            "Le bloc de Notes correspondant n’a pas été retrouvé dans ProjectData."
+            L10n.text("The matching Notes block could not be found in ProjectData.")
         case .emptyLyrics:
-            "Écris les paroles avant de créer la copie Logic."
+            L10n.text("Enter lyrics before creating the Logic copy.")
         case .emptyNoteContainerNotFound:
-            "Ce projet ne contient pas la structure de Notes vide reconnue. La copie n’a pas été créée afin d’éviter toute corruption."
+            L10n.text("This project does not contain the recognized empty Notes structure. No copy was created to prevent corruption.")
         case .encodedTextTooLarge(let available, let required):
-            "Les paroles corrigées nécessitent \(required) octets, mais le bloc Logic n’en réserve que \(available). La copie n’a pas été créée."
+            L10n.format("The edited lyrics require %d bytes, but the Logic block reserves only %d. No copy was created.", required, available)
         case .validationFailed:
-            "La copie a été annulée car la relecture des paroles modifiées a échoué."
+            L10n.text("The copy was discarded because the edited lyrics could not be read back successfully.")
         }
     }
 }

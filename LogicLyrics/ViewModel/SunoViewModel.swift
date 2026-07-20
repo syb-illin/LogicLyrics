@@ -22,21 +22,21 @@ final class SunoViewModel: ObservableObject {
     func generatePrompt(from lyrics: String, bpmText: String, musicalKey: String) -> String? {
         let artist = referenceArtist.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !artist.isEmpty else {
-            errorMessage = "Indique un groupe ou artiste de référence."
+            errorMessage = L10n.text("Enter a reference band or artist.")
             return nil
         }
         guard !lyrics.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            errorMessage = "Aucune parole n’est chargée."
+            errorMessage = L10n.text("No lyrics are loaded.")
             return nil
         }
         let normalizedBPM = bpmText.replacingOccurrences(of: ",", with: ".")
         guard let bpm = Double(normalizedBPM), (20...400).contains(bpm) else {
-            errorMessage = "Indique un BPM valide entre 20 et 400."
+            errorMessage = L10n.text("Enter a valid BPM between 20 and 400.")
             return nil
         }
         let key = musicalKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !key.isEmpty else {
-            errorMessage = "Indique la tonalité du morceau."
+            errorMessage = L10n.text("Enter the song key.")
             return nil
         }
         let bpmLabel = bpm.rounded() == bpm ? String(Int(bpm)) : String(format: "%.2f", bpm)

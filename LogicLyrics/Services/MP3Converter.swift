@@ -1,9 +1,15 @@
 import Foundation
 
 enum MP3EncodingMode: String, CaseIterable, Identifiable, Sendable {
-    case cbr = "Débit constant (CBR)"
-    case vbr = "Qualité variable (VBR)"
+    case cbr
+    case vbr
     var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .cbr: L10n.text("Constant bitrate (CBR)")
+        case .vbr: L10n.text("Variable quality (VBR)")
+        }
+    }
 }
 
 enum MP3Bitrate: Int, CaseIterable, Identifiable, Sendable {
@@ -19,11 +25,18 @@ enum MP3VBRQuality: Int, CaseIterable, Identifiable, Sendable {
 }
 
 enum MP3SampleRate: String, CaseIterable, Identifiable, Sendable {
-    case source = "Identique à la source"
-    case hz44100 = "44,1 kHz"
-    case hz48000 = "48 kHz"
+    case source
+    case hz44100
+    case hz48000
     var id: String { rawValue }
     var lameValue: String? { self == .hz44100 ? "44.1" : (self == .hz48000 ? "48" : nil) }
+    var label: String {
+        switch self {
+        case .source: L10n.text("Same as source")
+        case .hz44100: "44.1 kHz"
+        case .hz48000: "48 kHz"
+        }
+    }
 }
 
 struct MP3EncodingSettings: Sendable {
@@ -39,8 +52,8 @@ enum MP3ConversionError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .encoderMissing: "Le moteur MP3 LAME est absent de l’application. Relance BUILD.command."
-        case .failed(let details): "La conversion MP3 a échoué. \(details)"
+        case .encoderMissing: L10n.text("The LAME MP3 engine is missing from the application. Run BUILD.command again.")
+        case .failed(let details): L10n.format("MP3 conversion failed. %@", details)
         }
     }
 }

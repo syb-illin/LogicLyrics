@@ -3,6 +3,13 @@ import SwiftUI
 
 @main
 struct LogicLyricsApp: App {
+    init() {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown"
+        let localization = Bundle.main.preferredLocalizations.first ?? "unknown"
+        AppLog.lifecycle.notice("Application launched version=\(version, privacy: .public) build=\(build, privacy: .public) localization=\(localization, privacy: .public)")
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -13,9 +20,9 @@ struct LogicLyricsApp: App {
         .defaultSize(width: 1180, height: 780)
         .commands {
             CommandGroup(replacing: .appInfo) {
-                Button("À propos de Logic Lyrics") {
+                Button(L10n.text("About Logic Lyrics")) {
                     let credits = NSAttributedString(
-                        string: "Extrait les paroles des Notes de projet Logic Pro et prépare des prompts Suno AI respectueux de ta voix.",
+                        string: L10n.text("Extracts lyrics from Logic Pro Project Notes and prepares Suno AI prompts that preserve your vocal identity."),
                         attributes: [.foregroundColor: NSColor.secondaryLabelColor]
                     )
                     NSApplication.shared.orderFrontStandardAboutPanel(options: [
@@ -24,6 +31,12 @@ struct LogicLyricsApp: App {
                         .credits: credits
                     ])
                 }
+            }
+            CommandMenu(L10n.text("Diagnostics")) {
+                Button(L10n.text("Copy System Diagnostics")) {
+                    AppDiagnostics.copyToPasteboard()
+                }
+                .keyboardShortcut("d", modifiers: [.command, .option])
             }
         }
 

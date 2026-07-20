@@ -18,7 +18,9 @@ final class UpdateService: ObservableObject {
         guard state != .checking else { return }
         checkTask?.cancel()
         state = .checking
-        checkTask = Task { [weak self] in
+        let startedAt = Date()
+        AppLog.updates.info("Update check started")
+        checkTask = Task { [weak self, startedAt] in
             do {
                 let url = URL(string: "https://api.github.com/repos/syb-illin/LogicLyrics/releases/latest")!
                 var request = URLRequest(url: url)
@@ -40,12 +42,17 @@ final class UpdateService: ObservableObject {
                 state = Self.isNewer(remote, than: Self.currentVersion)
                     ? .available(version: remote)
                     : .current
+                let durationMilliseconds = Int(Date().timeIntervalSince(startedAt) * 1_000)
+                AppLog.updates.info("Update check succeeded duration_ms=\(durationMilliseconds, privacy: .public) remote_version=\(remote, privacy: .public)")
             } catch is CancellationError {
+                AppLog.updates.notice("Update check cancelled")
                 return
             } catch {
                 guard let self else { return }
+                let errorType = String(describing: type(of: error))
+                AppLog.updates.error("Update check failed error_type=\(errorType, privacy: .public)")
                 state = .idle
-                if !silent { errorMessage = "Vérification impossible : \(error.localizedDescription)" }
+                if !silent { errorMessage = L10n.format("Unable to check for updates: %@", error.localizedDescription) }
             }
         }
     }
@@ -53,7 +60,7 @@ final class UpdateService: ObservableObject {
     func installAvailableUpdate() {
         guard case .available = state,
               let bundled = Bundle.main.url(forResource: "UPDATE", withExtension: "command") else {
-            errorMessage = "Le programme de mise à jour est absent de l’application."
+            errorMessage = L10n.text("The updater is missing from the application.")
             return
         }
         do {
@@ -72,8 +79,11 @@ final class UpdateService: ObservableObject {
             try Data(currentApplication.path.utf8).write(to: targetFile, options: .atomic)
             try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: executable.path)
             guard NSWorkspace.shared.open(executable) else { throw UpdateError.cannotLaunch }
+            AppLog.updates.notice("Updater launched")
         } catch {
-            errorMessage = "Le programme de mise à jour ne peut pas être lancé : \(error.localizedDescription)"
+            let errorType = String(describing: type(of: error))
+            AppLog.updates.error("Updater launch failed error_type=\(errorType, privacy: .public)")
+            errorMessage = L10n.format("The updater could not be launched: %@", error.localizedDescription)
         }
     }
 
@@ -92,11 +102,11 @@ final class UpdateService: ObservableObject {
         var errorDescription: String? {
             switch self {
             case .incompleteRelease:
-                "La release ne contient pas les deux fichiers de mise à jour attendus."
+                L10n.text("The release does not contain the two required update files.")
             case .unwritableInstallation:
-                "L’app est installée dans un dossier non modifiable. Replace-la dans Téléchargements ou Applications avec les droits nécessaires."
+                L10n.text("The app is installed in a read-only folder. Move it to Downloads or Applications with the required permissions.")
             case .cannotLaunch:
-                "macOS n’a pas pu ouvrir le programme de mise à jour dans Terminal."
+                L10n.text("macOS could not open the updater in Terminal.")
             }
         }
     }

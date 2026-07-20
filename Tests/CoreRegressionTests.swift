@@ -92,15 +92,15 @@ enum CoreRegressionTests {
         try tag.write(to: source)
 
         let metadata = AudioMetadata(
-            title: "Éveil", trackNumber: "01", artist: "wake up fall", album: "Test",
-            year: 2026, genre: "Alternative", bpm: 140, lyrics: "Paroles", artwork: nil, artworkMIMEType: nil
+            title: "Blue Æther", trackNumber: "01", artist: "wake up fall", album: "Test",
+            year: 2026, genre: "Alternative", bpm: 140, lyrics: "Lyrics", artwork: nil, artworkMIMEType: nil
         )
         try AudioMetadataWriter().write(source: source, destination: output, metadata: metadata)
         let bytes = try Data(contentsOf: output)
         try require(bytes.count > 10 && bytes[3] == 4, "ID3v2.4 header")
         try require(bytes.range(of: Data("TSSE".utf8)) != nil, "Unknown ID3 frame preserved")
         let decoded = try AudioMetadataReader().read(from: output)
-        try require(decoded.title == "Éveil" && decoded.artist == "wake up fall", "Unicode ID3 round trip")
+        try require(decoded.title == "Blue Æther" && decoded.artist == "wake up fall", "Unicode ID3 round trip")
     }
 
     private static func id3v24Frame(_ id: String, payload: Data) -> Data {

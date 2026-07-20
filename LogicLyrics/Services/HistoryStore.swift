@@ -11,7 +11,7 @@ private enum HistoryRepositoryError: LocalizedError, Sendable {
     var errorDescription: String? {
         switch self {
         case .corrupt(let backupName):
-            "L’historique était illisible. Une sauvegarde a été conservée sous \(backupName)."
+            L10n.format("The history file was unreadable. A backup was preserved as %@.", backupName)
         }
     }
 }
@@ -77,7 +77,9 @@ final class HistoryStore: ObservableObject {
         do { repository = try HistoryRepository() }
         catch {
             repository = nil
-            persistenceError = .error(error, context: "Historique indisponible")
+            let errorType = String(describing: type(of: error))
+            AppLog.history.error("History repository initialization failed error_type=\(errorType, privacy: .public)")
+            persistenceError = .error(error, context: L10n.text("History unavailable"))
         }
         load()
     }
@@ -149,8 +151,12 @@ final class HistoryStore: ObservableObject {
     private func load() {
         guard let repository else { return }
         Task { [weak self] in
+            let startedAt = Date()
+            AppLog.history.info("History load started")
             do {
                 let loaded = try await repository.load().sorted { $0.updatedAt > $1.updatedAt }
+                let durationMilliseconds = Int(Date().timeIntervalSince(startedAt) * 1_000)
+                AppLog.history.info("History load succeeded duration_ms=\(durationMilliseconds, privacy: .public) entries=\(loaded.count, privacy: .public)")
                 guard let self else { return }
                 if self.entries.isEmpty {
                     self.entries = loaded
@@ -176,7 +182,9 @@ final class HistoryStore: ObservableObject {
                     self.scheduleSave(delayNanoseconds: 0)
                 }
             } catch {
-                self?.persistenceError = .error(error, context: "Lecture de l’historique impossible")
+                let errorType = String(describing: type(of: error))
+                AppLog.history.error("History load failed error_type=\(errorType, privacy: .public)")
+                self?.persistenceError = .error(error, context: L10n.text("Unable to read history"))
             }
         }
     }
@@ -197,10 +205,13 @@ final class HistoryStore: ObservableObject {
                 }
                 try Task.checkCancellation()
                 try await repository.save(snapshot)
+                AppLog.history.debug("History save succeeded entries=\(snapshot.count, privacy: .public)")
             } catch is CancellationError {
                 return
             } catch {
-                self?.persistenceError = .error(error, context: "Sauvegarde de l’historique impossible")
+                let errorType = String(describing: type(of: error))
+                AppLog.history.error("History save failed error_type=\(errorType, privacy: .public)")
+                self?.persistenceError = .error(error, context: L10n.text("Unable to save history"))
             }
         }
     }
