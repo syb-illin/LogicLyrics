@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-07-21T11:20:49.268210Z",
+  "repository": {
+    "fullName": "syb-illin/LogicLyrics",
+    "url": "https://github.com/syb-illin/LogicLyrics",
+    "description": "",
+    "defaultBranch": "main",
+    "stars": 0,
+    "forks": 0,
+    "watchers": 0,
+    "openIssues": 0
+  },
+  "downloads": {
+    "app": 2,
+    "allAssets": 8
+  },
+  "releases": [
+    {
+      "tag": "v2.2.1",
+      "name": "Logic Lyrics v2.2.1",
+      "publishedAt": "2026-07-21T08:57:06Z",
+      "url": "https://github.com/syb-illin/LogicLyrics/releases/tag/v2.2.1",
+      "prerelease": false,
+      "appDownloads": 1,
+      "allAssetDownloads": 4,
+      "assets": [
+        {
+          "name": "LogicLyrics-macOS-source.zip",
+          "downloads": 1,
+          "size": 2271910,
+          "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.2.1/LogicLyrics-macOS-source.zip"
+        },
+        {
+          "name": "LogicLyrics-macOS-source.zip.sha256",
+          "downloads": 1,
+          "size": 95,
+          "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.2.1/LogicLyrics-macOS-source.zip.sha256"
+        },
+        {
+          "name": "LogicLyrics.app.zip",
+          "downloads": 1,
+          "size": 1328751,
+          "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.2.1/LogicLyrics.app.zip"
+        },
+        {
+          "name": "LogicLyrics.app.zip.sha256",
+          "downloads": 1,
+          "size": 86,
+          "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.2.1/LogicLyrics.app.zip.sha256"
+        }
+      ]
+    },
+    {
+      "tag": "v2.2.0",
+      "name": "Logic Lyrics v2.2.0",
+      "publishedAt": "2026-07-20T17:25:04Z",
+      "url": "https://github.com/syb-illin/LogicLyrics/releases/tag/v2.2.0",
+      "prerelease": false,
+      "appDownloads": 1,
+      "allAssetDownloads": 4,
+      "assets": [
+        {
+          "name": "LogicLyrics-macOS-source.zip",
+          "downloads": 1,
+          "size": 2268275,
+          "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.2.0/LogicLyrics-macOS-source.zip"
+        },
+        {
+          "name": "LogicLyrics-macOS-source.zip.sha256",
+          "downloads": 1,
+          "size": 95,
+          "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.2.0/LogicLyrics-macOS-source.zip.sha256"
+        },
+        {
+          "name": "LogicLyrics.app.zip",
+          "downloads": 1,
+          "size": 1309011,
+          "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.2.0/LogicLyrics.app.zip"
+        },
+        {
+          "name": "LogicLyrics.app.zip.sha256",
+          "downloads": 1,
+          "size": 86,
+          "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.2.0/LogicLyrics.app.zip.sha256"
+        }
+      ]
+    }
+  ],
+  "traffic": {
+    "available": false,
+    "complete": false,
+    "reason": "permission-required",
+    "views": {},
+    "clones": {},
+    "referrers": [],
+    "popularPaths": []
+  },
+  "history": {
+    "schemaVersion": 1,
+    "dailyTraffic": {},
+    "snapshots": [
+      {
+        "date": "2026-07-21",
+        "capturedAt": "2026-07-21T11:20:49.268210Z",
+        "appDownloads": 2,
+        "allAssetDownloads": 8,
+        "stars": 0,
+        "forks": 0,
+        "watchers": 0,
+        "openIssues": 0,
+        "releases": {
+          "v2.2.1": 1,
+          "v2.2.0": 1
+        }
+      }
+    ]
+  }
+}
