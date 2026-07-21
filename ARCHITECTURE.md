@@ -1,4 +1,4 @@
-# Logic Lyrics 2.2.1 — architecture and invariants
+# Logic Lyrics 2.2.2 — architecture and invariants
 
 ## Layers
 
@@ -56,3 +56,5 @@ No source review can prove the absence of every runtime leak. Release validation
 - optionally notarizes and staples Developer ID builds.
 
 GitHub Actions runs the same lightweight pipeline on macOS and publishes checksummed app and source archives for tagged releases.
+
+The separate GitHub statistics workflow treats the GitHub REST API as an external adapter, stores a versioned history on the dedicated `github-stats` branch, and deploys a static Pages artifact. Public release metrics remain available when privileged Traffic metrics cannot be read; the dashboard exposes that degraded state instead of fabricating zero values.

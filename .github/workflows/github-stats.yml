@@ -1,0 +1,129 @@
+name: GitHub statistics dashboard
+
+on:
+  schedule:
+    - cron: "23 3 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/github-stats.yml"
+      - "Tools/GitHubStats/**"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-statistics-dashboard
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    name: Collect and archive GitHub metrics
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out dashboard sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+
+      - name: Run collector regression tests
+        run: |
+          python3 -m unittest discover -s Tools/GitHubStats -p 'test_*.py' -v
+          node --check Tools/GitHubStats/site/dashboard.js
+
+      - name: Prepare persistent dashboard branch
+        id: branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          dashboard_dir="${RUNNER_TEMP}/github-stats-branch"
+          if git ls-remote --exit-code --heads origin github-stats >/dev/null 2>&1; then
+            git fetch --depth=1 origin github-stats
+            git worktree add --detach "${dashboard_dir}" FETCH_HEAD
+          else
+            git worktree add --detach "${dashboard_dir}"
+            (
+              cd "${dashboard_dir}"
+              git switch --orphan github-stats
+              git rm -rf --ignore-unmatch .
+            )
+          fi
+          echo "dashboard_dir=${dashboard_dir}" >> "${GITHUB_OUTPUT}"
+
+      - name: Generate current dashboard
+        id: generate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          STATS_TOKEN: ${{ secrets.TRAFFIC_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          history_path="${{ steps.branch.outputs.dashboard_dir }}/data/history.json"
+          arguments=(
+            --repository "${GITHUB_REPOSITORY}"
+            --output "${RUNNER_TEMP}/generated-dashboard"
+          )
+          if [[ -f "${history_path}" ]]; then
+            arguments+=(--history "${history_path}")
+          fi
+          python3 Tools/GitHubStats/generate_dashboard.py "${arguments[@]}"
+          export DASHBOARD_JSON="${RUNNER_TEMP}/generated-dashboard/data/dashboard.json"
+          traffic_status="$(python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          dashboard = json.loads(Path(os.environ["DASHBOARD_JSON"]).read_text(encoding="utf-8"))
+          print(dashboard["traffic"]["reason"])
+          PY
+          )"
+          echo "traffic_status=${traffic_status}" >> "${GITHUB_OUTPUT}"
+          {
+            echo "## Logic Lyrics GitHub Insights"
+            echo
+            echo "- Traffic status: \`${traffic_status}\`"
+            echo "- Persistent branch: \`github-stats\`"
+            echo "- App telemetry collected: **none**"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Publish persistent archive branch
+        env:
+          DASHBOARD_DIR: ${{ steps.branch.outputs.dashboard_dir }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rsync --archive --delete --exclude='.git' \
+            "${RUNNER_TEMP}/generated-dashboard/" \
+            "${DASHBOARD_DIR}/"
+          cd "${DASHBOARD_DIR}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --all
+          if git diff --cached --quiet; then
+            echo "Dashboard data is already current."
+          else
+            git commit -m "Update GitHub statistics"
+            git push origin HEAD:github-stats
+          fi
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ${{ runner.temp }}/generated-dashboard
+
+  deploy:
+    name: Deploy GitHub Pages dashboard
+    needs: collect
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy dashboard
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
