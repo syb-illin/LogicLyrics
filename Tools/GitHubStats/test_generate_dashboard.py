@@ -212,6 +212,11 @@ class DashboardTests(unittest.TestCase):
             self.assertTrue(generated_json.is_file(), f"workflow reads a missing generated file: {generated_json}")
         self.assertIn("stats/data/history.json", source)
         self.assertIn("data/history.json", source, "legacy dashboard history must survive the path migration")
+        self.assertGreaterEqual(
+            source.count("if: github.ref == 'refs/heads/main'"),
+            2,
+            "feature branches must validate without publishing archive data or deploying Pages",
+        )
 
     def test_product_metadata_and_social_preview_are_release_ready(self) -> None:
         product_page = (self.site_template / "index.html").read_text(encoding="utf-8")
