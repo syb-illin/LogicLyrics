@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="Privacy-safe GitHub statistics for Logic Lyrics.">
+  <title>Logic Lyrics · GitHub Insights</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="dashboard.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to dashboard</a>
+  <header class="site-header">
+    <a class="brand" href="../" aria-label="Logic Lyrics product page">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+      <span>
+        <strong>Logic Lyrics</strong>
+        <small>GitHub Insights</small>
+      </span>
+    </a>
+    <div class="header-actions">
+      <span id="trafficStatus" class="status" role="status">Loading GitHub data…</span>
+      <a class="quiet-link" href="../">Product page</a>
+      <a id="repositoryLink" class="quiet-link" href="https://github.com/syb-illin/LogicLyrics">View repository</a>
+    </div>
+  </header>
+
+  <main id="content">
+    <section class="hero" aria-labelledby="dashboardTitle">
+      <p class="eyebrow">Repository analytics</p>
+      <h1 id="dashboardTitle">A clear view of the project.</h1>
+      <p class="lede">GitHub traffic and release adoption, archived daily. No application usage, lyrics, audio, file names or personal data are collected.</p>
+      <p id="lastUpdated" class="timestamp">Waiting for the first snapshot…</p>
+    </section>
+
+    <section class="metric-grid" aria-label="Current GitHub metrics">
+      <article class="metric-card">
+        <span class="metric-label">App downloads</span>
+        <strong id="appDownloads" class="metric-value">—</strong>
+        <span class="metric-note">Across all releases</span>
+      </article>
+      <article class="metric-card">
+        <span class="metric-label">Unique visitors</span>
+        <strong id="uniqueVisitors" class="metric-value">—</strong>
+        <span class="metric-note">GitHub’s rolling 14 days</span>
+      </article>
+      <article class="metric-card">
+        <span class="metric-label">Unique cloners</span>
+        <strong id="uniqueCloners" class="metric-value">—</strong>
+        <span class="metric-note">GitHub’s rolling 14 days</span>
+      </article>
+      <article class="metric-card">
+        <span class="metric-label">Stars</span>
+        <strong id="stars" class="metric-value">—</strong>
+        <span id="communityNote" class="metric-note">Repository community</span>
+      </article>
+    </section>
+
+    <section class="panel chart-panel" aria-labelledby="trafficHeading">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">Long-term archive</p>
+          <h2 id="trafficHeading">Daily traffic</h2>
+        </div>
+        <div class="range-control" role="group" aria-label="Traffic chart range">
+          <button type="button" data-range="30" aria-pressed="true">30D</button>
+          <button type="button" data-range="90" aria-pressed="false">90D</button>
+          <button type="button" data-range="all" aria-pressed="false">All</button>
+        </div>
+      </div>
+      <div id="chartEmpty" class="empty-state" hidden>
+        Traffic history will appear after GitHub Traffic access is connected and the first snapshot runs.
+      </div>
+      <div id="chartContainer" class="chart-wrap">
+        <svg id="trafficChart" viewBox="0 0 960 320" role="img" aria-labelledby="chartTitle chartDescription">
+          <title id="chartTitle">Daily repository views and clones</title>
+          <desc id="chartDescription">A line chart comparing GitHub page views with repository clones over time.</desc>
+        </svg>
+        <div class="legend" aria-hidden="true">
+          <span><i class="legend-line views"></i>Views</span>
+          <span><i class="legend-line clones"></i>Clones</span>
+        </div>
+      </div>
+      <details class="data-details">
+        <summary>View chart data as a table</summary>
+        <div class="table-scroll">
+          <table>
+            <caption>Archived daily GitHub traffic</caption>
+            <thead><tr><th scope="col">Date</th><th scope="col">Views</th><th scope="col">Unique visitors</th><th scope="col">Clones</th><th scope="col">Unique cloners</th></tr></thead>
+            <tbody id="trafficDataRows"></tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+
+    <section class="split-grid">
+      <article class="panel" aria-labelledby="releaseHeading">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Distribution</p>
+            <h2 id="releaseHeading">Release downloads</h2>
+          </div>
+          <a class="quiet-link" href="data/dashboard.json" download>Download JSON</a>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <caption class="visually-hidden">Application downloads by GitHub release</caption>
+            <thead><tr><th scope="col">Version</th><th scope="col">Published</th><th scope="col">App downloads</th></tr></thead>
+            <tbody id="releaseRows"></tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="panel" aria-labelledby="communityHeading">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Repository</p>
+            <h2 id="communityHeading">Community</h2>
+          </div>
+        </div>
+        <dl class="definition-grid">
+          <div><dt>Forks</dt><dd id="forks">—</dd></div>
+          <div><dt>Watchers</dt><dd id="watchers">—</dd></div>
+          <div><dt>Open issues &amp; PRs</dt><dd id="openIssues">—</dd></div>
+          <div><dt>All asset downloads</dt><dd id="allDownloads">—</dd></div>
+        </dl>
+      </article>
+    </section>
+
+    <section class="split-grid">
+      <article class="panel" aria-labelledby="referrerHeading">
+        <div class="panel-heading"><div><p class="eyebrow">Discovery</p><h2 id="referrerHeading">Top referrers</h2></div></div>
+        <div class="table-scroll">
+          <table>
+            <caption class="visually-hidden">Top sources sending visitors to the repository</caption>
+            <thead><tr><th scope="col">Source</th><th scope="col">Views</th><th scope="col">Unique</th></tr></thead>
+            <tbody id="referrerRows"></tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="panel" aria-labelledby="contentHeading">
+        <div class="panel-heading"><div><p class="eyebrow">Interest</p><h2 id="contentHeading">Popular content</h2></div></div>
+        <div class="table-scroll">
+          <table>
+            <caption class="visually-hidden">Most viewed repository pages</caption>
+            <thead><tr><th scope="col">Page</th><th scope="col">Views</th><th scope="col">Unique</th></tr></thead>
+            <tbody id="pathRows"></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <aside id="permissionNotice" class="notice" hidden aria-labelledby="permissionTitle">
+      <div>
+        <strong id="permissionTitle">GitHub Traffic access is not connected yet.</strong>
+        <p>Release downloads and public repository metrics are live. Add the repository secret <code>TRAFFIC_TOKEN</code> with read-only Administration permission to include views, clones and referrers.</p>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    <p>Generated by GitHub Actions from GitHub’s own APIs. This is repository analytics, not in-app telemetry.</p>
+  </footer>
+
+  <noscript><p class="noscript">JavaScript is required to render the dashboard. The raw metrics remain available in <a href="data/dashboard.json">dashboard.json</a>.</p></noscript>
+</body>
+</html>
