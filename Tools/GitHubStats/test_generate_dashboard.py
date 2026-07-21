@@ -194,10 +194,22 @@ class DashboardTests(unittest.TestCase):
         workflow = self.repository_root / ".github" / "workflows" / "github-stats.yml"
         source = workflow.read_text(encoding="utf-8")
         checked_paths = re.findall(r"node\s+--check\s+([^\s]+)", source)
+        generated_json_match = re.search(
+            r'DASHBOARD_JSON="\$\{RUNNER_TEMP\}/generated-dashboard/([^\"]+)"',
+            source,
+        )
 
         self.assertTrue(checked_paths, "workflow must syntax-check its JavaScript")
         for relative_path in checked_paths:
             self.assertTrue((self.repository_root / relative_path).is_file(), f"missing CI target: {relative_path}")
+        self.assertIsNotNone(generated_json_match, "workflow must declare its generated dashboard JSON path")
+        metrics = collect_metrics(FakeClient(), self.now)
+        history = merge_history(empty_history(), metrics)
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "dashboard"
+            write_dashboard(output, self.site_template, metrics, history)
+            generated_json = output / generated_json_match.group(1)  # type: ignore[union-attr]
+            self.assertTrue(generated_json.is_file(), f"workflow reads a missing generated file: {generated_json}")
         self.assertIn("stats/data/history.json", source)
         self.assertIn("data/history.json", source, "legacy dashboard history must survive the path migration")
 

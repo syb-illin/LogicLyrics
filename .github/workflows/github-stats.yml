@@ -75,7 +75,7 @@ jobs:
             arguments+=(--history "${history_path}")
           fi
           python3 Tools/GitHubStats/generate_dashboard.py "${arguments[@]}"
-          export DASHBOARD_JSON="${RUNNER_TEMP}/generated-dashboard/data/dashboard.json"
+          export DASHBOARD_JSON="${RUNNER_TEMP}/generated-dashboard/stats/data/dashboard.json"
           traffic_status="$(python3 - <<'PY'
           import json
           import os
