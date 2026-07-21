@@ -1,4 +1,4 @@
-# Logic Lyrics 2.2.2 — architecture and invariants
+# Logic Lyrics 2.2.3 — architecture and invariants
 
 ## Layers
 

@@ -1,0 +1,48 @@
+name: Feature request
+description: Propose a focused improvement to a musician workflow.
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Workflow problem
+      description: What is difficult today, and at which point in the Logic Lyrics workflow?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the result rather than a specific implementation when possible.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Logic project notes
+        - Lyrics and structure
+        - Suno prompts and voice protection
+        - Audio metadata and artwork
+        - WAV to MP3 conversion
+        - History
+        - Updates and installation
+        - Accessibility and localization
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Current workaround
+  - type: checkboxes
+    id: boundaries
+    attributes:
+      label: Safety boundaries
+      options:
+        - label: This proposal can preserve original Logic and audio files.
+          required: true
+        - label: This report contains no private creative content or personal information.
+          required: true

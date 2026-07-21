@@ -138,7 +138,9 @@ class DashboardTests(unittest.TestCase):
 
             self.assertTrue((output / ".nojekyll").is_file())
             self.assertTrue((output / "index.html").is_file())
-            dashboard = json.loads((output / "data" / "dashboard.json").read_text(encoding="utf-8"))
+            self.assertTrue((output / "stats" / "index.html").is_file())
+            self.assertTrue((output / "assets" / "social-preview.png").is_file())
+            dashboard = json.loads((output / "stats" / "data" / "dashboard.json").read_text(encoding="utf-8"))
             self.assertEqual(dashboard["repository"]["fullName"], "syb-illin/LogicLyrics")
             self.assertEqual(dashboard["history"]["schemaVersion"], 1)
 

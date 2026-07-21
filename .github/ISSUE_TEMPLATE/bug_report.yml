@@ -1,0 +1,82 @@
+name: Bug report
+description: Report a reproducible problem without exposing private creative content.
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a problem. Remove lyrics, audio, artist/project names, full paths and personal information before submitting.
+  - type: input
+    id: app-version
+    attributes:
+      label: Logic Lyrics version and build
+      placeholder: "2.2.3 (28)"
+    validations:
+      required: true
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version and Mac architecture
+      placeholder: "macOS 15.5, Apple silicon"
+    validations:
+      required: true
+  - type: input
+    id: logic-version
+    attributes:
+      label: Logic Pro version
+      description: Required only for Logic project reading or writing problems.
+      placeholder: "Logic Pro 12.2 (build 6644)"
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Logic project reading
+        - Lyrics editing and sections
+        - Suno prompt generation
+        - History
+        - Audio metadata
+        - WAV to MP3 conversion
+        - Updates
+        - Accessibility or localization
+        - Build or installation
+        - GitHub Pages or repository tooling
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Use synthetic content and the smallest reproducible sequence.
+      placeholder: |
+        1. Open…
+        2. Select…
+        3. Observe…
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Redacted diagnostics
+      description: Paste only privacy-safe output from Copy System Diagnostics. Never include lyrics, audio or full paths.
+      render: shell
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed private lyrics, audio, names, paths and identifiers from this report and its attachments.
+          required: true
