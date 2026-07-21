@@ -2,6 +2,10 @@
 
 Logic Lyrics uses Apple Unified Logging through `OSLog`. There is no third-party analytics or crash-reporting SDK and no telemetry leaves the Mac.
 
+## Remote telemetry
+
+Remote telemetry is intentionally not implemented. Adding it responsibly requires a declared HTTPS endpoint, an explicit opt-in that defaults to off, a documented event schema, retention and deletion rules, and a published privacy policy. Lyrics, prompts, filenames, paths, project names, artist metadata, artwork, and stable user identifiers remain prohibited even if an opt-in backend is added later.
+
 ## Log model
 
 Subsystem: `com.local.LogicLyrics`

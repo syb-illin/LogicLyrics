@@ -1,6 +1,55 @@
 import AppKit
 import Foundation
 
+enum UpdatePreferences {
+    static let automaticallyChecksForUpdatesKey = "updates.automaticallyChecksForUpdates"
+}
+
+struct UpdateRelease: Sendable {
+    let version: String
+    let assetNames: Set<String>
+}
+
+protocol UpdateReleaseChecking: Sendable {
+    func latestRelease() async throws -> UpdateRelease
+}
+
+struct GitHubReleaseClient: UpdateReleaseChecking {
+    private let session: URLSession
+    private let endpoint: URL
+
+    init(
+        session: URLSession = .shared,
+        endpoint: URL = URL(string: "https://api.github.com/repos/syb-illin/LogicLyrics/releases/latest")!
+    ) {
+        self.session = session
+        self.endpoint = endpoint
+    }
+
+    func latestRelease() async throws -> UpdateRelease {
+        var request = URLRequest(url: endpoint)
+        request.setValue("LogicLyrics-macOS", forHTTPHeaderField: "User-Agent")
+        request.timeoutInterval = 15
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+            throw URLError(.badServerResponse)
+        }
+        let release = try JSONDecoder().decode(Response.self, from: data)
+        return UpdateRelease(
+            version: release.tagName.trimmingCharacters(in: CharacterSet(charactersIn: "vV")),
+            assetNames: Set(release.assets.map(\.name))
+        )
+    }
+
+    private struct Response: Decodable {
+        let tagName: String
+        let assets: [Asset]
+
+        struct Asset: Decodable { let name: String }
+        enum CodingKeys: String, CodingKey { case tagName = "tag_name"; case assets }
+    }
+}
+
 @MainActor
 final class UpdateService: ObservableObject {
     enum State: Equatable {
@@ -12,38 +61,40 @@ final class UpdateService: ObservableObject {
 
     @Published private(set) var state = State.idle
     @Published var errorMessage: String?
+    private let releaseClient: any UpdateReleaseChecking
     private var checkTask: Task<Void, Never>?
 
+    init(releaseClient: any UpdateReleaseChecking = GitHubReleaseClient()) {
+        self.releaseClient = releaseClient
+    }
+
     func check(silent: Bool = true) {
+        if silent, state != .idle {
+            AppLog.updates.debug("Redundant automatic update check skipped")
+            return
+        }
         guard state != .checking else { return }
         checkTask?.cancel()
         state = .checking
         let startedAt = Date()
-        AppLog.updates.info("Update check started")
-        checkTask = Task { [weak self, startedAt] in
+        let trigger = silent ? "automatic" : "manual"
+        AppLog.updates.info("Update check started trigger=\(trigger, privacy: .public)")
+        let releaseClient = releaseClient
+        checkTask = Task { [weak self, releaseClient, startedAt] in
             do {
-                let url = URL(string: "https://api.github.com/repos/syb-illin/LogicLyrics/releases/latest")!
-                var request = URLRequest(url: url)
-                request.setValue("LogicLyrics-macOS", forHTTPHeaderField: "User-Agent")
-                request.timeoutInterval = 15
-                let (data, response) = try await URLSession.shared.data(for: request)
+                let release = try await releaseClient.latestRelease()
                 try Task<Never, Never>.checkCancellation()
-                guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
-                    throw URLError(.badServerResponse)
-                }
-                let release = try JSONDecoder().decode(Release.self, from: data)
-                let assetNames = Set(release.assets.map(\.name))
-                guard assetNames.contains("LogicLyrics-macOS-source.zip"),
-                      assetNames.contains("LogicLyrics-macOS-source.zip.sha256") else {
+                guard !release.version.isEmpty else { throw UpdateError.invalidRelease }
+                guard release.assetNames.contains("LogicLyrics-macOS-source.zip"),
+                      release.assetNames.contains("LogicLyrics-macOS-source.zip.sha256") else {
                     throw UpdateError.incompleteRelease
                 }
-                let remote = release.tagName.trimmingCharacters(in: CharacterSet(charactersIn: "vV"))
                 guard let self else { return }
-                state = Self.isNewer(remote, than: Self.currentVersion)
-                    ? .available(version: remote)
+                state = Self.isNewer(release.version, than: Self.currentVersion)
+                    ? .available(version: release.version)
                     : .current
                 let durationMilliseconds = Int(Date().timeIntervalSince(startedAt) * 1_000)
-                AppLog.updates.info("Update check succeeded duration_ms=\(durationMilliseconds, privacy: .public) remote_version=\(remote, privacy: .public)")
+                AppLog.updates.info("Update check succeeded duration_ms=\(durationMilliseconds, privacy: .public) remote_version=\(release.version, privacy: .public)")
             } catch is CancellationError {
                 AppLog.updates.notice("Update check cancelled")
                 return
@@ -87,20 +138,16 @@ final class UpdateService: ObservableObject {
         }
     }
 
-    private struct Release: Decodable {
-        let tagName: String
-        let assets: [Asset]
-        struct Asset: Decodable { let name: String }
-        enum CodingKeys: String, CodingKey { case tagName = "tag_name"; case assets }
-    }
-
     private enum UpdateError: LocalizedError {
+        case invalidRelease
         case incompleteRelease
         case unwritableInstallation
         case cannotLaunch
 
         var errorDescription: String? {
             switch self {
+            case .invalidRelease:
+                L10n.text("The release version is missing or invalid.")
             case .incompleteRelease:
                 L10n.text("The release does not contain the two required update files.")
             case .unwritableInstallation:
@@ -115,9 +162,14 @@ final class UpdateService: ObservableObject {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
     }
 
-    private static func isNewer(_ candidate: String, than current: String) -> Bool {
-        let left = candidate.split(separator: ".").map { Int($0) ?? 0 }
-        let right = current.split(separator: ".").map { Int($0) ?? 0 }
+    nonisolated static func isNewer(_ candidate: String, than current: String) -> Bool {
+        let candidateParts = candidate.split(separator: ".", omittingEmptySubsequences: false)
+        let currentParts = current.split(separator: ".", omittingEmptySubsequences: false)
+        guard !candidateParts.isEmpty, !currentParts.isEmpty,
+              candidateParts.allSatisfy({ Int($0) != nil }),
+              currentParts.allSatisfy({ Int($0) != nil }) else { return false }
+        let left = candidateParts.compactMap { Int($0) }
+        let right = currentParts.compactMap { Int($0) }
         for index in 0..<max(left.count, right.count) {
             let l = index < left.count ? left[index] : 0
             let r = index < right.count ? right[index] : 0

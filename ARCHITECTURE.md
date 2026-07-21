@@ -1,4 +1,4 @@
-# Logic Lyrics 2.2.0 — architecture and invariants
+# Logic Lyrics 2.2.1 — architecture and invariants
 
 ## Layers
 
@@ -9,6 +9,18 @@
 - `Views`: SwiftUI rendering and user interaction only.
 
 This is a pragmatic MVVM/service architecture. Protocol-based dependency inversion keeps filesystem and encoder behavior testable, actors serialize persistence, and value types carry parsed data across concurrency boundaries.
+
+## Applied patterns
+
+- **MVVM** keeps SwiftUI rendering separate from validation and workflow orchestration.
+- **Repository** isolates versioned history persistence behind an actor.
+- **Strategy + dependency injection** make Logic reading/writing, audio inspection/tagging, MP3 conversion, and GitHub release checks replaceable in tests.
+- **State machine** represents update and long-running operation states explicitly instead of combining unrelated booleans.
+- **Transactional write** builds Logic and audio outputs in temporary locations before publishing them.
+- **Single source of truth** gives the main window and Settings one app-owned update service, preventing duplicate network checks and inconsistent results.
+- **Adapter** confines GitHub’s JSON response and HTTP behavior to `GitHubReleaseClient`.
+
+Swift value types, protocol-oriented design, and actors are preferred over class-only “pure OOP.” Classes are reserved for identity-bearing observable state and injected services where reference semantics are useful.
 
 ## Safety and performance invariants
 

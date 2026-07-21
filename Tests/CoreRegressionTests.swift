@@ -8,6 +8,7 @@ enum CoreRegressionTests {
         try testLogicSourceProtection()
         try testLogicEmptyNoteCreation()
         try testID3v24RoundTripAndPreservation()
+        try testSemanticVersionComparison()
         print("Core regression tests: OK")
     }
 
@@ -101,6 +102,16 @@ enum CoreRegressionTests {
         try require(bytes.range(of: Data("TSSE".utf8)) != nil, "Unknown ID3 frame preserved")
         let decoded = try AudioMetadataReader().read(from: output)
         try require(decoded.title == "Blue Æther" && decoded.artist == "wake up fall", "Unicode ID3 round trip")
+    }
+
+    private static func testSemanticVersionComparison() throws {
+        try require(UpdateService.isNewer("2.2.1", than: "2.2.0"), "Patch update comparison")
+        try require(UpdateService.isNewer("2.10.0", than: "2.9.9"), "Numeric minor version comparison")
+        try require(UpdateService.isNewer("3.0", than: "2.99.99"), "Major version comparison")
+        try require(!UpdateService.isNewer("2.2.0", than: "2.2.0"), "Equal version comparison")
+        try require(!UpdateService.isNewer("2.1.9", than: "2.2.0"), "Older version comparison")
+        try require(!UpdateService.isNewer("3.beta", than: "2.2.0"), "Invalid version rejection")
+        try require(!UpdateService.isNewer("3..0", than: "2.2.0"), "Empty version component rejection")
     }
 
     private static func id3v24Frame(_ id: String, payload: Data) -> Data {

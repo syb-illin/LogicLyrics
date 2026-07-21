@@ -152,6 +152,7 @@ SOURCES=(
     "$SCRIPT_DIR/LogicLyrics/Views/ContentView.swift"
     "$SCRIPT_DIR/LogicLyrics/Views/AudioMetadataView.swift"
     "$SCRIPT_DIR/LogicLyrics/Views/HistoryDetailView.swift"
+    "$SCRIPT_DIR/LogicLyrics/Views/SettingsView.swift"
     "$SCRIPT_DIR/LogicLyrics/Views/SunoGeneratorView.swift"
 )
 
@@ -173,6 +174,7 @@ CORE_TEST="$BUILD_ROOT/CoreRegressionTests"
     "$SCRIPT_DIR/LogicLyrics/Services/LogicProjectWriter.swift" \
     "$SCRIPT_DIR/LogicLyrics/Services/AudioMetadataWriter.swift" \
     "$SCRIPT_DIR/LogicLyrics/Services/AudioMetadataReader.swift" \
+    "$SCRIPT_DIR/LogicLyrics/Services/UpdateService.swift" \
     "$SCRIPT_DIR/Tests/CoreRegressionTests.swift" \
     || fail "The regression tests could not be compiled."
 "$CORE_TEST" || fail "A critical regression test failed."

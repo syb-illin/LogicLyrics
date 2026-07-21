@@ -2,7 +2,10 @@ import AppKit
 import SwiftUI
 
 @main
+@MainActor
 struct LogicLyricsApp: App {
+    @StateObject private var updater = UpdateService()
+
     init() {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown"
@@ -13,6 +16,7 @@ struct LogicLyricsApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(updater)
                 .frame(minWidth: 980, minHeight: 650)
                 .preferredColorScheme(.dark)
         }
@@ -41,7 +45,8 @@ struct LogicLyricsApp: App {
         }
 
         Settings {
-            MetadataSettingsView()
+            AppSettingsView()
+                .environmentObject(updater)
         }
     }
 

@@ -2,7 +2,7 @@
 
 Logic Lyrics is a native macOS app that reads lyrics from Logic Pro Project Notes, prepares voice-faithful Suno prompts, and manages metadata for Suno MP3/WAV exports.
 
-Current version: **2.2.0 (build 25)**. Every shipped build receives a new build number.
+Current version: **2.2.1 (build 26)**. Every shipped build receives a new build number.
 
 ## Features
 
@@ -38,7 +38,7 @@ LAME is cached at `~/Library/Caches/com.local.LogicLyrics` and reused by future 
 
 ## Updates
 
-The app checks GitHub Releases. When a newer complete release is available, **Install v…** downloads the source archive and SHA-256 checksum, verifies both, rebuilds, and replaces the app at its current location. The shared LAME cache prevents repeated downloads and compilation.
+The app can check GitHub Releases silently when it opens. This behavior is enabled by default and can be disabled in **Settings > Updates**. **Check Now** always remains available and shows an explicit checking, up-to-date, or available-version result. Installation requires **Install Update** followed by an **Install / Not Now** confirmation. When approved, the updater downloads the source archive and SHA-256 checksum, verifies both, rebuilds, and replaces the app at its current location. The shared LAME cache prevents repeated downloads and compilation.
 
 A `vX.Y.Z` tag triggers the macOS workflow. Each release publishes:
 

@@ -11,9 +11,11 @@ private enum WorkspaceMode: Int {
 struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @AppStorage(UpdatePreferences.automaticallyChecksForUpdatesKey)
+    private var automaticallyChecksForUpdates = true
     @StateObject private var model = ProjectViewModel()
     @StateObject private var history = HistoryStore()
-    @StateObject private var updater = UpdateService()
+    @EnvironmentObject private var updater: UpdateService
     @State private var isTargeted = false
     @State private var showImporter = false
     @State private var showAudioImporter = false
@@ -25,6 +27,7 @@ struct ContentView: View {
     @State private var pendingAudioURL: URL?
     @State private var historySaveTask: Task<Void, Never>?
     @State private var confirmsLogicWrite = false
+    @State private var confirmsUpdateInstallation = false
 
     private let logicProjectType = UTType(filenameExtension: "logicx") ?? UTType.package
 
@@ -78,8 +81,22 @@ struct ContentView: View {
         } message: {
             Text("The original will never be modified. The app recognizes and updates the terminal Notes structure, then reads the copy back. Final compatibility must be confirmed by opening it in Logic Pro.")
         }
+        .confirmationDialog(
+            L10n.format("Install Logic Lyrics %@?", availableUpdateVersion ?? ""),
+            isPresented: $confirmsUpdateInstallation,
+            titleVisibility: .visible
+        ) {
+            Button("Not Now", role: .cancel) {}
+            Button("Install Update") { updater.installAvailableUpdate() }
+        } message: {
+            Text("Logic Lyrics will close, rebuild the verified update, preserve a backup, and reopen automatically.")
+        }
         .onAppear {
-            updater.check(silent: true)
+            if automaticallyChecksForUpdates {
+                updater.check(silent: true)
+            } else {
+                AppLog.updates.info("Automatic update check skipped because it is disabled")
+            }
             model.onProjectLoaded = { name, path, notes, bpm, musicalKey in
                 var restored = [String: String]()
                 var identifiers = [String: UUID]()
@@ -660,11 +677,16 @@ struct ContentView: View {
             switch updater.state {
             case .available(let version):
                 Button(L10n.format("Install v%@", version), systemImage: "arrow.down.circle.fill") {
-                    updater.installAvailableUpdate()
+                    confirmsUpdateInstallation = true
                 }
                 .help(L10n.text("Download, verify, and compile the update automatically"))
             case .checking:
                 ProgressView().controlSize(.small).help(L10n.text("Checking for updates"))
+            case .current:
+                Button("Up to Date", systemImage: "checkmark.circle.fill") {
+                    updater.check(silent: false)
+                }
+                .help(L10n.text("Check again"))
             default:
                 Button("Updates", systemImage: "arrow.triangle.2.circlepath") {
                     updater.check(silent: false)
@@ -689,6 +711,11 @@ struct ContentView: View {
 
     private var currentErrorMessage: String {
         model.errorMessage ?? history.persistenceError?.message ?? updater.errorMessage ?? String(localized: "An unexpected error occurred.")
+    }
+
+    private var availableUpdateVersion: String? {
+        if case .available(let version) = updater.state { return version }
+        return nil
     }
 
     private func receiveDrop(_ providers: [NSItemProvider]) -> Bool {

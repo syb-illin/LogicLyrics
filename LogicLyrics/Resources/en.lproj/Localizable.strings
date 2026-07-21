@@ -63,6 +63,20 @@
 "Text (.txt)" = "Text (.txt)";
 "Markdown (.md)" = "Markdown (.md)";
 "Updates" = "Updates";
+"Automatically check for updates" = "Automatically check for updates";
+"Checks silently when Logic Lyrics opens. Manual checks remain available." = "Checks silently when Logic Lyrics opens. Manual checks remain available.";
+"Up to Date" = "Up to Date";
+"Check again" = "Check again";
+"Check Now" = "Check Now";
+"No update check has been run." = "No update check has been run.";
+"Checking for updates…" = "Checking for updates…";
+"Logic Lyrics is up to date." = "Logic Lyrics is up to date.";
+"Version %@ is available." = "Version %@ is available.";
+"Install Update" = "Install Update";
+"Install Logic Lyrics %@?" = "Install Logic Lyrics %@?";
+"Not Now" = "Not Now";
+"Logic Lyrics will close, rebuild the verified update, preserve a backup, and reopen automatically." = "Logic Lyrics will close, rebuild the verified update, preserve a backup, and reopen automatically.";
+"Updates are never installed without your confirmation." = "Updates are never installed without your confirmation.";
 "Export" = "Export";
 "STRUCTURE" = "STRUCTURE";
 "Copy this section" = "Copy this section";
@@ -250,5 +264,6 @@
 "The updater is missing from the application." = "The updater is missing from the application.";
 "The updater could not be launched: %@" = "The updater could not be launched: %@";
 "The release does not contain the two required update files." = "The release does not contain the two required update files.";
+"The release version is missing or invalid." = "The release version is missing or invalid.";
 "The app is installed in a read-only folder. Move it to Downloads or Applications with the required permissions." = "The app is installed in a read-only folder. Move it to Downloads or Applications with the required permissions.";
 "macOS could not open the updater in Terminal." = "macOS could not open the updater in Terminal.";

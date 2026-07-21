@@ -63,6 +63,20 @@
 "Text (.txt)" = "Texte (.txt)";
 "Markdown (.md)" = "Markdown (.md)";
 "Updates" = "Mises à jour";
+"Automatically check for updates" = "Rechercher automatiquement les mises à jour";
+"Checks silently when Logic Lyrics opens. Manual checks remain available." = "Effectue une vérification silencieuse à l’ouverture de Logic Lyrics. La vérification manuelle reste disponible.";
+"Up to Date" = "À jour";
+"Check again" = "Vérifier à nouveau";
+"Check Now" = "Vérifier maintenant";
+"No update check has been run." = "Aucune vérification n’a encore été effectuée.";
+"Checking for updates…" = "Recherche de mises à jour…";
+"Logic Lyrics is up to date." = "Logic Lyrics est à jour.";
+"Version %@ is available." = "La version %@ est disponible.";
+"Install Update" = "Installer la mise à jour";
+"Install Logic Lyrics %@?" = "Installer Logic Lyrics %@ ?";
+"Not Now" = "Pas maintenant";
+"Logic Lyrics will close, rebuild the verified update, preserve a backup, and reopen automatically." = "Logic Lyrics va se fermer, reconstruire la mise à jour vérifiée, conserver une sauvegarde, puis se rouvrir automatiquement.";
+"Updates are never installed without your confirmation." = "Les mises à jour ne sont jamais installées sans votre confirmation.";
 "Export" = "Exporter";
 "STRUCTURE" = "STRUCTURE";
 "Copy this section" = "Copier cette section";
@@ -250,5 +264,6 @@
 "The updater is missing from the application." = "Le programme de mise à jour est absent de l’application.";
 "The updater could not be launched: %@" = "Le programme de mise à jour n’a pas pu être lancé : %@";
 "The release does not contain the two required update files." = "La release ne contient pas les deux fichiers de mise à jour requis.";
+"The release version is missing or invalid." = "La version de la release est absente ou invalide.";
 "The app is installed in a read-only folder. Move it to Downloads or Applications with the required permissions." = "L’app est installée dans un dossier en lecture seule. Déplacez-la dans Téléchargements ou Applications avec les autorisations requises.";
 "macOS could not open the updater in Terminal." = "macOS n’a pas pu ouvrir le programme de mise à jour dans Terminal.";
