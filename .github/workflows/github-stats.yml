@@ -33,7 +33,7 @@ jobs:
       - name: Run collector regression tests
         run: |
           python3 -m unittest discover -s Tools/GitHubStats -p 'test_*.py' -v
-          node --check Tools/GitHubStats/site/dashboard.js
+          node --check Tools/GitHubStats/site/stats/dashboard.js
 
       - name: Prepare persistent dashboard branch
         id: branch
