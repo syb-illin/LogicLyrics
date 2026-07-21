@@ -8,6 +8,7 @@ All notable user-facing changes are documented here. Releases use semantic versi
 - Rebuilt the repository README around the Logic Pro-to-Suno workflow, privacy guarantees and direct app download.
 - Added repository contribution, support, security, conduct, roadmap, issue and pull request guidance.
 - Added a restrained 1280 × 640 social preview asset and richer search/social metadata.
+- Published the source under the MIT License.
 
 ## 2.2.2 — build 27
 

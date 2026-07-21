@@ -21,6 +21,7 @@
   <img alt="macOS 14 or later" src="https://img.shields.io/badge/macOS-14%2B-242429?style=flat-square&logo=apple">
   <img alt="Swift" src="https://img.shields.io/badge/Swift-native-242429?style=flat-square&logo=swift">
   <img alt="No app telemetry" src="https://img.shields.io/badge/telemetry-none-242429?style=flat-square">
+  <img alt="MIT license" src="https://img.shields.io/github/license/syb-illin/LogicLyrics?style=flat-square&color=242429">
 </p>
 
 ## Why Logic Lyrics
@@ -110,3 +111,7 @@ Bug reports, focused feature requests and accessibility feedback are welcome. Re
 The system boundaries and safety invariants are documented in [ARCHITECTURE.md](ARCHITECTURE.md). Security reports should follow [SECURITY.md](SECURITY.md).
 
 If Logic Lyrics saves you time on a real project, starring the repository helps other Logic users find it.
+
+## License
+
+Logic Lyrics is available under the [MIT License](LICENSE).
