@@ -1,10 +1,14 @@
 # Observability
 
-Logic Lyrics uses Apple Unified Logging through `OSLog`. There is no third-party analytics or crash-reporting SDK and no telemetry leaves the Mac.
+Logic Lyrics uses Apple Unified Logging through `OSLog`. There is no third-party analytics or crash-reporting SDK and no application telemetry leaves the Mac.
+
+The GitHub repository separately archives GitHub's own repository metrics—release downloads, repository views, clones, referrers, stars, forks, watchers, and issue/PR counts—through a scheduled GitHub Action. This is distribution analytics generated entirely within GitHub. The app does not send events to that dashboard.
 
 ## Remote telemetry
 
 Remote telemetry is intentionally not implemented. Adding it responsibly requires a declared HTTPS endpoint, an explicit opt-in that defaults to off, a documented event schema, retention and deletion rules, and a published privacy policy. Lyrics, prompts, filenames, paths, project names, artist metadata, artwork, and stable user identifiers remain prohibited even if an opt-in backend is added later.
+
+The repository dashboard does not change this policy: it cannot report launches, active installations, feature usage, processing results, crashes, or device identifiers.
 
 ## Log model
 

@@ -2,7 +2,7 @@
 
 Logic Lyrics is a native macOS app that reads lyrics from Logic Pro Project Notes, prepares voice-faithful Suno prompts, and manages metadata for Suno MP3/WAV exports.
 
-Current version: **2.2.1 (build 26)**. Every shipped build receives a new build number.
+Current version: **2.2.2 (build 27)**. Every shipped build receives a new build number.
 
 ## Features
 
@@ -58,6 +58,21 @@ English is the source language. A complete French localization is bundled, and m
 The interface supports VoiceOver semantics, keyboard alternatives, Reduce Motion, Reduce Transparency, scalable labels, and state communication that does not rely on color alone. See [ACCESSIBILITY.md](ACCESSIBILITY.md).
 
 Privacy-safe structured logs use the macOS Unified Logging system. The **Diagnostics > Copy System Diagnostics** command copies only app/system configuration and never lyrics, prompts, project names, file paths, or audio metadata. See [OBSERVABILITY.md](OBSERVABILITY.md).
+
+## GitHub statistics
+
+The repository includes a privacy-safe GitHub statistics dashboard. A scheduled GitHub Action archives release downloads and public repository metrics every day, preserving history beyond GitHub's rolling 14-day Traffic window. When the optional `TRAFFIC_TOKEN` repository secret is configured with read-only **Administration** access, it also archives views, unique visitors, clones, unique cloners, top referrers, and popular repository pages.
+
+The generated website is stored on the dedicated `github-stats` branch and deployed through GitHub Pages. It measures the GitHub repository only: Logic Lyrics never sends launches, feature usage, lyrics, audio, file names, paths, prompts, or personal identifiers.
+
+One-time setup:
+
+1. In **Settings > Pages**, select **GitHub Actions** as the Pages source.
+2. Create a fine-grained token limited to this repository with **Administration: Read-only**.
+3. Add it under **Settings > Secrets and variables > Actions** as `TRAFFIC_TOKEN`.
+4. Run **Actions > GitHub statistics dashboard > Run workflow**.
+
+Without `TRAFFIC_TOKEN`, release downloads, stars, forks, watchers, issue/PR counts, and per-release history still work; the dashboard visibly marks GitHub Traffic data as unavailable instead of failing silently.
 
 ## Requirements and compatibility
 
