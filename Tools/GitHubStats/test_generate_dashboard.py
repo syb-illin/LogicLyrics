@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import json
+import re
+import struct
 import tempfile
 import unittest
 from datetime import datetime, timezone
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +20,31 @@ from generate_dashboard import (
     merge_history,
     write_dashboard,
 )
+
+
+class StaticHTMLAudit(HTMLParser):
+    """Collect structural and local-asset references without external dependencies."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.ids: list[str] = []
+        self.h1_count = 0
+        self.images_without_alt: list[str] = []
+        self.local_references: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        values = dict(attrs)
+        identifier = values.get("id")
+        if identifier:
+            self.ids.append(identifier)
+        if tag == "h1":
+            self.h1_count += 1
+        if tag == "img" and "alt" not in values:
+            self.images_without_alt.append(values.get("src") or "unknown image")
+        attribute = "href" if tag in {"a", "link"} else "src" if tag in {"img", "script"} else None
+        reference = values.get(attribute) if attribute else None
+        if reference and not reference.startswith(("https://", "http://", "mailto:", "#")):
+            self.local_references.append(reference.split("#", 1)[0])
 
 
 class FakeClient:
@@ -96,6 +124,8 @@ class FakeClient:
 
 class DashboardTests(unittest.TestCase):
     now = datetime(2026, 7, 21, 9, 30, tzinfo=timezone.utc)
+    repository_root = Path(__file__).resolve().parents[2]
+    site_template = Path(__file__).resolve().parent / "site"
 
     def test_collects_app_downloads_without_counting_checksum_downloads(self) -> None:
         metrics = collect_metrics(FakeClient(), self.now)
@@ -130,11 +160,9 @@ class DashboardTests(unittest.TestCase):
     def test_writes_complete_static_site_and_valid_json(self) -> None:
         metrics = collect_metrics(FakeClient(), self.now)
         history = merge_history(empty_history(), metrics)
-        template = Path(__file__).resolve().parent / "site"
-
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "dashboard"
-            write_dashboard(output, template, metrics, history)
+            write_dashboard(output, self.site_template, metrics, history)
 
             self.assertTrue((output / ".nojekyll").is_file())
             self.assertTrue((output / "index.html").is_file())
@@ -143,6 +171,65 @@ class DashboardTests(unittest.TestCase):
             dashboard = json.loads((output / "stats" / "data" / "dashboard.json").read_text(encoding="utf-8"))
             self.assertEqual(dashboard["repository"]["fullName"], "syb-illin/LogicLyrics")
             self.assertEqual(dashboard["history"]["schemaVersion"], 1)
+
+    def test_generated_site_has_valid_local_references_and_basic_accessibility_structure(self) -> None:
+        metrics = collect_metrics(FakeClient(), self.now)
+        history = merge_history(empty_history(), metrics)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "dashboard"
+            write_dashboard(output, self.site_template, metrics, history)
+
+            for html_path in sorted(output.rglob("*.html")):
+                audit = StaticHTMLAudit()
+                audit.feed(html_path.read_text(encoding="utf-8"))
+                self.assertEqual(audit.h1_count, 1, f"{html_path} must contain exactly one h1")
+                self.assertEqual(len(audit.ids), len(set(audit.ids)), f"duplicate HTML id in {html_path}")
+                self.assertEqual(audit.images_without_alt, [], f"missing image alt text in {html_path}")
+                for reference in audit.local_references:
+                    target = html_path.parent / reference
+                    self.assertTrue(target.exists(), f"broken local reference {reference} in {html_path}")
+
+    def test_workflow_checks_existing_dashboard_script_and_preserves_legacy_history(self) -> None:
+        workflow = self.repository_root / ".github" / "workflows" / "github-stats.yml"
+        source = workflow.read_text(encoding="utf-8")
+        checked_paths = re.findall(r"node\s+--check\s+([^\s]+)", source)
+        generated_json_match = re.search(
+            r'DASHBOARD_JSON="\$\{RUNNER_TEMP\}/generated-dashboard/([^\"]+)"',
+            source,
+        )
+
+        self.assertTrue(checked_paths, "workflow must syntax-check its JavaScript")
+        for relative_path in checked_paths:
+            self.assertTrue((self.repository_root / relative_path).is_file(), f"missing CI target: {relative_path}")
+        self.assertIsNotNone(generated_json_match, "workflow must declare its generated dashboard JSON path")
+        metrics = collect_metrics(FakeClient(), self.now)
+        history = merge_history(empty_history(), metrics)
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "dashboard"
+            write_dashboard(output, self.site_template, metrics, history)
+            generated_json = output / generated_json_match.group(1)  # type: ignore[union-attr]
+            self.assertTrue(generated_json.is_file(), f"workflow reads a missing generated file: {generated_json}")
+        self.assertIn("stats/data/history.json", source)
+        self.assertIn("data/history.json", source, "legacy dashboard history must survive the path migration")
+        self.assertGreaterEqual(
+            source.count("if: github.ref == 'refs/heads/main'"),
+            2,
+            "feature branches must validate without publishing archive data or deploying Pages",
+        )
+
+    def test_product_metadata_and_social_preview_are_release_ready(self) -> None:
+        product_page = (self.site_template / "index.html").read_text(encoding="utf-8")
+        preview = self.site_template / "assets" / "social-preview.png"
+
+        self.assertIn("releases/latest/download/LogicLyrics.app.zip", product_page)
+        self.assertIn('property="og:image"', product_page)
+        self.assertTrue(preview.is_file())
+        with preview.open("rb") as stream:
+            header = stream.read(24)
+        self.assertEqual(header[:8], b"\x89PNG\r\n\x1a\n")
+        width, height = struct.unpack(">II", header[16:24])
+        self.assertEqual((width, height), (1280, 640))
 
 
 if __name__ == "__main__":

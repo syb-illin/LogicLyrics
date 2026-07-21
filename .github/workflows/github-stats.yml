@@ -33,7 +33,7 @@ jobs:
       - name: Run collector regression tests
         run: |
           python3 -m unittest discover -s Tools/GitHubStats -p 'test_*.py' -v
-          node --check Tools/GitHubStats/site/dashboard.js
+          node --check Tools/GitHubStats/site/stats/dashboard.js
 
       - name: Prepare persistent dashboard branch
         id: branch
@@ -75,7 +75,7 @@ jobs:
             arguments+=(--history "${history_path}")
           fi
           python3 Tools/GitHubStats/generate_dashboard.py "${arguments[@]}"
-          export DASHBOARD_JSON="${RUNNER_TEMP}/generated-dashboard/data/dashboard.json"
+          export DASHBOARD_JSON="${RUNNER_TEMP}/generated-dashboard/stats/data/dashboard.json"
           traffic_status="$(python3 - <<'PY'
           import json
           import os
@@ -95,6 +95,7 @@ jobs:
           } >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Publish persistent archive branch
+        if: github.ref == 'refs/heads/main'
         env:
           DASHBOARD_DIR: ${{ steps.branch.outputs.dashboard_dir }}
         shell: bash
@@ -122,6 +123,7 @@ jobs:
   deploy:
     name: Deploy GitHub Pages dashboard
     needs: collect
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment:
