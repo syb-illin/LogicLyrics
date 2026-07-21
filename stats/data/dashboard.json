@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "capturedAt": "2026-07-21T15:05:25.978726Z",
+  "capturedAt": "2026-07-21T16:03:11.681593Z",
   "repository": {
     "fullName": "syb-illin/LogicLyrics",
     "url": "https://github.com/syb-illin/LogicLyrics",
@@ -9,11 +9,11 @@
     "stars": 0,
     "forks": 0,
     "watchers": 0,
-    "openIssues": 1
+    "openIssues": 0
   },
   "downloads": {
-    "app": 3,
-    "allAssets": 12
+    "app": 4,
+    "allAssets": 16
   },
   "releases": [
     {
@@ -22,30 +22,30 @@
       "publishedAt": "2026-07-21T14:57:33Z",
       "url": "https://github.com/syb-illin/LogicLyrics/releases/tag/v2.2.3",
       "prerelease": false,
-      "appDownloads": 0,
-      "allAssetDownloads": 0,
+      "appDownloads": 1,
+      "allAssetDownloads": 4,
       "assets": [
         {
           "name": "LogicLyrics-macOS-source.zip",
-          "downloads": 0,
+          "downloads": 1,
           "size": 2702152,
           "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.2.3/LogicLyrics-macOS-source.zip"
         },
         {
           "name": "LogicLyrics-macOS-source.zip.sha256",
-          "downloads": 0,
+          "downloads": 1,
           "size": 95,
           "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.2.3/LogicLyrics-macOS-source.zip.sha256"
         },
         {
           "name": "LogicLyrics.app.zip",
-          "downloads": 0,
+          "downloads": 1,
           "size": 1328750,
           "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.2.3/LogicLyrics.app.zip"
         },
         {
           "name": "LogicLyrics.app.zip.sha256",
-          "downloads": 0,
+          "downloads": 1,
           "size": 86,
           "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.2.3/LogicLyrics.app.zip.sha256"
         }
@@ -172,15 +172,15 @@
     "snapshots": [
       {
         "date": "2026-07-21",
-        "capturedAt": "2026-07-21T15:05:25.978726Z",
-        "appDownloads": 3,
-        "allAssetDownloads": 12,
+        "capturedAt": "2026-07-21T16:03:11.681593Z",
+        "appDownloads": 4,
+        "allAssetDownloads": 16,
         "stars": 0,
         "forks": 0,
         "watchers": 0,
-        "openIssues": 1,
+        "openIssues": 0,
         "releases": {
-          "v2.2.3": 0,
+          "v2.2.3": 1,
           "v2.2.2": 1,
           "v2.2.1": 1,
           "v2.2.0": 1

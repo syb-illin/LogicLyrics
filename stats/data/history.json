@@ -4,15 +4,15 @@
   "snapshots": [
     {
       "date": "2026-07-21",
-      "capturedAt": "2026-07-21T15:05:25.978726Z",
-      "appDownloads": 3,
-      "allAssetDownloads": 12,
+      "capturedAt": "2026-07-21T16:03:11.681593Z",
+      "appDownloads": 4,
+      "allAssetDownloads": 16,
       "stars": 0,
       "forks": 0,
       "watchers": 0,
-      "openIssues": 1,
+      "openIssues": 0,
       "releases": {
-        "v2.2.3": 0,
+        "v2.2.3": 1,
         "v2.2.2": 1,
         "v2.2.1": 1,
         "v2.2.0": 1
