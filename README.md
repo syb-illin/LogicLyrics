@@ -1,83 +1,117 @@
-# Logic Lyrics
+<p align="center">
+  <img src="Tools/GitHubStats/site/assets/social-preview.png" width="100%" alt="Logic Lyrics — Project Notes Studio for macOS">
+</p>
 
-Logic Lyrics is a native macOS app that reads lyrics from Logic Pro Project Notes, prepares voice-faithful Suno prompts, and manages metadata for Suno MP3/WAV exports.
+<h1 align="center">Logic Lyrics</h1>
 
-Current version: **2.2.2 (build 27)**. Every shipped build receives a new build number.
+<p align="center">
+  Recover and structure lyrics from Logic Pro projects, prepare voice-faithful Suno prompts,<br>
+  and finish MP3/WAV metadata in one private, native macOS workflow.
+</p>
 
-## Features
+<p align="center">
+  <a href="https://github.com/syb-illin/LogicLyrics/releases/latest/download/LogicLyrics.app.zip"><strong>Download for macOS</strong></a>
+  · <a href="https://syb-illin.github.io/LogicLyrics/">Product page</a>
+  · <a href="https://github.com/syb-illin/LogicLyrics/releases/latest">Latest release</a>
+  · <a href="https://github.com/syb-illin/LogicLyrics/discussions">Discussions</a>
+</p>
 
-- Opens `.logicx` packages and extracts embedded RTF Project Notes.
-- Detects BPM and musical key from the selected Logic alternative.
-- Keeps lyrics editable and recognizes Suno section markers such as `[Verse 1]`, `[Chorus]`, and `[Outro]`.
-- Copies all lyrics or individual sections to the clipboard.
-- Creates prompts with separate **Styles**, **Styles to Exclude**, and **Lyrics** blocks for ChatGPT or Gemini, without an API key.
-- Places BPM and key at the beginning of the Suno Styles instructions.
-- Locks the requested baritone identity to chest voice, natural grain and formants, with no falsetto, high notes, screaming, singer replacement, or unrealistic vocal acrobatics.
-- Allows backing vocals and provides an explicit option for female backing vocals without replacing the lead.
-- Stores a local history of loaded songs, edited lyrics, prompts, BPM, key, artist reference, and vocal settings.
-- Reads and writes MP3/WAV metadata in a new file while preserving the original.
-- Displays codec, sample rate, bit depth/bitrate, channel layout, duration, and embedded artwork.
-- Uses a tokenized output filename template. The default is `{track} {group} - {title} {year}`; supported tokens are `{track}`, `{group}`, `{title}`, `{album}`, `{year}`, and `{bpm}`.
-- Converts WAV to MP3 with locally built LAME 3.100 and configurable CBR/VBR and sample-rate settings.
+<p align="center">
+  <img alt="Latest release" src="https://img.shields.io/github/v/release/syb-illin/LogicLyrics?style=flat-square&color=8f86bd">
+  <img alt="macOS 14 or later" src="https://img.shields.io/badge/macOS-14%2B-242429?style=flat-square&logo=apple">
+  <img alt="Swift" src="https://img.shields.io/badge/Swift-native-242429?style=flat-square&logo=swift">
+  <img alt="No app telemetry" src="https://img.shields.io/badge/telemetry-none-242429?style=flat-square">
+  <img alt="MIT license" src="https://img.shields.io/github/license/syb-illin/LogicLyrics?style=flat-square&color=242429">
+</p>
 
-The audio metadata screen defaults to artist `wake up fall` and the current year. Lyrics are excluded from tags by default, and the musical key is never written to audio metadata.
+## Why Logic Lyrics
 
-## Install or build
+Logic Pro Project Notes are useful while a song is evolving, but they are awkward to recover, reorganize and move into the rest of a release workflow. Logic Lyrics turns the project itself into the source of truth: it reads the notes, detects musical context, makes the text editable, and keeps everything ready for the clipboard, Suno or final audio tags.
 
-The GitHub Release contains a ready-built `LogicLyrics.app.zip`. The public build is ad-hoc signed unless the release workflow is configured with an Apple Developer ID and notarization credentials, so Gatekeeper may still request confirmation on another Mac.
+Your projects stay on your Mac. The app does not upload lyrics, prompts, audio, project names, file names or paths.
 
-For a local trusted build, double-click `BUILD.command`. It uses Apple Command Line Tools only; the full Xcode application and Homebrew are not required. The script:
+## Workflow
 
-1. validates the macOS SDK and architecture;
-2. downloads the official LAME source once and verifies its SHA-256 checksum;
-3. runs the regression suite and compiles with strict Swift concurrency checks;
-4. signs and verifies the app;
-5. places `LogicLyrics.app` in Downloads.
+| Stage | What Logic Lyrics does |
+| --- | --- |
+| **Recover** | Opens `.logicx` packages and extracts embedded RTF Project Notes, BPM and musical key. |
+| **Structure** | Detects markers such as `[Verse 1]`, `[Chorus]` and `[Outro]`; keeps lyrics editable and copyable by section. |
+| **Prompt** | Produces separate **Styles**, **Styles to Exclude** and **Lyrics** blocks for ChatGPT, Gemini and Suno, without requiring an API key. |
+| **Protect the voice** | Keeps the requested baritone identity, chest voice, grain and formants while excluding falsetto, screaming, singer replacement, unrealistic high notes and vocal acrobatics. |
+| **Finish audio** | Reads and writes MP3/WAV metadata to a new file, previews artwork, displays technical audio details and converts WAV exports with LAME. |
+
+Backing vocals are optional. Female backing vocals can be allowed explicitly without replacing the lead voice. BPM and key are always included at the beginning of the Suno Styles instructions.
+
+## Download and install
+
+### Ready-built app
+
+1. Download [`LogicLyrics.app.zip`](https://github.com/syb-illin/LogicLyrics/releases/latest/download/LogicLyrics.app.zip).
+2. Unzip it and move **Logic Lyrics** to Applications.
+3. Open the app.
+
+The public build is currently ad-hoc signed. Until Apple Developer ID signing and notarization are configured, macOS may require **System Settings → Privacy & Security → Open Anyway** on first launch. Checksums are published with every release.
+
+### Trusted local build
+
+Double-click `BUILD.command`. It needs Apple Command Line Tools, not the full Xcode application or Homebrew. The build validates the SDK and architecture, downloads and verifies LAME once, runs the regression suite, compiles with strict Swift concurrency checks, signs the app and places it in Downloads.
 
 LAME is cached at `~/Library/Caches/com.local.LogicLyrics` and reused by future builds and updates. If a Developer ID Application identity exists in Keychain, the script detects it automatically. Set `LOGICLYRICS_NOTARY_PROFILE` to a configured `notarytool` profile to notarize and staple the result.
 
-## Updates
+## Features
 
-The app can check GitHub Releases silently when it opens. This behavior is enabled by default and can be disabled in **Settings > Updates**. **Check Now** always remains available and shows an explicit checking, up-to-date, or available-version result. Installation requires **Install Update** followed by an **Install / Not Now** confirmation. When approved, the updater downloads the source archive and SHA-256 checksum, verifies both, rebuilds, and replaces the app at its current location. The shared LAME cache prevents repeated downloads and compilation.
-
-A `vX.Y.Z` tag triggers the macOS workflow. Each release publishes:
-
-- `LogicLyrics.app.zip` and its SHA-256 checksum;
-- `LogicLyrics-macOS-source.zip` and its SHA-256 checksum.
+- Editable lyrics with automatic section recognition and per-section clipboard actions.
+- Local history for projects, lyrics, prompts, BPM, key, artist reference and vocal settings.
+- Safe experimental writing to a duplicate `.logicx`, including empty Notes insertion when a recognized structure is available.
+- Audio metadata defaults for artist, current year, genre, cover artwork and tokenized filenames.
+- Filename tokens: `{track}`, `{group}`, `{title}`, `{album}`, `{year}` and `{bpm}`.
+- WAV/MP3 inspection: codec, sample rate, bit depth or bitrate, channel layout, duration and embedded artwork.
+- Configurable LAME 3.100 MP3 conversion with CBR/VBR and sample-rate choices.
+- Integrated automatic update checks that can be disabled, plus a visible **Check Now** result and explicit install confirmation.
+- English and French localizations selected by macOS.
+- VoiceOver semantics, keyboard alternatives, Reduce Motion, Reduce Transparency, scalable labels and non-color-only status communication.
 
 ## Logic project safety
 
-Reading is non-destructive. Edited lyrics affect the local history, exports, prompts, and optional audio tags without changing the original `.logicx` package.
+Reading is non-destructive. Edited lyrics affect local history, exports, prompts and optional audio tags without changing the original project.
 
-The experimental **Logic Copy** action works only on a duplicate. It locates a recognized terminal Notes record, updates its redundant lengths when required, reads the new copy back, and discards the temporary result if validation fails. If no lyrics exist, the app exposes an editable draft and attempts insertion only when the recognized empty Notes structure is present. Always open the resulting copy in Logic Pro to confirm compatibility.
+The experimental **Logic Copy** action only operates on a duplicate. It updates a recognized Notes record, validates redundant lengths, reads the result back and discards the temporary output if validation fails. Always open the resulting copy in Logic Pro before treating it as authoritative.
 
-## Languages, accessibility, and diagnostics
+## Updates
 
-English is the source language. A complete French localization is bundled, and macOS selects the appropriate app language. Persisted settings use language-neutral identifiers so changing language does not reset MP3 choices.
+The app can check GitHub Releases silently at launch. Disable this under **Settings → Updates** if desired. **Check Now** remains available and reports checking, up-to-date or update-available states. Installation only starts after explicit confirmation, verifies the downloaded source and checksum, rebuilds, then replaces the app at its current location.
 
-The interface supports VoiceOver semantics, keyboard alternatives, Reduce Motion, Reduce Transparency, scalable labels, and state communication that does not rely on color alone. See [ACCESSIBILITY.md](ACCESSIBILITY.md).
+Every release contains:
 
-Privacy-safe structured logs use the macOS Unified Logging system. The **Diagnostics > Copy System Diagnostics** command copies only app/system configuration and never lyrics, prompts, project names, file paths, or audio metadata. See [OBSERVABILITY.md](OBSERVABILITY.md).
+- `LogicLyrics.app.zip` and SHA-256 checksum;
+- `LogicLyrics-macOS-source.zip` and SHA-256 checksum.
 
-## GitHub statistics
+## Privacy, accessibility and diagnostics
 
-The repository includes a privacy-safe GitHub statistics dashboard. A scheduled GitHub Action archives release downloads and public repository metrics every day, preserving history beyond GitHub's rolling 14-day Traffic window. When the optional `TRAFFIC_TOKEN` repository secret is configured with read-only **Administration** access, it also archives views, unique visitors, clones, unique cloners, top referrers, and popular repository pages.
+- No analytics SDK and no application telemetry.
+- Privacy-safe diagnostics use macOS Unified Logging and exclude user content.
+- **Copy System Diagnostics** includes app/system configuration only.
+- Accessibility behavior and verification are documented in [ACCESSIBILITY.md](ACCESSIBILITY.md).
+- Logging and GitHub-only repository analytics are documented in [OBSERVABILITY.md](OBSERVABILITY.md).
 
-The generated website is stored on the dedicated `github-stats` branch and deployed through GitHub Pages. It measures the GitHub repository only: Logic Lyrics never sends launches, feature usage, lyrics, audio, file names, paths, prompts, or personal identifiers.
+The public [GitHub Insights dashboard](https://syb-illin.github.io/LogicLyrics/stats/) tracks repository traffic and release downloads only. It never receives data from the app.
 
-One-time setup:
-
-1. In **Settings > Pages**, select **GitHub Actions** as the Pages source.
-2. Create a fine-grained token limited to this repository with **Administration: Read-only**.
-3. Add it under **Settings > Secrets and variables > Actions** as `TRAFFIC_TOKEN`.
-4. Run **Actions > GitHub statistics dashboard > Run workflow**.
-
-Without `TRAFFIC_TOKEN`, release downloads, stars, forks, watchers, issue/PR counts, and per-release history still work; the dashboard visibly marks GitHub Traffic data as unavailable instead of failing silently.
-
-## Requirements and compatibility
+## Requirements
 
 - macOS 14 or later
+- Logic Pro project using Project Notes
 - Apple Command Line Tools for local builds
-- Validated sample: Logic Pro 12.2 (build 6644), RTF Project Notes
 
-Open `LogicLyrics.xcodeproj` in Xcode 16 or later for IDE development. The production and safety invariants are documented in [ARCHITECTURE.md](ARCHITECTURE.md).
+Validated sample: Logic Pro 12.2 (build 6644), RTF Project Notes. Open `LogicLyrics.xcodeproj` in Xcode 16 or later for IDE development.
+
+## Contributing and support
+
+Bug reports, focused feature requests and accessibility feedback are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md), use the repository [issue forms](https://github.com/syb-illin/LogicLyrics/issues/new/choose), or start a conversation in [Discussions](https://github.com/syb-illin/LogicLyrics/discussions).
+
+The system boundaries and safety invariants are documented in [ARCHITECTURE.md](ARCHITECTURE.md). Security reports should follow [SECURITY.md](SECURITY.md).
+
+If Logic Lyrics saves you time on a real project, starring the repository helps other Logic users find it.
+
+## License
+
+Logic Lyrics is available under the [MIT License](LICENSE).

@@ -337,8 +337,8 @@ def write_dashboard(output: Path, template: Path, metrics: dict[str, Any], histo
     (output / ".nojekyll").touch()
     dashboard = dict(metrics)
     dashboard["history"] = history
-    _atomic_json(output / "data" / "dashboard.json", dashboard)
-    _atomic_json(output / "data" / "history.json", history)
+    _atomic_json(output / "stats" / "data" / "dashboard.json", dashboard)
+    _atomic_json(output / "stats" / "data" / "history.json", history)
 
 
 def parse_arguments(argv: list[str]) -> argparse.Namespace:

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and workflows
+    url: https://github.com/syb-illin/LogicLyrics/discussions
+    about: Ask for setup help or discuss a music-production workflow.
+  - name: Security report
+    url: https://github.com/syb-illin/LogicLyrics/security/policy
+    about: Read the private reporting instructions before sharing sensitive details.

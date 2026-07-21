@@ -1,0 +1,19 @@
+title: "[Idea] "
+labels: ["ideas"]
+body:
+  - type: markdown
+    attributes:
+      value: Share a workflow idea without posting private lyrics, audio, project names or paths.
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Music workflow
+      description: Where does this idea fit between Logic Pro, lyrics, prompting and audio export?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: What would improve?
+    validations:
+      required: true

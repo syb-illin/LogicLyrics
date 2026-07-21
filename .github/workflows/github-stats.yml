@@ -62,7 +62,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          history_path="${{ steps.branch.outputs.dashboard_dir }}/data/history.json"
+          history_path="${{ steps.branch.outputs.dashboard_dir }}/stats/data/history.json"
+          legacy_history_path="${{ steps.branch.outputs.dashboard_dir }}/data/history.json"
+          if [[ ! -f "${history_path}" && -f "${legacy_history_path}" ]]; then
+            history_path="${legacy_history_path}"
+          fi
           arguments=(
             --repository "${GITHUB_REPOSITORY}"
             --output "${RUNNER_TEMP}/generated-dashboard"
