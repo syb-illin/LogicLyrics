@@ -14,7 +14,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
@@ -39,7 +39,7 @@ jobs:
           shasum -a 256 LogicLyrics-macOS-source.zip > LogicLyrics-macOS-source.zip.sha256
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: LogicLyrics-macOS
           path: |
