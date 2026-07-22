@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 @main
@@ -7,6 +8,8 @@ enum CoreRegressionTests {
         try testLegacyHistoryMigration()
         try testLogicSourceProtection()
         try testLogicEmptyNoteCreation()
+        try testActiveLogicProjectNotesSelection()
+        try testTechnicalRichTextIsNotLyrics()
         try testID3v24RoundTripAndPreservation()
         try testSemanticVersionComparison()
         print("Core regression tests: OK")
@@ -78,6 +81,56 @@ enum CoreRegressionTests {
         try require(originalProjectData.count == 98, "Empty Logic source preserved")
     }
 
+    private static func testActiveLogicProjectNotesSelection() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let project = root.appendingPathComponent("Selection.logicx", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        try writeProjectData(
+            ["[Verse 1]\nStale alternative"],
+            alternative: "000",
+            project: project
+        )
+        try writeProjectData(
+            [
+                "Sample Library - Indie Rock Drum Loop 130",
+                "Demo Song\nVerse 1\nFirst lyric line\nChorus\nSecond lyric line",
+                "Sample Library - Indie Rock Drum Loop 130 Alternate"
+            ],
+            alternative: "005",
+            project: project
+        )
+        try writePlist(
+            ["ActiveVariant": 5],
+            to: project.appendingPathComponent("Resources/ProjectInformation.plist")
+        )
+        try writePlist(
+            ["BeatsPerMinute": 130.0, "SongKey": "F", "SongGenderKey": "major"],
+            to: project.appendingPathComponent("Alternatives/005/MetaData.plist")
+        )
+
+        let result = try LogicProjectReader().readProject(at: project)
+        try require(result.notes.count == 1, "Only Project Notes selected")
+        try require(result.notes[0].alternative == "005", "Active Logic alternative selected")
+        try require(result.notes[0].index == 1, "Project Notes keep their stable RTF index")
+        try require(result.notes[0].text.contains("First lyric line"), "Active lyrics extracted")
+        try require(result.bpm == 130 && result.musicalKey == "F major", "Active alternative metadata")
+    }
+
+    private static func testTechnicalRichTextIsNotLyrics() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let project = root.appendingPathComponent("No-Lyrics.logicx", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try writeProjectData(
+            ["Sample Library - Indie Rock Drum Loop 130"],
+            alternative: "000",
+            project: project
+        )
+
+        let result = try LogicProjectReader().readProject(at: project)
+        try require(result.notes.count == 1 && result.notes[0].isDraft, "Technical RTF rejected as lyrics")
+    }
+
     private static func testID3v24RoundTripAndPreservation() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
@@ -128,6 +181,27 @@ enum CoreRegressionTests {
     private static func setLittleEndianUInt32(_ value: UInt32, in data: inout Data, at offset: Int) {
         let bytes = withUnsafeBytes(of: value.littleEndian) { Data($0) }
         data.replaceSubrange(offset..<(offset + 4), with: bytes)
+    }
+
+    private static func writeProjectData(_ texts: [String], alternative: String, project: URL) throws {
+        let url = project.appendingPathComponent("Alternatives/\(alternative)/ProjectData")
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        var data = Data("synthetic Logic fixture".utf8)
+        for text in texts {
+            let attributed = NSAttributedString(string: text)
+            let rtf = try attributed.data(
+                from: NSRange(location: 0, length: attributed.length),
+                documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]
+            )
+            data.append(rtf)
+        }
+        try data.write(to: url)
+    }
+
+    private static func writePlist(_ values: [String: Any], to url: URL) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let data = try PropertyListSerialization.data(fromPropertyList: values, format: .binary, options: 0)
+        try data.write(to: url)
     }
 
     private static func require(_ condition: @autoclosure () -> Bool, _ message: String) throws {

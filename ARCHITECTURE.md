@@ -1,4 +1,4 @@
-# Logic Lyrics 2.2.3 — architecture and invariants
+# Logic Lyrics 2.2.4 — architecture and invariants
 
 ## Layers
 
@@ -36,6 +36,7 @@ Swift value types, protocol-oriented design, and actors are preferred over class
 10. History has a versioned schema and a project + alternative + note identity.
 11. Update and LAME archives are verified by SHA-256 before execution.
 12. Unified logs never include user content, filenames, paths, project names, lyrics, prompts, artwork, or tag values.
+13. Logic parsing selects the active alternative and excludes single-line technical rich text from Project Notes results.
 
 ## Concurrency and lifecycle
 
