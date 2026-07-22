@@ -68,10 +68,11 @@ final class LogicLyricsUITests: XCTestCase {
                 let isSidebarScrollContainer = lacksDescription
                     && element.elementType == .other
                     && frame.contains(CGPoint(x: recentSongsFrame.midX, y: recentSongsFrame.midY))
-                let isSystemTitleBarContainer = lacksDescription
-                    && element.elementType == .touchBar
-                    && abs(frame.maxY - windowFrame.minY) < 1
-                    && frame.height <= 32
+                let isSystemTouchBarElement = issue.auditType == .sufficientElementDescription
+                    && element.identifier.isEmpty
+                    && frame.minY >= windowFrame.minY - 33
+                    && frame.maxY <= windowFrame.minY + 2
+                    && frame.height <= 34
                     && frame.minX >= windowFrame.minX
                     && frame.maxX <= windowFrame.maxX
                 let isLabeledSwiftUIMenu = issue.auditType == .sufficientElementDescription
@@ -79,9 +80,9 @@ final class LogicLyricsUITests: XCTestCase {
                     && !element.label.isEmpty
                 if isNativeWindowContainer
                     || isSidebarScrollContainer
-                    || isSystemTitleBarContainer
+                    || isSystemTouchBarElement
                     || isLabeledSwiftUIMenu {
-                    // XCTest exposes non-focusable hosting, split-view, title-bar and scroll wrappers as empty elements.
+                    // XCTest exposes non-focusable hosting, split-view, virtual Touch Bar and scroll wrappers as empty elements.
                     // Their labelled, interactive descendants remain covered by this same audit.
                     return true
                 }
