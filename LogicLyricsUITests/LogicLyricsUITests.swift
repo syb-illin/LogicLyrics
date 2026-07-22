@@ -70,7 +70,7 @@ final class LogicLyricsUITests: XCTestCase {
                     && frame.contains(CGPoint(x: recentSongsFrame.midX, y: recentSongsFrame.midY))
                 let isSystemTitleBarContainer = lacksDescription
                     && element.elementType == .touchBar
-                    && abs(frame.minY - windowFrame.minY) < 1
+                    && abs(frame.maxY - windowFrame.minY) < 1
                     && frame.height <= 32
                     && frame.minX >= windowFrame.minX
                     && frame.maxX <= windowFrame.maxX
