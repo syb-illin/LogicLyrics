@@ -14,7 +14,7 @@ struct LogicLyricsApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
+        Window("Logic Lyrics", id: "main") {
             ContentView()
                 .environmentObject(updater)
                 .frame(minWidth: 820, minHeight: 620)
@@ -22,6 +22,7 @@ struct LogicLyricsApp: App {
         }
         .windowStyle(.titleBar)
         .defaultSize(width: Self.initialWindowSize.width, height: Self.initialWindowSize.height)
+        .defaultPosition(.center)
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button(L10n.text("About Logic Lyrics")) {

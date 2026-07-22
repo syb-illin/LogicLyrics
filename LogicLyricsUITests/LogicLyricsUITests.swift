@@ -79,9 +79,7 @@ final class LogicLyricsUITests: XCTestCase {
     @MainActor
     private func launchApp(additionalArguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = [
-            "--ui-testing", "-ApplePersistenceIgnoreState", "YES"
-        ] + additionalArguments
+        app.launchArguments = ["--ui-testing"] + additionalArguments
         app.launch()
         app.activate()
         XCTAssertEqual(app.state, .runningForeground)
