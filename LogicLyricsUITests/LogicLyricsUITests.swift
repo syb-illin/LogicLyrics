@@ -22,7 +22,7 @@ final class LogicLyricsUITests: XCTestCase {
 
         let recovered = element("history-recovered-revisions", in: app)
         if recovered.exists { recovered.click() }
-        let restore = element("history-restore-revision-0", in: app)
+        let restore = app.buttons["Restore recovered text 1"]
         XCTAssertTrue(restore.waitForExistence(timeout: 3))
         restore.click()
         XCTAssertTrue(element("history-revert-edit", in: app).waitForExistence(timeout: 3))
@@ -54,6 +54,21 @@ final class LogicLyricsUITests: XCTestCase {
         XCTAssertFalse(element("history-revert-edit", in: app).label.isEmpty)
         try app.performAccessibilityAudit(for: [.sufficientElementDescription, .elementDetection]) { issue in
             if let element = issue.element {
+                let frame = element.frame
+                let windowFrame = app.windows.firstMatch.frame
+                let isNativeWindowContainer = issue.auditType == .sufficientElementDescription
+                    && element.elementType == .group
+                    && element.identifier.isEmpty
+                    && element.label.isEmpty
+                    && abs(frame.minX - windowFrame.minX) < 1
+                    && abs(frame.minY - windowFrame.minY) < 1
+                    && abs(frame.width - windowFrame.width) < 1
+                    && abs(frame.height - windowFrame.height) < 1
+                if isNativeWindowContainer {
+                    // XCTest exposes the non-focusable macOS hosting wrapper as an empty group.
+                    // Its labelled, interactive descendants remain covered by this same audit.
+                    return true
+                }
                 print(
                     "Accessibility audit issue: type=\(element.elementType.rawValue), "
                     + "identifier=\(element.identifier), label=\(element.label), frame=\(element.frame), "
