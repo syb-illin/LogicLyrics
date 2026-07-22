@@ -20,14 +20,15 @@
     },
     {
       "date": "2026-07-22",
-      "capturedAt": "2026-07-22T15:58:39.391950Z",
-      "appDownloads": 6,
-      "allAssetDownloads": 19,
+      "capturedAt": "2026-07-22T16:30:52.998110Z",
+      "appDownloads": 8,
+      "allAssetDownloads": 22,
       "stars": 0,
       "forks": 0,
       "watchers": 0,
       "openIssues": 0,
       "releases": {
+        "v2.2.5": 2,
         "v2.2.4": 2,
         "v2.2.3": 1,
         "v2.2.2": 1,
