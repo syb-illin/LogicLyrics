@@ -541,6 +541,8 @@ struct ContentView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(showsHistory ? L10n.text("Song history details") : workspaceTitle)
         }
         .background(Color.black.opacity(0.08))
         .overlay {

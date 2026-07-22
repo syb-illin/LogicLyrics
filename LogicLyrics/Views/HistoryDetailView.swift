@@ -169,7 +169,6 @@ struct HistoryDetailView: View {
                 AccentIcon(systemName: icon, color: color, size: 36)
                 Text(L10n.text(title))
                     .font(.headline)
-                    .accessibilityIdentifier("history-\(field)")
                 Spacer()
                 Button(copied == field ? L10n.text("Copied") : L10n.text("Copy"), systemImage: copied == field ? "checkmark" : "doc.on.doc") {
                     copy(value, field: field)
@@ -189,6 +188,7 @@ struct HistoryDetailView: View {
         .appPanel(radius: 20, padding: 20)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(L10n.text(title))
+        .accessibilityIdentifier("history-\(field)")
     }
 
     private func copy(_ text: String, field: String) {

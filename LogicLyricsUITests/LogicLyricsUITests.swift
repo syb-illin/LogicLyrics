@@ -52,6 +52,10 @@ final class LogicLyricsUITests: XCTestCase {
         XCTAssertFalse(element("history-open-project", in: app).label.isEmpty)
         XCTAssertFalse(element("history-locate-project", in: app).label.isEmpty)
         XCTAssertFalse(element("history-revert-edit", in: app).label.isEmpty)
+        for (index, group) in app.groups.allElementsBoundByIndex.enumerated()
+            where group.label.isEmpty && group.identifier.isEmpty {
+            print("Unlabeled accessibility group #\(index), frame=\(group.frame), value=\(String(describing: group.value))")
+        }
         try app.performAccessibilityAudit(for: [.sufficientElementDescription, .elementDetection]) { issue in
             print("Accessibility audit issue: \(String(describing: issue))")
             return false
