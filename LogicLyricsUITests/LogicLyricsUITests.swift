@@ -22,7 +22,7 @@ final class LogicLyricsUITests: XCTestCase {
 
         let recovered = element("history-recovered-revisions", in: app)
         XCTAssertTrue(recovered.waitForExistence(timeout: 3))
-        element("history-detail", in: app).scroll(byDeltaX: 0, deltaY: -1_200)
+        element("history-detail", in: app).scroll(byDeltaX: 0, deltaY: 1_200)
         let restore = app.buttons["Restore recovered text 1"]
         XCTAssertTrue(restore.waitForExistence(timeout: 3))
         restore.click()
@@ -57,16 +57,21 @@ final class LogicLyricsUITests: XCTestCase {
             if let element = issue.element {
                 let frame = element.frame
                 let windowFrame = app.windows.firstMatch.frame
-                let isNativeWindowContainer = issue.auditType == .sufficientElementDescription
-                    && element.elementType == .group
+                let lacksDescription = issue.auditType == .sufficientElementDescription
                     && element.identifier.isEmpty
                     && element.label.isEmpty
+                let isNativeWindowContainer = lacksDescription
+                    && element.elementType == .group
                     && abs(frame.minY - windowFrame.minY) < 1
                     && abs(frame.height - windowFrame.height) < 1
                     && frame.minX >= windowFrame.minX - 1
                     && frame.maxX <= windowFrame.maxX + 1
-                if isNativeWindowContainer {
-                    // XCTest exposes the non-focusable macOS hosting and split-view wrappers as empty groups.
+                let recentSongsFrame = self.element("recent-songs-section", in: app).frame
+                let isSidebarScrollContainer = lacksDescription
+                    && element.elementType == .other
+                    && frame.contains(CGPoint(x: recentSongsFrame.midX, y: recentSongsFrame.midY))
+                if isNativeWindowContainer || isSidebarScrollContainer {
+                    // XCTest exposes non-focusable hosting, split-view and scroll wrappers as empty elements.
                     // Its labelled, interactive descendants remain covered by this same audit.
                     return true
                 }
