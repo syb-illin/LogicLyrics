@@ -68,12 +68,21 @@ final class LogicLyricsUITests: XCTestCase {
                 let isSidebarScrollContainer = lacksDescription
                     && element.elementType == .other
                     && frame.contains(CGPoint(x: recentSongsFrame.midX, y: recentSongsFrame.midY))
+                let isSystemTitleBarContainer = lacksDescription
+                    && element.elementType == .touchBar
+                    && abs(frame.minY - windowFrame.minY) < 1
+                    && frame.height <= 32
+                    && frame.minX >= windowFrame.minX
+                    && frame.maxX <= windowFrame.maxX
                 let isLabeledSwiftUIMenu = issue.auditType == .sufficientElementDescription
                     && element.identifier == "history-transfer-menu"
                     && !element.label.isEmpty
-                if isNativeWindowContainer || isSidebarScrollContainer || isLabeledSwiftUIMenu {
-                    // XCTest exposes non-focusable hosting, split-view and scroll wrappers as empty elements.
-                    // Its labelled, interactive descendants remain covered by this same audit.
+                if isNativeWindowContainer
+                    || isSidebarScrollContainer
+                    || isSystemTitleBarContainer
+                    || isLabeledSwiftUIMenu {
+                    // XCTest exposes non-focusable hosting, split-view, title-bar and scroll wrappers as empty elements.
+                    // Their labelled, interactive descendants remain covered by this same audit.
                     return true
                 }
                 print(
