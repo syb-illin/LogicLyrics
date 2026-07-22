@@ -98,11 +98,13 @@ private final class WindowSizingView: NSView {
     init(requestedSize: CGSize?) {
         self.requestedSize = requestedSize
         super.init(frame: .zero)
+        setAccessibilityElement(false)
     }
 
     required init?(coder: NSCoder) {
         requestedSize = nil
         super.init(coder: coder)
+        setAccessibilityElement(false)
     }
 
     override func viewDidMoveToWindow() {

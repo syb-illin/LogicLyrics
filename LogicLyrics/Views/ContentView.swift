@@ -52,6 +52,9 @@ struct ContentView: View {
             }
             .navigationSplitViewStyle(.balanced)
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(L10n.text("Logic Lyrics workspace"))
+        .accessibilityIdentifier("logic-lyrics-workspace")
         .tint(AppTheme.accent)
         .navigationTitle(model.projectName.isEmpty ? "Logic Lyrics" : model.projectName)
         .toolbar { toolbar }

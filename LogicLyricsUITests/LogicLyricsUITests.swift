@@ -52,7 +52,10 @@ final class LogicLyricsUITests: XCTestCase {
         XCTAssertFalse(element("history-open-project", in: app).label.isEmpty)
         XCTAssertFalse(element("history-locate-project", in: app).label.isEmpty)
         XCTAssertFalse(element("history-revert-edit", in: app).label.isEmpty)
-        try app.performAccessibilityAudit(for: [.sufficientElementDescription, .elementDetection])
+        try app.performAccessibilityAudit(for: [.sufficientElementDescription, .elementDetection]) { issue in
+            print("Accessibility audit issue: \(String(describing: issue))")
+            return false
+        }
     }
 
     @MainActor

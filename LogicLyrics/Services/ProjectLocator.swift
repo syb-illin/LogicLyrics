@@ -20,7 +20,7 @@ enum ProjectLocatorError: LocalizedError, Sendable {
     }
 }
 
-protocol ProjectLocating: Sendable {
+protocol ProjectLocating {
     func capture(_ url: URL) -> ProjectLocation
     func resolve(path: String, bookmark: Data?) throws -> ProjectLocation
 }
