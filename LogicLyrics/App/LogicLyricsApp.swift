@@ -109,6 +109,7 @@ private final class WindowSizingView: NSView {
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        window?.contentView?.setAccessibilityLabel(L10n.text("Logic Lyrics workspace"))
         applyRequestedSizeIfNeeded()
     }
 

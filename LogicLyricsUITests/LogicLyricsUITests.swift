@@ -17,8 +17,8 @@ final class LogicLyricsUITests: XCTestCase {
 
         plaid.click()
         XCTAssertTrue(element("history-detail", in: app).waitForExistence(timeout: 3))
-        XCTAssertTrue(element("history-project-lyrics", in: app).exists)
-        XCTAssertTrue(element("history-edited-lyrics", in: app).exists)
+        XCTAssertTrue(app.staticTexts["Project Lyrics"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Edited Lyrics"].exists)
 
         let recovered = element("history-recovered-revisions", in: app)
         if recovered.exists { recovered.click() }
@@ -27,7 +27,7 @@ final class LogicLyricsUITests: XCTestCase {
         restore.click()
         XCTAssertTrue(element("history-revert-edit", in: app).waitForExistence(timeout: 3))
         element("history-revert-edit", in: app).click()
-        XCTAssertTrue(element("history-edited-lyrics", in: app).waitForNonExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Edited Lyrics"].waitForNonExistence(timeout: 3))
 
         let search = element("history-search-field", in: app)
         search.click()
@@ -52,12 +52,14 @@ final class LogicLyricsUITests: XCTestCase {
         XCTAssertFalse(element("history-open-project", in: app).label.isEmpty)
         XCTAssertFalse(element("history-locate-project", in: app).label.isEmpty)
         XCTAssertFalse(element("history-revert-edit", in: app).label.isEmpty)
-        for (index, group) in app.groups.allElementsBoundByIndex.enumerated()
-            where group.label.isEmpty && group.identifier.isEmpty {
-            print("Unlabeled accessibility group #\(index), frame=\(group.frame), value=\(String(describing: group.value))")
-        }
         try app.performAccessibilityAudit(for: [.sufficientElementDescription, .elementDetection]) { issue in
-            print("Accessibility audit issue: \(String(describing: issue))")
+            if let element = issue.element {
+                print(
+                    "Accessibility audit issue: type=\(element.elementType.rawValue), "
+                    + "identifier=\(element.identifier), label=\(element.label), frame=\(element.frame), "
+                    + "details=\(issue.detailedDescription)"
+                )
+            }
             return false
         }
     }
@@ -86,7 +88,9 @@ final class LogicLyricsUITests: XCTestCase {
     @MainActor
     private func launchApp(additionalArguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing"] + additionalArguments
+        app.launchArguments = [
+            "--ui-testing", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"
+        ] + additionalArguments
         app.launch()
         app.activate()
         XCTAssertEqual(app.state, .runningForeground)
