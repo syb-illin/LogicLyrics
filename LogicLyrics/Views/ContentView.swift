@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import SwiftUI
 import UniformTypeIdentifiers
@@ -14,7 +15,7 @@ struct ContentView: View {
     @AppStorage(UpdatePreferences.automaticallyChecksForUpdatesKey)
     private var automaticallyChecksForUpdates = true
     @StateObject private var model = ProjectViewModel()
-    @StateObject private var history = HistoryStore()
+    @StateObject private var history: HistoryStore
     @EnvironmentObject private var updater: UpdateService
     @State private var isTargeted = false
     @State private var showImporter = false
@@ -31,6 +32,14 @@ struct ContentView: View {
     @State private var confirmsUpdateInstallation = false
 
     private let logicProjectType = UTType(filenameExtension: "logicx") ?? UTType.package
+    private let historyArchiveType = UTType(
+        filenameExtension: HistoryArchiveService.fileExtension,
+        conformingTo: .json
+    ) ?? .json
+
+    init() {
+        _history = StateObject(wrappedValue: HistoryStore.configuredForCurrentProcess())
+    }
 
     var body: some View {
         ZStack {
@@ -43,6 +52,7 @@ struct ContentView: View {
             }
             .navigationSplitViewStyle(.balanced)
         }
+        .accessibilityIdentifier("logic-lyrics-root")
         .tint(AppTheme.accent)
         .navigationTitle(model.projectName.isEmpty ? "Logic Lyrics" : model.projectName)
         .toolbar { toolbar }
@@ -71,7 +81,7 @@ struct ContentView: View {
                 model.errorMessage = String(format: String(localized: "Unable to open the audio file: %@"), error.localizedDescription)
             }
         }
-        .alert("Logic Lyrics", isPresented: errorBinding) {
+        .alert(currentAlertTitle, isPresented: errorBinding) {
             Button("OK", role: .cancel) { model.errorMessage = nil }
         } message: {
             Text(currentErrorMessage)
@@ -93,19 +103,19 @@ struct ContentView: View {
             Text("Logic Lyrics will close, rebuild the verified update, preserve a backup, and reopen automatically.")
         }
         .onAppear {
-            if automaticallyChecksForUpdates {
+            if automaticallyChecksForUpdates && !Self.isUITesting {
                 updater.check(silent: true)
             } else {
                 AppLog.updates.info("Automatic update check skipped because it is disabled")
             }
-            model.onProjectLoaded = { name, path, notes, bpm, musicalKey in
+            model.onProjectLoaded = { name, url, notes, bpm, musicalKey in
                 historySaveTask?.cancel()
                 historySaveTask = nil
                 hasPendingHistoryLyricsSave = false
                 var identifiers = [String: UUID]()
                 for note in notes {
                     let identifier = history.recordProject(
-                        name: name, path: path, noteKey: note.id, alternative: note.alternative,
+                        name: name, url: url, noteKey: note.id, alternative: note.alternative,
                         lyrics: note.text, bpm: bpm, musicalKey: musicalKey
                     )
                     identifiers[note.id] = identifier
@@ -122,7 +132,7 @@ struct ContentView: View {
                 history.flush()
             }
         }
-        .overlay { ProcessingOverlay(state: model.operationState, cancel: model.cancelProcessing) }
+        .overlay { ProcessingOverlay(state: activeOperationState, cancel: cancelActiveOperation) }
     }
 
     private var sidebar: some View {
@@ -242,6 +252,22 @@ struct ContentView: View {
                     .font(.caption2.monospacedDigit().weight(.bold))
                     .foregroundStyle(.secondary)
                     .accessibilityLabel(L10n.format("%d songs", history.entries.count))
+                Menu {
+                    Button("Export History…", systemImage: "square.and.arrow.up") {
+                        exportHistory()
+                    }
+                    .disabled(history.entries.isEmpty)
+                    Button("Import History…", systemImage: "square.and.arrow.down") {
+                        importHistory()
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .help(L10n.text("Import or export song history"))
+                .accessibilityLabel(L10n.text("History transfer actions"))
+                .accessibilityIdentifier("history-transfer-menu")
             }
 
             HStack(spacing: 8) {
@@ -251,6 +277,7 @@ struct ContentView: View {
                 TextField("Search", text: $history.searchText)
                     .textFieldStyle(.plain)
                     .accessibilityLabel(L10n.text("Search recent songs"))
+                    .accessibilityIdentifier("history-search-field")
             }
             .padding(10)
             .background(Color.primary.opacity(0.055))
@@ -308,10 +335,12 @@ struct ContentView: View {
                         .buttonStyle(.plain)
                         .accessibilityElement(children: .combine)
                         .accessibilityHint(L10n.text("Shows the saved project lyrics and Suno prompt."))
+                        .accessibilityIdentifier("history-row-\(entry.id.uuidString.lowercased())")
                     }
                 }
             }
         }
+        .accessibilityIdentifier("recent-songs-section")
     }
 
     private var projectCard: some View {
@@ -452,14 +481,21 @@ struct ContentView: View {
             Divider().opacity(0.25)
             Group {
                 if showsHistory, let entry = history.entry(id: selectedHistoryID) {
-                    HistoryDetailView(entry: entry) {
-                        history.delete(id: entry.id)
-                        if currentHistoryID == entry.id {
-                            currentHistoryID = nil
-                            historyIDsByNote = historyIDsByNote.filter { $0.value != entry.id }
+                    HistoryDetailView(
+                        entry: entry,
+                        onOpenProject: { reopenHistoryProject(entry.id) },
+                        onLocateProject: { locateHistoryProject(entry.id) },
+                        onRevertToSource: { revertHistoryEntry(entry) },
+                        onRestoreRevision: { restoreHistoryRevision(entryID: entry.id, lyrics: $0) },
+                        onDelete: {
+                            history.delete(id: entry.id)
+                            if currentHistoryID == entry.id {
+                                currentHistoryID = nil
+                                historyIDsByNote = historyIDsByNote.filter { $0.value != entry.id }
+                            }
+                            selectedHistoryID = history.entries.first?.id
                         }
-                        selectedHistoryID = history.entries.first?.id
-                    }
+                    )
                 } else if showsHistory {
                     historyEmptyState
                 } else if model.isLoading {
@@ -741,6 +777,20 @@ struct ContentView: View {
         model.errorMessage ?? history.persistenceError?.message ?? updater.errorMessage ?? String(localized: "An unexpected error occurred.")
     }
 
+    private var currentAlertTitle: String {
+        history.persistenceError?.title ?? L10n.text("Logic Lyrics")
+    }
+
+    private var activeOperationState: OperationState {
+        history.operationState.isRunning ? history.operationState : model.operationState
+    }
+
+    private var cancelActiveOperation: (() -> Void)? {
+        if history.operationState.isRunning { return history.cancelTransfer }
+        if model.operationState.isRunning { return model.cancelProcessing }
+        return nil
+    }
+
     private var availableUpdateVersion: String? {
         if case .available(let version) = updater.state { return version }
         return nil
@@ -787,6 +837,69 @@ struct ContentView: View {
         model.open(url)
     }
 
+    private func reopenHistoryProject(_ entryID: UUID) {
+        do {
+            openLogicProject(try history.resolveProjectURL(entryID: entryID))
+        } catch {
+            locateHistoryProject(entryID, fallbackError: error)
+        }
+    }
+
+    private func locateHistoryProject(_ entryID: UUID, fallbackError: Error? = nil) {
+        let panel = NSOpenPanel()
+        panel.title = L10n.text("Locate Logic Project")
+        panel.message = L10n.text("Choose the moved or renamed .logicx project to reconnect it with this history entry.")
+        panel.prompt = L10n.text("Reconnect")
+        panel.allowedContentTypes = [logicProjectType, .package]
+        panel.allowsMultipleSelection = false
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = true
+        panel.treatsFilePackagesAsDirectories = false
+        guard panel.runModal() == .OK, let url = panel.url else {
+            if let fallbackError { model.errorMessage = fallbackError.localizedDescription }
+            return
+        }
+        do {
+            openLogicProject(try history.relocateProject(entryID: entryID, to: url))
+        } catch {
+            model.errorMessage = error.localizedDescription
+        }
+    }
+
+    private func restoreHistoryRevision(entryID: UUID, lyrics: String) {
+        history.restoreRevision(entryID: entryID, lyrics: lyrics)
+        if currentHistoryID == entryID { model.updateSelectedText(lyrics) }
+    }
+
+    private func revertHistoryEntry(_ entry: SongHistoryEntry) {
+        history.revertToProjectLyrics(entryID: entry.id)
+        if currentHistoryID == entry.id { model.updateSelectedText(entry.sourceLyrics) }
+    }
+
+    private func exportHistory() {
+        flushHistorySave()
+        history.flush()
+        let panel = NSSavePanel()
+        panel.title = L10n.text("Export Song History")
+        panel.nameFieldStringValue = "LogicLyrics-History.\(HistoryArchiveService.fileExtension)"
+        panel.allowedContentTypes = [historyArchiveType]
+        panel.canCreateDirectories = true
+        guard panel.runModal() == .OK, let destination = panel.url else { return }
+        history.exportHistory(to: destination)
+    }
+
+    private func importHistory() {
+        let panel = NSOpenPanel()
+        panel.title = L10n.text("Import Song History")
+        panel.message = L10n.text("Imported songs are merged safely; current local versions are never overwritten.")
+        panel.allowedContentTypes = [historyArchiveType, .json]
+        panel.allowsMultipleSelection = false
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        guard panel.runModal() == .OK, let source = panel.url else { return }
+        history.importHistory(from: source)
+    }
+
     private func scheduleHistorySave(_ lyrics: String) {
         historySaveTask?.cancel()
         guard let entryID = currentHistoryID else { return }
@@ -815,5 +928,9 @@ struct ContentView: View {
 
     private static var buildNumber: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"
+    }
+
+    private static var isUITesting: Bool {
+        ProcessInfo.processInfo.arguments.contains("--ui-testing")
     }
 }

@@ -7,7 +7,7 @@ final class ProjectViewModel: ObservableObject {
     /// Observes a completed project load so history can record it. The callback
     /// deliberately cannot return replacement lyrics: the open Logic project is
     /// always the source of truth for the current editor session.
-    var onProjectLoaded: ((String, String, [ExtractedNote], Double?, String?) -> Void)?
+    var onProjectLoaded: ((String, URL, [ExtractedNote], Double?, String?) -> Void)?
     @Published private(set) var projectName = ""
     @Published private(set) var notes: [ExtractedNote] = []
     @Published private(set) var bpm: Double?
@@ -200,7 +200,7 @@ final class ProjectViewModel: ObservableObject {
         bpm = result.bpm
         musicalKey = result.musicalKey
         selectedNoteID = result.notes.first?.id
-        onProjectLoaded?(projectName, url.path, result.notes, result.bpm, result.musicalKey)
+        onProjectLoaded?(projectName, url, result.notes, result.bpm, result.musicalKey)
         refreshSections()
         finishOperation(operationID)
     }

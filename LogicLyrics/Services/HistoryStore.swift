@@ -20,7 +20,7 @@ private enum HistoryRepositoryError: LocalizedError, Sendable {
 }
 
 actor HistoryRepository {
-    private static let currentSchemaVersion = 3
+    private static let currentSchemaVersion = 4
     private let fileURL: URL
 
     init(fileManager: FileManager = .default) throws {
@@ -69,9 +69,14 @@ final class HistoryStore: ObservableObject {
     @Published private(set) var entries: [SongHistoryEntry] = []
     @Published var searchText = ""
     @Published private(set) var persistenceError: UserAlert?
+    @Published private(set) var operationState = OperationState.idle
 
     private let repository: HistoryRepository?
+    private let locator: any ProjectLocating
+    private let archiveService: HistoryArchiveService
     private var saveTask: Task<Void, Never>?
+    private var transferTask: Task<Void, Never>?
+    private var transferOperationID = UUID()
     private var hasFinishedInitialLoad = false
     private var saveRequestedDuringInitialLoad = false
     private var dirtyLyrics = Set<UUID>()
@@ -87,7 +92,12 @@ final class HistoryStore: ObservableObject {
         }
     }
 
-    init() {
+    init(
+        locator: any ProjectLocating = ProjectLocator(),
+        archiveService: HistoryArchiveService = HistoryArchiveService()
+    ) {
+        self.locator = locator
+        self.archiveService = archiveService
         do { repository = try HistoryRepository() }
         catch {
             repository = nil
@@ -98,14 +108,62 @@ final class HistoryStore: ObservableObject {
         load()
     }
 
+    private init(
+        inMemoryEntries: [SongHistoryEntry],
+        locator: any ProjectLocating = ProjectLocator(),
+        archiveService: HistoryArchiveService = HistoryArchiveService()
+    ) {
+        repository = nil
+        self.locator = locator
+        self.archiveService = archiveService
+        entries = inMemoryEntries
+        hasFinishedInitialLoad = true
+    }
+
+    static func configuredForCurrentProcess() -> HistoryStore {
+        guard ProcessInfo.processInfo.arguments.contains("--ui-testing") else {
+            return HistoryStore()
+        }
+
+        let createdAt = Date(timeIntervalSinceReferenceDate: 700_000_000)
+        var plaid = SongHistoryEntry(
+            id: UUID(uuidString: "11111111-1111-1111-1111-111111111111") ?? UUID(),
+            projectName: "Plaid", projectPath: "/tmp/Plaid.logicx",
+            noteKey: "005#2", alternative: "005",
+            lyrics: "Demo Song\n[Verse 1]\nLive project lyrics\n[Chorus]\nStay with me",
+            prompt: "Suno prompt with BPM 130 and F major",
+            referenceArtist: "Reference Band", allowsFemaleBackingVocals: true,
+            bpm: 130, musicalKey: "F major", createdAt: createdAt,
+            updatedAt: createdAt.addingTimeInterval(200)
+        )
+        plaid.applyLocalEdit("Demo Song\n[Verse 1]\nEdited local lyrics\n[Chorus]\nStay with me")
+        plaid.recover("Demo Song\n[Verse 1]\nRecovered legacy lyrics")
+        let second = SongHistoryEntry(
+            id: UUID(uuidString: "22222222-2222-2222-2222-222222222222") ?? UUID(),
+            projectName: "Human Geology", projectPath: "/tmp/Human Geology.logicx",
+            noteKey: "000#1", alternative: "000",
+            lyrics: "[Verse 1]\nSecond project lyrics", prompt: "",
+            referenceArtist: "", allowsFemaleBackingVocals: false,
+            bpm: 112, musicalKey: "A minor", createdAt: createdAt,
+            updatedAt: createdAt.addingTimeInterval(100)
+        )
+        return HistoryStore(inMemoryEntries: [plaid, second])
+    }
+
     @discardableResult
     func recordProject(
-        name: String, path: String, noteKey: String, alternative: String,
+        name: String, url: URL, noteKey: String, alternative: String,
         lyrics: String, bpm: Double?, musicalKey: String?
     ) -> UUID {
-        let normalizedPath = Self.normalizedProjectPath(path)
-        if let index = entries.firstIndex(where: { $0.projectPath == normalizedPath }) {
+        let location = locator.capture(url)
+        let normalizedPath = Self.normalizedProjectPath(location.url.path)
+        if let index = index(matching: location) {
             entries[index].projectName = name
+            entries[index].updateProjectLocation(
+                path: normalizedPath,
+                fileID: location.fileID,
+                bookmark: location.bookmark ?? entries[index].projectBookmark
+            )
             entries[index].noteKey = noteKey
             entries[index].alternative = alternative
             entries[index].reconcileSourceLyrics(lyrics)
@@ -120,7 +178,8 @@ final class HistoryStore: ObservableObject {
             id: UUID(), projectName: name, projectPath: normalizedPath,
             noteKey: noteKey, alternative: alternative, lyrics: lyrics,
             prompt: "", referenceArtist: "", allowsFemaleBackingVocals: false,
-            bpm: bpm, musicalKey: musicalKey, createdAt: Date(), updatedAt: Date()
+            bpm: bpm, musicalKey: musicalKey, createdAt: Date(), updatedAt: Date(),
+            projectFileID: location.fileID, projectBookmark: location.bookmark
         )
         entries.insert(entry, at: 0)
         scheduleSave()
@@ -145,6 +204,62 @@ final class HistoryStore: ObservableObject {
         sortAndScheduleSave()
     }
 
+    func restoreRevision(entryID: UUID, lyrics: String) {
+        guard let index = entries.firstIndex(where: { $0.id == entryID }) else { return }
+        entries[index].restoreRevision(lyrics)
+        entries[index].updatedAt = Date()
+        dirtyLyrics.insert(entryID)
+        sortAndScheduleSave()
+    }
+
+    func revertToProjectLyrics(entryID: UUID) {
+        guard let index = entries.firstIndex(where: { $0.id == entryID }),
+              entries[index].hasLocalEdits else { return }
+        entries[index].revertToSource()
+        entries[index].updatedAt = Date()
+        dirtyLyrics.insert(entryID)
+        sortAndScheduleSave()
+    }
+
+    func resolveProjectURL(entryID: UUID) throws -> URL {
+        guard let index = entries.firstIndex(where: { $0.id == entryID }) else {
+            throw ProjectLocatorError.unavailable
+        }
+        let location = try locator.resolve(
+            path: entries[index].projectPath,
+            bookmark: entries[index].projectBookmark
+        )
+        refreshLocation(at: index, from: location)
+        return location.url
+    }
+
+    func relocateProject(entryID: UUID, to url: URL) throws -> URL {
+        guard let index = entries.firstIndex(where: { $0.id == entryID }) else {
+            throw ProjectLocatorError.unavailable
+        }
+        let location = try locator.resolve(path: url.path, bookmark: nil)
+        refreshLocation(at: index, from: location)
+        return location.url
+    }
+
+    func exportHistory(to destination: URL) {
+        beginTransfer(message: L10n.text("Exporting song history…")) { [archiveService, entries] in
+            try archiveService.write(entries, to: destination)
+            return .exported(entries.count)
+        }
+    }
+
+    func importHistory(from source: URL) {
+        beginTransfer(message: L10n.text("Importing song history…")) { [archiveService] in
+            .imported(try archiveService.read(from: source))
+        }
+    }
+
+    func cancelTransfer() {
+        guard operationState.isRunning else { return }
+        transferTask?.cancel()
+    }
+
     func entry(id: UUID?) -> SongHistoryEntry? {
         guard let id else { return nil }
         return entries.first { $0.id == id }
@@ -152,6 +267,8 @@ final class HistoryStore: ObservableObject {
 
     func delete(id: UUID) {
         entries.removeAll { $0.id == id }
+        dirtyLyrics.remove(id)
+        dirtyPrompts.remove(id)
         scheduleSave()
     }
 
@@ -160,6 +277,72 @@ final class HistoryStore: ObservableObject {
     }
 
     func dismissPersistenceError() { persistenceError = nil }
+
+    private enum TransferResult: Sendable {
+        case exported(Int)
+        case imported([SongHistoryEntry])
+    }
+
+    private func beginTransfer(
+        message: String,
+        operation: @escaping @Sendable () throws -> TransferResult
+    ) {
+        transferTask?.cancel()
+        let operationID = UUID()
+        transferOperationID = operationID
+        operationState = .running(message: message, startedAt: Date())
+        transferTask = Task.detached(priority: .userInitiated) { [weak self] in
+            do {
+                try Task<Never, Never>.checkCancellation()
+                let result = try operation()
+                try Task<Never, Never>.checkCancellation()
+                await self?.completeTransfer(result, operationID: operationID)
+            } catch is CancellationError {
+                await self?.finishTransfer(operationID: operationID)
+            } catch {
+                await self?.failTransfer(error, operationID: operationID)
+            }
+        }
+    }
+
+    private func completeTransfer(_ result: TransferResult, operationID: UUID) {
+        guard transferOperationID == operationID else { return }
+        switch result {
+        case .exported(let count):
+            persistenceError = UserAlert(
+                kind: .success,
+                title: L10n.text("History Exported"),
+                message: L10n.format("%d songs were exported successfully.", count)
+            )
+        case .imported(let imported):
+            let currentIDs = Set(entries.map(\.id))
+            entries = Self.consolidated(
+                entries + imported,
+                preferredIDs: currentIDs,
+                protectedLyricsIDs: currentIDs,
+                protectedPromptIDs: currentIDs
+            )
+            scheduleSave(delayNanoseconds: 0)
+            persistenceError = UserAlert(
+                kind: .success,
+                title: L10n.text("History Imported"),
+                message: L10n.format("%d songs were imported and merged safely.", imported.count)
+            )
+        }
+        finishTransfer(operationID: operationID)
+    }
+
+    private func failTransfer(_ error: Error, operationID: UUID) {
+        guard transferOperationID == operationID else { return }
+        persistenceError = .error(error, context: L10n.text("History Transfer Failed"))
+        finishTransfer(operationID: operationID)
+    }
+
+    private func finishTransfer(operationID: UUID) {
+        guard transferOperationID == operationID else { return }
+        operationState = .idle
+        transferTask = nil
+    }
 
     private func load() {
         guard let repository else { return }
@@ -232,16 +415,26 @@ final class HistoryStore: ObservableObject {
         }
     }
 
-    /// Produces one stable history row per project path. In-memory IDs can be
-    /// preferred during an asynchronous load so UI selections remain valid.
+    /// Produces one stable history row per filesystem identity, falling back
+    /// to a normalized path for legacy records without an identity.
     static func consolidated(
         _ values: [SongHistoryEntry],
         preferredIDs: Set<UUID> = [],
         protectedLyricsIDs: Set<UUID> = [],
         protectedPromptIDs: Set<UUID> = []
     ) -> [SongHistoryEntry] {
-        let groups = Dictionary(grouping: values) { entry -> String in
+        var identifiedPathOwners = [String: SongHistoryEntry]()
+        for entry in values where entry.projectFileID != nil {
             let path = normalizedProjectPath(entry.projectPath)
+            if let current = identifiedPathOwners[path], current.updatedAt >= entry.updatedAt { continue }
+            identifiedPathOwners[path] = entry
+        }
+        let groups = Dictionary(grouping: values) { entry -> String in
+            if let fileID = entry.projectFileID { return "file:\(fileID)" }
+            let path = normalizedProjectPath(entry.projectPath)
+            if let migratedFileID = identifiedPathOwners[path]?.projectFileID {
+                return "file:\(migratedFileID)"
+            }
             return path.isEmpty ? "missing-path:\(entry.id.uuidString)" : path
         }
         return groups.values
@@ -275,8 +468,19 @@ final class HistoryStore: ObservableObject {
         }) else {
             return merged
         }
-        merged.projectPath = normalizedProjectPath(sourceOwner.projectPath)
-        merged.projectName = sorted.first(where: { !$0.projectName.isEmpty })?.projectName ?? merged.projectName
+        let locationOwner = sorted.first(where: {
+            preferredIDs.contains($0.id) && ($0.projectFileID != nil || $0.projectBookmark != nil)
+        }) ?? sorted.first(where: { $0.projectBookmark != nil })
+            ?? sorted.first(where: { $0.projectFileID != nil })
+            ?? sourceOwner
+        merged.updateProjectLocation(
+            path: normalizedProjectPath(locationOwner.projectPath),
+            fileID: locationOwner.projectFileID,
+            bookmark: locationOwner.projectBookmark
+        )
+        merged.projectName = locationOwner.projectName.isEmpty
+            ? (sorted.first(where: { !$0.projectName.isEmpty })?.projectName ?? merged.projectName)
+            : locationOwner.projectName
         merged.noteKey = sourceOwner.noteKey
         merged.alternative = sourceOwner.alternative
         merged.reconcileSourceLyrics(sourceOwner.sourceLyrics)
@@ -312,6 +516,29 @@ final class HistoryStore: ObservableObject {
     private static func normalizedProjectPath(_ path: String) -> String {
         guard !path.isEmpty else { return "" }
         return URL(fileURLWithPath: path).standardizedFileURL.path
+    }
+
+    private func index(matching location: ProjectLocation) -> Int? {
+        let normalizedPath = Self.normalizedProjectPath(location.url.path)
+        if let fileID = location.fileID,
+           let exact = entries.firstIndex(where: { $0.projectFileID == fileID }) {
+            return exact
+        }
+        return entries.firstIndex {
+            $0.projectFileID == nil && Self.normalizedProjectPath($0.projectPath) == normalizedPath
+        }
+    }
+
+    private func refreshLocation(at index: Int, from location: ProjectLocation) {
+        let normalizedPath = Self.normalizedProjectPath(location.url.path)
+        entries[index].projectName = location.url.deletingPathExtension().lastPathComponent
+        entries[index].updateProjectLocation(
+            path: normalizedPath,
+            fileID: location.fileID,
+            bookmark: location.bookmark ?? entries[index].projectBookmark
+        )
+        entries[index].updatedAt = Date()
+        sortAndScheduleSave()
     }
 
     private static func sourceQuality(_ text: String) -> (Int, Int, Int) {

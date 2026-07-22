@@ -1,4 +1,4 @@
-# Logic Lyrics 2.3.0 — architecture and invariants
+# Logic Lyrics 2.4.0 — architecture and invariants
 
 ## Layers
 
@@ -19,6 +19,8 @@ This is a pragmatic MVVM/service architecture. Protocol-based dependency inversi
 - **Transactional write** builds Logic and audio outputs in temporary locations before publishing them.
 - **Single source of truth** gives the main window and Settings one app-owned update service, preventing duplicate network checks and inconsistent results.
 - **Adapter** confines GitHub’s JSON response and HTTP behavior to `GitHubReleaseClient`.
+- **Project locator** encapsulates filesystem identity and security-scoped bookmark capture/resolution.
+- **Transfer object + service** keeps portable history archives versioned, validated, and independent from local persistence.
 
 Swift value types, protocol-oriented design, and actors are preferred over class-only “pure OOP.” Classes are reserved for identity-bearing observable state and injected services where reference semantics are useful.
 
@@ -33,12 +35,14 @@ Swift value types, protocol-oriented design, and actors are preferred over class
 7. File handles and security-scoped resources close in `defer` blocks.
 8. `ProjectData` scans use mapped `Data` and avoid a full `[UInt8]` duplicate.
 9. User-impacting failures surface through accessible alerts instead of being silently ignored.
-10. History schema 3 stores one normalized row per Logic project, independently preserving the latest extracted source, an optional local edit, and recovered legacy values.
+10. History schema 4 stores one row per stable project identity, independently preserving source lyrics, an optional local edit, recovered revisions, and a security-scoped bookmark.
 11. Update and LAME archives are verified by SHA-256 before execution.
 12. Unified logs never include user content, filenames, paths, project names, lyrics, prompts, artwork, or tag values.
 13. Logic parsing selects the active alternative and excludes single-line technical rich text from Project Notes results.
 14. History observes project loads but cannot replace the live lyrics extracted from the currently open Logic project.
 15. Initial history loading completes before any queued save can publish, preventing a fast project open from erasing persisted history.
+16. Portable history exports strip machine-specific file identities and bookmark capabilities; imports validate size and content before a merge.
+17. Reverting or restoring lyrics always preserves the displaced local value as a recoverable revision.
 
 ## Concurrency and lifecycle
 
@@ -59,5 +63,7 @@ No source review can prove the absence of every runtime leak. Release validation
 - optionally notarizes and staples Developer ID builds.
 
 GitHub Actions runs the same lightweight pipeline on macOS and publishes checksummed app and source archives for tagged releases.
+
+The Xcode UI-test target runs history navigation, migration-state screenshots, semantic accessibility audits, and compact/large window checks on every build workflow.
 
 The separate GitHub statistics workflow treats the GitHub REST API as an external adapter, stores a versioned history on the dedicated `github-stats` branch, and deploys a static Pages artifact. Public release metrics remain available when privileged Traffic metrics cannot be read; the dashboard exposes that degraded state instead of fabricating zero values.

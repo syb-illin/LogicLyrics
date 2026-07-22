@@ -10,6 +10,10 @@ enum CoreRegressionTests {
         try testHistoryDeduplicatesLegacyProjectRows()
         try testHistorySeparatesSourceEditsAndRecoveredText()
         try testHistoryStartupMergePrefersLiveProject()
+        try testHistoryRevisionRestoreAndRevert()
+        try testHistoryIdentitySurvivesMove()
+        try testHistoryConsolidatesRenamedProjectIdentity()
+        try testPortableHistoryArchiveRoundTrip()
         try testLogicSourceProtection()
         try testLogicEmptyNoteCreation()
         try testActiveLogicProjectNotesSelection()
@@ -84,7 +88,96 @@ enum CoreRegressionTests {
         try require(entry.recoveredLyrics.contains("[Verse 1]\nCurrent Logic lyrics"), "Previous source revision preserved")
 
         let roundTrip = try JSONDecoder().decode(SongHistoryEntry.self, from: JSONEncoder().encode(entry))
-        try require(roundTrip == entry, "History schema 3 round trip")
+        try require(roundTrip == entry, "History schema 4 round trip")
+    }
+
+    private static func testHistoryRevisionRestoreAndRevert() throws {
+        var entry = SongHistoryEntry(
+            id: UUID(), projectName: "Restore", projectPath: "/tmp/Restore.logicx",
+            noteKey: "000#1", alternative: "000", lyrics: "Project source",
+            prompt: "", referenceArtist: "", allowsFemaleBackingVocals: false,
+            bpm: nil, musicalKey: nil, createdAt: Date(), updatedAt: Date()
+        )
+        entry.applyLocalEdit("First edit")
+        entry.recover("Older revision")
+        entry.restoreRevision("Older revision")
+        try require(entry.editedLyrics == "Older revision", "Recovered revision becomes the local edit")
+        try require(entry.recoveredLyrics.contains("First edit"), "Replaced edit remains recoverable")
+        entry.revertToSource()
+        try require(entry.editedLyrics == nil && entry.lyrics == "Project source", "Revert restores Logic source")
+        try require(entry.recoveredLyrics.contains("Older revision"), "Reverted edit remains recoverable")
+    }
+
+    private static func testHistoryIdentitySurvivesMove() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let original = root.appendingPathComponent("Original.logicx", isDirectory: true)
+        let renamed = root.appendingPathComponent("Renamed.logicx", isDirectory: true)
+        try FileManager.default.createDirectory(at: original, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let locator = ProjectLocator()
+        let captured = locator.capture(original)
+        try require(captured.fileID != nil, "Stable filesystem identity captured")
+        try require(captured.bookmark != nil, "Project bookmark captured")
+        try FileManager.default.moveItem(at: original, to: renamed)
+        let resolved = try locator.resolve(path: original.path, bookmark: captured.bookmark)
+        try require(resolved.url.standardizedFileURL == renamed.standardizedFileURL, "Bookmark follows renamed project")
+        try require(resolved.fileID == captured.fileID, "Filesystem identity survives rename")
+    }
+
+    @MainActor
+    private static func testHistoryConsolidatesRenamedProjectIdentity() throws {
+        let fileID = "volume:file"
+        let old = SongHistoryEntry(
+            id: UUID(), projectName: "Old", projectPath: "/tmp/Old.logicx",
+            noteKey: "000#1", alternative: "000", lyrics: "Old source",
+            prompt: "Saved prompt", referenceArtist: "", allowsFemaleBackingVocals: false,
+            bpm: 120, musicalKey: "C major", createdAt: Date(), updatedAt: Date(),
+            projectFileID: fileID, projectBookmark: Data([1, 2, 3])
+        )
+        let new = SongHistoryEntry(
+            id: UUID(), projectName: "Renamed", projectPath: "/tmp/Renamed.logicx",
+            noteKey: "000#1", alternative: "000", lyrics: "Current source",
+            prompt: "", referenceArtist: "", allowsFemaleBackingVocals: false,
+            bpm: 121, musicalKey: "D minor", createdAt: Date(),
+            updatedAt: Date().addingTimeInterval(10), projectFileID: fileID,
+            projectBookmark: Data([4, 5, 6])
+        )
+
+        let values = HistoryStore.consolidated([old, new], preferredIDs: [new.id])
+        let entry = try requireValue(values.first, "Renamed project consolidation")
+        try require(values.count == 1, "Moved project keeps one history row")
+        try require(entry.id == new.id && entry.projectName == "Renamed", "Newest project location wins")
+        try require(entry.projectPath == "/tmp/Renamed.logicx", "Renamed path is persisted")
+        try require(entry.prompt == "Saved prompt", "Prompt survives project rename")
+    }
+
+    private static func testPortableHistoryArchiveRoundTrip() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let archiveURL = root.appendingPathComponent("History.\(HistoryArchiveService.fileExtension)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        var entry = SongHistoryEntry(
+            id: UUID(), projectName: "Portable", projectPath: "/tmp/Portable.logicx",
+            noteKey: "001#2", alternative: "001", lyrics: "Project lyrics",
+            prompt: "Saved prompt", referenceArtist: "Band", allowsFemaleBackingVocals: true,
+            bpm: 128, musicalKey: "E minor", createdAt: Date(), updatedAt: Date(),
+            projectFileID: "machine-specific", projectBookmark: Data([7, 8, 9])
+        )
+        entry.applyLocalEdit("Edited lyrics")
+        entry.recover("Recovered lyrics")
+
+        let service = HistoryArchiveService()
+        try service.write([entry], to: archiveURL)
+        let imported = try service.read(from: archiveURL)
+        let decoded = try requireValue(imported.first, "Portable archive entry")
+        try require(imported.count == 1, "Portable archive count")
+        try require(decoded.sourceLyrics == "Project lyrics", "Archive preserves Logic source")
+        try require(decoded.editedLyrics == "Edited lyrics", "Archive preserves local edit")
+        try require(decoded.recoveredLyrics == ["Recovered lyrics"], "Archive preserves revisions")
+        try require(decoded.prompt == "Saved prompt", "Archive preserves prompt")
+        try require(decoded.projectFileID == nil && decoded.projectBookmark == nil, "Archive strips Mac capabilities")
     }
 
     @MainActor

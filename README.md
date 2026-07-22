@@ -62,6 +62,7 @@ LAME is cached at `~/Library/Caches/com.local.LogicLyrics` and reused by future 
 
 - Editable lyrics with automatic section recognition and per-section clipboard actions.
 - Local history for projects, lyrics, prompts, BPM, key, artist reference and vocal settings.
+- Stable project reconnection after moves/renames, recoverable lyric revisions, and portable history import/export.
 - Safe experimental writing to a duplicate `.logicx`, including empty Notes insertion when a recognized structure is available.
 - Audio metadata defaults for artist, current year, genre, cover artwork and tokenized filenames.
 - Filename tokens: `{track}`, `{group}`, `{title}`, `{album}`, `{year}` and `{bpm}`.

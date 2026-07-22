@@ -2,6 +2,14 @@
 
 All notable user-facing changes are documented here. Releases use semantic versions and every shipped build receives a new build number.
 
+## 2.4.0 — build 32
+
+- Added stable filesystem identity and security-scoped bookmarks so history follows Logic projects after moves and renames.
+- Added **Open Project**, **Locate Project**, revision restoration, and safe revert-to-project actions to history details.
+- Added portable, capability-stripped history export and defensive merge-based import with transactional writes and visible progress.
+- Added automated macOS UI coverage for history navigation, migrated visual states, accessibility audits, and compact/large window layouts.
+- Expanded core regression coverage for bookmark resolution, renamed-project consolidation, revision recovery, and portable archive round trips.
+
 ## 2.3.0 — build 31
 
 - Added a permanent, searchable **Recent Songs** list to the sidebar, available across launches even when no project is open.

@@ -17,11 +17,11 @@ struct LogicLyricsApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(updater)
-                .frame(minWidth: 980, minHeight: 650)
+                .frame(minWidth: 820, minHeight: 620)
                 .preferredColorScheme(.dark)
         }
         .windowStyle(.titleBar)
-        .defaultSize(width: 1180, height: 780)
+        .defaultSize(width: Self.initialWindowSize.width, height: Self.initialWindowSize.height)
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button(L10n.text("About Logic Lyrics")) {
@@ -54,5 +54,16 @@ struct LogicLyricsApp: App {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"
         return "\(version) (build \(build))"
+    }
+
+    private static var initialWindowSize: CGSize {
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("--ui-test-compact-window") {
+            return CGSize(width: 860, height: 640)
+        }
+        if arguments.contains("--ui-test-large-window") {
+            return CGSize(width: 1_440, height: 900)
+        }
+        return CGSize(width: 1_180, height: 780)
     }
 }

@@ -27,6 +27,15 @@ jobs:
           chmod +x BUILD.command LogicLyrics/Resources/UPDATE.command
           ./BUILD.command
 
+      - name: Run macOS UI, accessibility and window-layout tests
+        run: |
+          xcodebuild test \
+            -project LogicLyrics.xcodeproj \
+            -scheme LogicLyrics \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            -only-testing:LogicLyricsUITests
+
       - name: Package application and source updater asset
         run: |
           ditto -c -k --sequesterRsrc --keepParent \
