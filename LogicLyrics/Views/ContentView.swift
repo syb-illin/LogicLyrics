@@ -52,7 +52,6 @@ struct ContentView: View {
             }
             .navigationSplitViewStyle(.balanced)
         }
-        .accessibilityIdentifier("logic-lyrics-root")
         .tint(AppTheme.accent)
         .navigationTitle(model.projectName.isEmpty ? "Logic Lyrics" : model.projectName)
         .toolbar { toolbar }
@@ -170,7 +169,9 @@ struct ContentView: View {
         HStack(spacing: 11) {
             AccentIcon(systemName: "waveform.and.mic", size: 38)
             VStack(alignment: .leading, spacing: 1) {
-                Text("Logic Lyrics").font(.headline)
+                Text("Logic Lyrics")
+                    .font(.headline)
+                    .accessibilityIdentifier("logic-lyrics-root")
                 Text("Project Notes Studio")
                     .font(.caption)
                     .foregroundStyle(.secondary)
