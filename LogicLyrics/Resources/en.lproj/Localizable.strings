@@ -8,6 +8,7 @@
 "Logic Project" = "Logic Project";
 "Project Notes" = "Project Notes";
 "PROJECT NOTES" = "PROJECT NOTES";
+"RECENT SONGS" = "RECENT SONGS";
 "History" = "History";
 "Lyrics" = "Lyrics";
 "Suno AI" = "Suno AI";
@@ -46,6 +47,12 @@
 "Reading Logic Project…" = "Reading Logic Project…";
 "Extracting Project Notes" = "Extracting Project Notes";
 "No songs in history" = "No songs in history";
+"No matching songs" = "No matching songs";
+"Search recent songs" = "Search recent songs";
+"%d songs" = "%d songs";
+"Edited lyrics" = "Edited lyrics";
+"Saved Suno prompt" = "Saved Suno prompt";
+"Shows the saved project lyrics and Suno prompt." = "Shows the saved project lyrics and Suno prompt.";
 "History Is Empty" = "History Is Empty";
 "Loaded Logic projects will automatically appear here." = "Loaded Logic projects will automatically appear here.";
 "Not detected" = "Not detected";
@@ -56,6 +63,12 @@
 "%d sections • automatic editing and saving" = "%d sections • automatic editing and saving";
 "Copy %@ section" = "Copy %@ section";
 "Lyrics editor" = "Lyrics editor";
+"Project Lyrics" = "Project Lyrics";
+"Edited Lyrics" = "Edited Lyrics";
+"Edited" = "Edited";
+"Recovered Legacy Text (%d)" = "Recovered Legacy Text (%d)";
+"Recovered text %d" = "Recovered text %d";
+"Older values were preserved during history migration. They may include previous edits or technical text detected by older versions." = "Older values were preserved during history migration. They may include previous edits or technical text detected by older versions.";
 "Edit the lyrics. Changes are saved automatically in local history." = "Edit the lyrics. Changes are saved automatically in local history.";
 "Copy" = "Copy";
 "Copied" = "Copied";
@@ -260,6 +273,7 @@
 "Unable to read history" = "Unable to read history";
 "Unable to save history" = "Unable to save history";
 "The history file was unreadable. A backup was preserved as %@." = "The history file was unreadable. A backup was preserved as %@.";
+"This history was created by a newer app version (schema %d). Update Logic Lyrics before opening it." = "This history was created by a newer app version (schema %d). Update Logic Lyrics before opening it.";
 "Unable to check for updates: %@" = "Unable to check for updates: %@";
 "The updater is missing from the application." = "The updater is missing from the application.";
 "The updater could not be launched: %@" = "The updater could not be launched: %@";

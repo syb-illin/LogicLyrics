@@ -2,6 +2,14 @@
 
 All notable user-facing changes are documented here. Releases use semantic versions and every shipped build receives a new build number.
 
+## 2.3.0 — build 31
+
+- Added a permanent, searchable **Recent Songs** list to the sidebar, available across launches even when no project is open.
+- Migrated history to schema 3 with one row per Logic project, separate Logic-source and locally edited lyrics, and lossless recovery of older duplicate values.
+- Prevented initial history loading, project navigation, and debounced editor saves from overwriting one another.
+- Added regression coverage for legacy migration, duplicate consolidation, source/edit separation, and the asynchronous startup race.
+- Replaced the app icon with a fully opaque, full-mask monochrome design whose waveform remains legible at small macOS sizes.
+
 ## 2.2.5 — build 30
 
 - Fixed cached history replacing freshly extracted Project Notes after a Logic project opens.

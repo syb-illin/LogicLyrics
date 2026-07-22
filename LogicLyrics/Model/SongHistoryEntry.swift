@@ -6,7 +6,10 @@ struct SongHistoryEntry: Codable, Identifiable, Hashable, Sendable {
     var projectPath: String
     var noteKey: String
     var alternative: String
-    var lyrics: String
+    private(set) var sourceLyrics: String
+    private(set) var editedLyrics: String?
+    private(set) var recoveredLyrics: [String]
+    private(set) var needsSourceReconciliation: Bool
     var prompt: String
     var referenceArtist: String
     var allowsFemaleBackingVocals: Bool
@@ -15,9 +18,21 @@ struct SongHistoryEntry: Codable, Identifiable, Hashable, Sendable {
     let createdAt: Date
     var updatedAt: Date
 
+    /// The history detail favors the user's local edit while retaining the
+    /// latest text extracted from Logic as an independent source snapshot.
+    var lyrics: String { editedLyrics ?? sourceLyrics }
+    var hasLocalEdits: Bool { editedLyrics != nil }
+
+    var searchableLyrics: String {
+        ([sourceLyrics, editedLyrics].compactMap { $0 } + recoveredLyrics)
+            .joined(separator: "\n")
+    }
+
     private enum CodingKeys: String, CodingKey {
-        case id, projectName, projectPath, noteKey, alternative, lyrics, prompt
-        case referenceArtist, allowsFemaleBackingVocals, bpm, musicalKey, createdAt, updatedAt
+        case id, projectName, projectPath, noteKey, alternative
+        case lyrics // Schema 1–2 compatibility and downgrade safety.
+        case sourceLyrics, editedLyrics, recoveredLyrics, needsSourceReconciliation
+        case prompt, referenceArtist, allowsFemaleBackingVocals, bpm, musicalKey, createdAt, updatedAt
     }
 
     init(
@@ -30,7 +45,10 @@ struct SongHistoryEntry: Codable, Identifiable, Hashable, Sendable {
         self.projectPath = projectPath
         self.noteKey = noteKey
         self.alternative = alternative
-        self.lyrics = lyrics
+        sourceLyrics = lyrics
+        editedLyrics = nil
+        recoveredLyrics = []
+        needsSourceReconciliation = false
         self.prompt = prompt
         self.referenceArtist = referenceArtist
         self.allowsFemaleBackingVocals = allowsFemaleBackingVocals
@@ -47,7 +65,20 @@ struct SongHistoryEntry: Codable, Identifiable, Hashable, Sendable {
         projectPath = try values.decodeIfPresent(String.self, forKey: .projectPath) ?? ""
         noteKey = try values.decodeIfPresent(String.self, forKey: .noteKey) ?? "legacy"
         alternative = try values.decodeIfPresent(String.self, forKey: .alternative) ?? ""
-        lyrics = try values.decodeIfPresent(String.self, forKey: .lyrics) ?? ""
+
+        if let source = try values.decodeIfPresent(String.self, forKey: .sourceLyrics) {
+            sourceLyrics = source
+            needsSourceReconciliation = try values.decodeIfPresent(
+                Bool.self, forKey: .needsSourceReconciliation
+            ) ?? false
+        } else {
+            sourceLyrics = try values.decodeIfPresent(String.self, forKey: .lyrics) ?? ""
+            // Older schemas did not distinguish Logic source text from an edit
+            // or from the technical RTF false positives fixed in v2.2.4.
+            needsSourceReconciliation = true
+        }
+        editedLyrics = try values.decodeIfPresent(String.self, forKey: .editedLyrics)
+        recoveredLyrics = try values.decodeIfPresent([String].self, forKey: .recoveredLyrics) ?? []
         prompt = try values.decodeIfPresent(String.self, forKey: .prompt) ?? ""
         referenceArtist = try values.decodeIfPresent(String.self, forKey: .referenceArtist) ?? ""
         allowsFemaleBackingVocals = try values.decodeIfPresent(Bool.self, forKey: .allowsFemaleBackingVocals) ?? false
@@ -55,5 +86,73 @@ struct SongHistoryEntry: Codable, Identifiable, Hashable, Sendable {
         musicalKey = try values.decodeIfPresent(String.self, forKey: .musicalKey)
         createdAt = try values.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
         updatedAt = try values.decodeIfPresent(Date.self, forKey: .updatedAt) ?? createdAt
+        normalizeCollections()
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(id, forKey: .id)
+        try values.encode(projectName, forKey: .projectName)
+        try values.encode(projectPath, forKey: .projectPath)
+        try values.encode(noteKey, forKey: .noteKey)
+        try values.encode(alternative, forKey: .alternative)
+        try values.encode(lyrics, forKey: .lyrics)
+        try values.encode(sourceLyrics, forKey: .sourceLyrics)
+        try values.encodeIfPresent(editedLyrics, forKey: .editedLyrics)
+        try values.encode(recoveredLyrics, forKey: .recoveredLyrics)
+        try values.encode(needsSourceReconciliation, forKey: .needsSourceReconciliation)
+        try values.encode(prompt, forKey: .prompt)
+        try values.encode(referenceArtist, forKey: .referenceArtist)
+        try values.encode(allowsFemaleBackingVocals, forKey: .allowsFemaleBackingVocals)
+        try values.encodeIfPresent(bpm, forKey: .bpm)
+        try values.encodeIfPresent(musicalKey, forKey: .musicalKey)
+        try values.encode(createdAt, forKey: .createdAt)
+        try values.encode(updatedAt, forKey: .updatedAt)
+    }
+
+    mutating func reconcileSourceLyrics(_ value: String) {
+        let previousSource = sourceLyrics
+        sourceLyrics = value
+        needsSourceReconciliation = false
+        if previousSource != value { recover(previousSource) }
+        if editedLyrics == sourceLyrics { editedLyrics = nil }
+        normalizeCollections()
+    }
+
+    mutating func applyLocalEdit(_ value: String) {
+        editedLyrics = value == sourceLyrics ? nil : value
+        normalizeCollections()
+    }
+
+    mutating func recover(_ value: String) {
+        let cleaned = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty, cleaned != sourceLyrics, cleaned != editedLyrics,
+              !recoveredLyrics.contains(cleaned) else { return }
+        recoveredLyrics.append(cleaned)
+    }
+
+    mutating func replaceRecoveredLyrics(_ values: [String]) {
+        recoveredLyrics = values
+        normalizeCollections()
+    }
+
+    mutating func replaceEditedLyrics(_ value: String?) {
+        editedLyrics = value
+        normalizeCollections()
+    }
+
+    mutating func markSourceForReconciliation(_ value: Bool) {
+        needsSourceReconciliation = value
+    }
+
+    private mutating func normalizeCollections() {
+        if editedLyrics == sourceLyrics { editedLyrics = nil }
+        var seen = Set<String>()
+        recoveredLyrics = recoveredLyrics.compactMap { value in
+            let cleaned = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !cleaned.isEmpty, cleaned != sourceLyrics, cleaned != editedLyrics,
+                  seen.insert(cleaned).inserted else { return nil }
+            return cleaned
+        }
     }
 }

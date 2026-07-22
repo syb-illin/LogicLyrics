@@ -1,4 +1,4 @@
-# Logic Lyrics 2.2.5 — architecture and invariants
+# Logic Lyrics 2.3.0 — architecture and invariants
 
 ## Layers
 
@@ -33,11 +33,12 @@ Swift value types, protocol-oriented design, and actors are preferred over class
 7. File handles and security-scoped resources close in `defer` blocks.
 8. `ProjectData` scans use mapped `Data` and avoid a full `[UInt8]` duplicate.
 9. User-impacting failures surface through accessible alerts instead of being silently ignored.
-10. History has a versioned schema and a project + alternative + note identity.
+10. History schema 3 stores one normalized row per Logic project, independently preserving the latest extracted source, an optional local edit, and recovered legacy values.
 11. Update and LAME archives are verified by SHA-256 before execution.
 12. Unified logs never include user content, filenames, paths, project names, lyrics, prompts, artwork, or tag values.
 13. Logic parsing selects the active alternative and excludes single-line technical rich text from Project Notes results.
 14. History observes project loads but cannot replace the live lyrics extracted from the currently open Logic project.
+15. Initial history loading completes before any queued save can publish, preventing a fast project open from erasing persisted history.
 
 ## Concurrency and lifecycle
 

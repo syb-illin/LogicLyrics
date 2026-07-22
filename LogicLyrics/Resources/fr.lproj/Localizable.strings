@@ -8,6 +8,7 @@
 "Logic Project" = "Projet Logic";
 "Project Notes" = "Notes du projet";
 "PROJECT NOTES" = "NOTES DU PROJET";
+"RECENT SONGS" = "MORCEAUX RÉCENTS";
 "History" = "Historique";
 "Lyrics" = "Paroles";
 "Suno AI" = "Suno AI";
@@ -46,6 +47,12 @@
 "Reading Logic Project…" = "Lecture du projet Logic…";
 "Extracting Project Notes" = "Extraction des Notes du projet";
 "No songs in history" = "Aucun morceau dans l’historique";
+"No matching songs" = "Aucun morceau correspondant";
+"Search recent songs" = "Rechercher dans les morceaux récents";
+"%d songs" = "%d morceaux";
+"Edited lyrics" = "Paroles modifiées";
+"Saved Suno prompt" = "Prompt Suno enregistré";
+"Shows the saved project lyrics and Suno prompt." = "Affiche les paroles du projet et le prompt Suno enregistrés.";
 "History Is Empty" = "L’historique est vide";
 "Loaded Logic projects will automatically appear here." = "Les projets Logic chargés apparaîtront automatiquement ici.";
 "Not detected" = "Non détecté";
@@ -56,6 +63,12 @@
 "%d sections • automatic editing and saving" = "%d sections • édition et sauvegarde automatiques";
 "Copy %@ section" = "Copier la section %@";
 "Lyrics editor" = "Éditeur de paroles";
+"Project Lyrics" = "Paroles du projet";
+"Edited Lyrics" = "Paroles modifiées";
+"Edited" = "Modifié";
+"Recovered Legacy Text (%d)" = "Ancien texte récupéré (%d)";
+"Recovered text %d" = "Texte récupéré %d";
+"Older values were preserved during history migration. They may include previous edits or technical text detected by older versions." = "Les anciennes valeurs ont été conservées pendant la migration. Elles peuvent contenir des modifications précédentes ou du texte technique détecté par d’anciennes versions.";
 "Edit the lyrics. Changes are saved automatically in local history." = "Modifiez les paroles. Les changements sont enregistrés automatiquement dans l’historique local.";
 "Copy" = "Copier";
 "Copied" = "Copié";
@@ -260,6 +273,7 @@
 "Unable to read history" = "Impossible de lire l’historique";
 "Unable to save history" = "Impossible d’enregistrer l’historique";
 "The history file was unreadable. A backup was preserved as %@." = "Le fichier d’historique était illisible. Une sauvegarde a été conservée sous le nom %@.";
+"This history was created by a newer app version (schema %d). Update Logic Lyrics before opening it." = "Cet historique a été créé par une version plus récente de l’app (schéma %d). Mettez Logic Lyrics à jour avant de l’ouvrir.";
 "Unable to check for updates: %@" = "Impossible de rechercher les mises à jour : %@";
 "The updater is missing from the application." = "Le programme de mise à jour est absent de l’application.";
 "The updater could not be launched: %@" = "Le programme de mise à jour n’a pas pu être lancé : %@";
