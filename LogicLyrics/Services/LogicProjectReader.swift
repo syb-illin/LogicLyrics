@@ -20,6 +20,29 @@ enum LogicProjectError: LocalizedError {
 struct LogicProjectReader: Sendable {
     private static let signature = Data("{\\rtf1".utf8)
 
+    private struct NoteCandidate {
+        let index: Int
+        let text: String
+
+        var nonEmptyLineCount: Int {
+            text.split(whereSeparator: \.isNewline).count
+        }
+
+        var sectionMarkerCount: Int {
+            text.components(separatedBy: "[").dropFirst().reduce(into: 0) { count, component in
+                let label = component.prefix { $0 != "]" }.lowercased()
+                if ["verse", "chorus", "pre-chorus", "bridge", "intro", "outro", "hook", "refrain"]
+                    .contains(where: { label.hasPrefix($0) }) {
+                    count += 1
+                }
+            }
+        }
+
+        var isLikelyProjectNote: Bool {
+            nonEmptyLineCount > 1 || sectionMarkerCount > 0
+        }
+    }
+
     struct Result: Sendable {
         let notes: [ExtractedNote]
         let bpm: Double?
@@ -57,38 +80,87 @@ struct LogicProjectReader: Sendable {
 
         guard !projectDataURLs.isEmpty else { throw LogicProjectError.noProjectData }
 
-        var notes: [ExtractedNote] = []
-        var firstEmptyNoteAlternative: String?
-        for dataURL in projectDataURLs {
-            try Task<Never, Never>.checkCancellation()
-            let data = try Data(contentsOf: dataURL, options: [.mappedIfSafe])
-            let alternative = dataURL.deletingLastPathComponent().lastPathComponent
-            var seenTexts = Set<String>()
-            var noteIndex = 0
-            for rtf in try extractRTFDocuments(from: data) {
-                guard let text = decodeRTF(rtf) else { continue }
-                let cleaned = clean(text)
-                guard !cleaned.isEmpty else {
-                    if firstEmptyNoteAlternative == nil { firstEmptyNoteAlternative = alternative }
-                    continue
-                }
-                guard seenTexts.insert(cleaned).inserted else { continue }
-                notes.append(ExtractedNote(
-                    alternative: alternative,
-                    index: noteIndex,
-                    text: cleaned
-                ))
-                noteIndex += 1
-            }
-        }
+        // Logic stores many unrelated rich-text values in ProjectData (loop names,
+        // region annotations, and Project Notes). Reading every RTF made a loop name
+        // appear as the selected lyrics. The active alternative is the project state
+        // visible in Logic, and its richest multi-line RTF is the Project Notes value.
+        let activeProjectDataURL = preferredProjectDataURL(
+            among: projectDataURLs,
+            projectURL: projectURL
+        )
+        let alternative = activeProjectDataURL.deletingLastPathComponent().lastPathComponent
+        let data = try Data(contentsOf: activeProjectDataURL, options: [.mappedIfSafe])
+        let candidates = try noteCandidates(in: data)
 
-        if notes.isEmpty {
-            let alternative = firstEmptyNoteAlternative
-                ?? projectDataURLs[0].deletingLastPathComponent().lastPathComponent
+        let notes: [ExtractedNote]
+        if let candidate = candidates
+            .filter(\.isLikelyProjectNote)
+            .max(by: { isLowerQuality($0, than: $1) }) {
+            notes = [ExtractedNote(
+                alternative: alternative,
+                index: candidate.index,
+                text: candidate.text
+            )]
+        } else {
             notes = [ExtractedNote(alternative: alternative, index: 0, text: "", isDraft: true)]
         }
-        let metadata = readMetadata(beside: projectDataURLs[0])
+
+        let metadata = readMetadata(beside: activeProjectDataURL)
         return Result(notes: notes, bpm: metadata.bpm, musicalKey: metadata.musicalKey)
+    }
+
+    private func preferredProjectDataURL(among urls: [URL], projectURL: URL) -> URL {
+        if let activeAlternative = activeAlternativeName(in: projectURL),
+           let activeURL = urls.first(where: {
+               $0.deletingLastPathComponent().lastPathComponent == activeAlternative
+           }) {
+            return activeURL
+        }
+        return urls[urls.count - 1]
+    }
+
+    private func activeAlternativeName(in projectURL: URL) -> String? {
+        let informationURL = projectURL
+            .appendingPathComponent("Resources", isDirectory: true)
+            .appendingPathComponent("ProjectInformation.plist")
+        guard let data = try? Data(contentsOf: informationURL),
+              let plist = try? PropertyListSerialization.propertyList(from: data, format: nil),
+              let values = plist as? [String: Any] else { return nil }
+
+        if let value = values["ActiveVariant"] as? NSNumber {
+            return String(format: "%03d", value.intValue)
+        }
+        if let value = values["ActiveVariant"] as? String {
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let number = Int(trimmed) { return String(format: "%03d", number) }
+            return trimmed.isEmpty ? nil : trimmed
+        }
+        return nil
+    }
+
+    private func noteCandidates(in data: Data) throws -> [NoteCandidate] {
+        var candidates: [NoteCandidate] = []
+        var seenTexts = Set<String>()
+        var nonEmptyIndex = 0
+        for rtf in try extractRTFDocuments(from: data) {
+            guard let text = decodeRTF(rtf) else { continue }
+            let cleaned = clean(text)
+            guard !cleaned.isEmpty else { continue }
+            guard seenTexts.insert(cleaned).inserted else { continue }
+            candidates.append(NoteCandidate(index: nonEmptyIndex, text: cleaned))
+            nonEmptyIndex += 1
+        }
+        return candidates
+    }
+
+    private func isLowerQuality(_ candidate: NoteCandidate, than other: NoteCandidate) -> Bool {
+        if candidate.sectionMarkerCount != other.sectionMarkerCount {
+            return candidate.sectionMarkerCount < other.sectionMarkerCount
+        }
+        if candidate.nonEmptyLineCount != other.nonEmptyLineCount {
+            return candidate.nonEmptyLineCount < other.nonEmptyLineCount
+        }
+        return candidate.text.count < other.text.count
     }
 
     private func readMetadata(beside projectDataURL: URL) -> (bpm: Double?, musicalKey: String?) {

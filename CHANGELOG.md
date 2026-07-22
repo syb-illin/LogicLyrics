@@ -2,6 +2,12 @@
 
 All notable user-facing changes are documented here. Releases use semantic versions and every shipped build receives a new build number.
 
+## 2.2.4 — build 29
+
+- Fixed Project Notes detection in Logic projects containing unrelated rich-text loop and region metadata.
+- Read lyrics, BPM and musical key from the active Logic alternative instead of an older alternative.
+- Added regression coverage for active-alternative selection and technical RTF false positives.
+
 ## 2.2.3 — build 28
 
 - Added a product-focused GitHub Pages landing page while preserving repository analytics under `/stats/`.
