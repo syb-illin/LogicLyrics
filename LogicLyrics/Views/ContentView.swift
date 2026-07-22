@@ -747,7 +747,7 @@ struct ContentView: View {
                 ? L10n.text("Open an MP3 or WAV file")
                 : L10n.text("Open a Logic Pro project"))
             .accessibilityIdentifier("toolbar-open")
-            if selectedMode != .metadata {
+            if !showsHistory && selectedMode != .metadata {
                 Button("Copy", systemImage: "doc.on.doc") { model.copySelectedNote() }
                     .disabled(model.selectedNote == nil)
                     .keyboardShortcut("c", modifiers: [.command, .shift])
