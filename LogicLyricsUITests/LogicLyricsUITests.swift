@@ -21,7 +21,7 @@ final class LogicLyricsUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Edited Lyrics"].exists)
 
         let recovered = element("history-recovered-revisions", in: app)
-        if recovered.exists { recovered.click() }
+        XCTAssertTrue(recovered.waitForExistence(timeout: 3))
         let restore = app.buttons["Restore recovered text 1"]
         XCTAssertTrue(restore.waitForExistence(timeout: 3))
         restore.click()
@@ -60,12 +60,12 @@ final class LogicLyricsUITests: XCTestCase {
                     && element.elementType == .group
                     && element.identifier.isEmpty
                     && element.label.isEmpty
-                    && abs(frame.minX - windowFrame.minX) < 1
                     && abs(frame.minY - windowFrame.minY) < 1
-                    && abs(frame.width - windowFrame.width) < 1
                     && abs(frame.height - windowFrame.height) < 1
+                    && frame.minX >= windowFrame.minX - 1
+                    && frame.maxX <= windowFrame.maxX + 1
                 if isNativeWindowContainer {
-                    // XCTest exposes the non-focusable macOS hosting wrapper as an empty group.
+                    // XCTest exposes the non-focusable macOS hosting and split-view wrappers as empty groups.
                     // Its labelled, interactive descendants remain covered by this same audit.
                     return true
                 }

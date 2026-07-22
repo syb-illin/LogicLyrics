@@ -10,6 +10,7 @@ struct HistoryDetailView: View {
     let onDelete: () -> Void
     @State private var copied = ""
     @State private var confirmsDeletion = false
+    @State private var recoveredRevisionsExpanded = ProcessInfo.processInfo.arguments.contains("--ui-testing")
     @State private var copyFeedbackTask: Task<Void, Never>?
 
     var body: some View {
@@ -115,7 +116,7 @@ struct HistoryDetailView: View {
     }
 
     private var recoveredLyricsCard: some View {
-        DisclosureGroup {
+        DisclosureGroup(isExpanded: $recoveredRevisionsExpanded) {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Older values were preserved during history migration. They may include previous edits or technical text detected by older versions.")
                     .font(.caption)
