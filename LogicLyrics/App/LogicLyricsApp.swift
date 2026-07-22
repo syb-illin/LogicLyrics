@@ -19,6 +19,7 @@ struct LogicLyricsApp: App {
                 .environmentObject(updater)
                 .frame(minWidth: 820, minHeight: 620)
                 .preferredColorScheme(.dark)
+                .background(WindowSizeOverride(size: Self.requestedUITestWindowSize))
         }
         .windowStyle(.titleBar)
         .defaultSize(width: Self.initialWindowSize.width, height: Self.initialWindowSize.height)
@@ -58,6 +59,10 @@ struct LogicLyricsApp: App {
     }
 
     private static var initialWindowSize: CGSize {
+        requestedUITestWindowSize ?? CGSize(width: 1_180, height: 780)
+    }
+
+    private static var requestedUITestWindowSize: CGSize? {
         let arguments = ProcessInfo.processInfo.arguments
         if arguments.contains("--ui-test-compact-window") {
             return CGSize(width: 860, height: 640)
@@ -65,6 +70,55 @@ struct LogicLyricsApp: App {
         if arguments.contains("--ui-test-large-window") {
             return CGSize(width: 1_440, height: 900)
         }
-        return CGSize(width: 1_180, height: 780)
+        return nil
+    }
+}
+
+private struct WindowSizeOverride: NSViewRepresentable {
+    let size: CGSize?
+
+    func makeNSView(context: Context) -> WindowSizingView {
+        WindowSizingView(requestedSize: size)
+    }
+
+    func updateNSView(_ view: WindowSizingView, context: Context) {
+        view.requestedSize = size
+        view.applyRequestedSizeIfNeeded()
+    }
+}
+
+private final class WindowSizingView: NSView {
+    var requestedSize: CGSize? {
+        didSet {
+            if requestedSize != oldValue { hasAppliedSize = false }
+        }
+    }
+    private var hasAppliedSize = false
+
+    init(requestedSize: CGSize?) {
+        self.requestedSize = requestedSize
+        super.init(frame: .zero)
+    }
+
+    required init?(coder: NSCoder) {
+        requestedSize = nil
+        super.init(coder: coder)
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        applyRequestedSizeIfNeeded()
+    }
+
+    func applyRequestedSizeIfNeeded() {
+        guard !hasAppliedSize, let requestedSize, let window else { return }
+        let visibleSize = window.screen?.visibleFrame.size ?? requestedSize
+        let fittedSize = CGSize(
+            width: min(requestedSize.width, max(820, visibleSize.width - 20)),
+            height: min(requestedSize.height, max(620, visibleSize.height - 20))
+        )
+        window.setContentSize(fittedSize)
+        window.center()
+        hasAppliedSize = true
     }
 }

@@ -94,6 +94,8 @@
 "STRUCTURE" = "STRUCTURE";
 "Copy this section" = "Copier cette section";
 "Song history" = "Historique des morceaux";
+"Song history details" = "Détails de l’historique du morceau";
+"Recent songs" = "Morceaux récents";
 "Search" = "Rechercher";
 "Create a .logicx copy containing these lyrics without changing the original" = "Créer une copie .logicx contenant ces paroles sans modifier l’original";
 "No Project Notes were found. Enter the lyrics below, then create a Logic copy." = "Aucune Note de projet n’a été trouvée. Saisissez les paroles ci-dessous, puis créez une copie Logic.";

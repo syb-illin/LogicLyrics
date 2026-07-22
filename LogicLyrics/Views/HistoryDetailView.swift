@@ -49,6 +49,7 @@ struct HistoryDetailView: View {
             copyFeedbackTask?.cancel()
             copyFeedbackTask = nil
         }
+        .accessibilityLabel(L10n.text("Song history details"))
         .accessibilityIdentifier("history-detail")
     }
 
@@ -158,6 +159,7 @@ struct HistoryDetailView: View {
             .font(.headline)
         }
         .appPanel(radius: 20, padding: 20)
+        .accessibilityLabel(L10n.format("Recovered Legacy Text (%d)", entry.recoveredLyrics.count))
         .accessibilityIdentifier("history-recovered-revisions")
     }
 
@@ -181,9 +183,9 @@ struct HistoryDetailView: View {
                 .background(Color.black.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .accessibilityLabel(L10n.format("%@ content", L10n.text(title)))
+                .accessibilityIdentifier("history-\(field)")
         }
         .appPanel(radius: 20, padding: 20)
-        .accessibilityIdentifier("history-\(field)")
     }
 
     private func copy(_ text: String, field: String) {

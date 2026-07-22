@@ -341,6 +341,8 @@ struct ContentView: View {
                 }
             }
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(L10n.text("Recent songs"))
         .accessibilityIdentifier("recent-songs-section")
     }
 

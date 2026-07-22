@@ -7,6 +7,12 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      diagnostic_mode:
+        description: Preserve UI test diagnostics without failing this manual run
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -30,6 +36,8 @@ jobs:
           ./BUILD.command
 
       - name: Run macOS UI, accessibility and window-layout tests
+        id: ui_tests
+        continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.diagnostic_mode }}
         run: |
           xcodebuild test \
             -project LogicLyrics.xcodeproj \
@@ -47,6 +55,10 @@ jobs:
           path: ${{ runner.temp }}/LogicLyricsUITests.xcresult
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Report diagnostic UI test outcome
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.diagnostic_mode
+        run: echo "Raw UI test outcome - ${{ steps.ui_tests.outcome }}"
 
       - name: Package application and source updater asset
         run: |
