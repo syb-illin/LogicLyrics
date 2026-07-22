@@ -12,7 +12,16 @@ struct HistoryDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 header
-                historyCard("Lyrics", icon: "text.quote", color: AppTheme.cyan, value: entry.lyrics, field: "lyrics")
+                historyCard(
+                    "Project Lyrics", icon: "text.quote", color: AppTheme.cyan,
+                    value: entry.sourceLyrics, field: "source-lyrics"
+                )
+                if let edited = entry.editedLyrics {
+                    historyCard(
+                        "Edited Lyrics", icon: "pencil.and.outline", color: AppTheme.accent,
+                        value: edited, field: "edited-lyrics"
+                    )
+                }
                 if !entry.prompt.isEmpty {
                     historyCard("Suno Prompt", icon: "sparkles", color: AppTheme.accent, value: entry.prompt, field: "prompt")
                 } else {
@@ -20,6 +29,7 @@ struct HistoryDetailView: View {
                         .foregroundStyle(.secondary)
                         .appPanel()
                 }
+                if !entry.recoveredLyrics.isEmpty { recoveredLyricsCard }
             }
             .frame(maxWidth: 860)
             .padding(30)
@@ -61,6 +71,9 @@ struct HistoryDetailView: View {
                     if !entry.referenceArtist.isEmpty {
                         CapsuleStatus(text: entry.referenceArtist, systemName: "music.note", color: AppTheme.accent)
                     }
+                    if entry.hasLocalEdits {
+                        CapsuleStatus(text: L10n.text("Edited"), systemName: "pencil", color: AppTheme.accent)
+                    }
                 }
             }
             Spacer()
@@ -69,6 +82,47 @@ struct HistoryDetailView: View {
             }
             .buttonStyle(.bordered)
         }
+    }
+
+    private var recoveredLyricsCard: some View {
+        DisclosureGroup {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Older values were preserved during history migration. They may include previous edits or technical text detected by older versions.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ForEach(Array(entry.recoveredLyrics.enumerated()), id: \.offset) { index, value in
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text(L10n.format("Recovered text %d", index + 1))
+                                .font(.caption.weight(.semibold))
+                            Spacer()
+                            Button(
+                                copied == "recovered-\(index)" ? L10n.text("Copied") : L10n.text("Copy"),
+                                systemImage: copied == "recovered-\(index)" ? "checkmark" : "doc.on.doc"
+                            ) {
+                                copy(value, field: "recovered-\(index)")
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                        Text(value)
+                            .font(.system(size: 13, design: .rounded))
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(12)
+                    .background(Color.black.opacity(0.10))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }
+            }
+            .padding(.top, 12)
+        } label: {
+            Label(
+                L10n.format("Recovered Legacy Text (%d)", entry.recoveredLyrics.count),
+                systemImage: "archivebox"
+            )
+            .font(.headline)
+        }
+        .appPanel(radius: 20, padding: 20)
     }
 
     private func historyCard(_ title: String, icon: String, color: Color, value: String, field: String) -> some View {

@@ -26,6 +26,7 @@ struct ContentView: View {
     @State private var selectedHistoryID: UUID?
     @State private var pendingAudioURL: URL?
     @State private var historySaveTask: Task<Void, Never>?
+    @State private var hasPendingHistoryLyricsSave = false
     @State private var confirmsLogicWrite = false
     @State private var confirmsUpdateInstallation = false
 
@@ -53,7 +54,7 @@ struct ContentView: View {
         ) { result in
             switch result {
             case .success(let urls):
-                if let url = urls.first { model.open(url) }
+                if let url = urls.first { openLogicProject(url) }
             case .failure(let error):
                 model.errorMessage = String(format: String(localized: "Unable to open the project: %@"), error.localizedDescription)
             }
@@ -98,6 +99,9 @@ struct ContentView: View {
                 AppLog.updates.info("Automatic update check skipped because it is disabled")
             }
             model.onProjectLoaded = { name, path, notes, bpm, musicalKey in
+                historySaveTask?.cancel()
+                historySaveTask = nil
+                hasPendingHistoryLyricsSave = false
                 var identifiers = [String: UUID]()
                 for note in notes {
                     let identifier = history.recordProject(
@@ -126,19 +130,20 @@ struct ContentView: View {
             brandHeader
             Divider().opacity(0.35)
 
-            if showsHistory {
-                historySidebar
-            } else if model.notes.isEmpty {
-                compactEmptyState
-            } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 18) {
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 18) {
+                    if model.notes.isEmpty {
+                        compactEmptyState
+                            .frame(minHeight: 250)
+                    } else {
                         projectCard
                         notePicker
                         if !model.sections.isEmpty { sectionPicker }
                     }
-                    .padding(14)
+                    Divider().opacity(0.3)
+                    recentSongsSection
                 }
+                .padding(14)
             }
         }
         .background {
@@ -178,8 +183,13 @@ struct ContentView: View {
             .accessibilityLabel(selectedMode == .metadata ? L10n.text("Open audio file") : L10n.text("Open Logic project"))
             .accessibilityHint(L10n.text("Opens a file picker. Drag and drop remains available as an alternative."))
             Button {
-                showsHistory.toggle()
-                if showsHistory { selectedHistoryID = history.entries.first?.id }
+                flushHistorySave()
+                if showsHistory {
+                    showsHistory = false
+                } else {
+                    selectedHistoryID = currentHistoryID ?? history.entries.first?.id
+                    showsHistory = selectedHistoryID != nil
+                }
             } label: {
                 Image(systemName: showsHistory ? "clock.fill" : "clock")
                     .font(.system(size: 13, weight: .semibold))
@@ -223,65 +233,82 @@ struct ContentView: View {
         .padding(24)
     }
 
-    private var historySidebar: some View {
-        VStack(spacing: 0) {
+    private var recentSongsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                sidebarTitle("RECENT SONGS")
+                Spacer()
+                Text("\(history.entries.count)")
+                    .font(.caption2.monospacedDigit().weight(.bold))
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(L10n.format("%d songs", history.entries.count))
+            }
+
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
                 TextField("Search", text: $history.searchText)
                     .textFieldStyle(.plain)
+                    .accessibilityLabel(L10n.text("Search recent songs"))
             }
             .padding(10)
             .background(Color.primary.opacity(0.055))
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .padding(14)
 
             if history.filteredEntries.isEmpty {
                 VStack(spacing: 10) {
-                    Spacer()
                     Image(systemName: "clock.arrow.circlepath")
-                        .font(.system(size: 30)).foregroundStyle(.secondary)
+                        .font(.system(size: 24)).foregroundStyle(.secondary)
                         .accessibilityHidden(true)
-                    Text("No songs in history")
-                        .font(.subheadline).foregroundStyle(.secondary)
-                    Spacer()
+                    Text(history.entries.isEmpty ? L10n.text("No songs in history") : L10n.text("No matching songs"))
+                        .font(.caption).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity)
+                .padding(.vertical, 18)
             } else {
-                ScrollView {
-                    LazyVStack(spacing: 7) {
-                        ForEach(history.filteredEntries) { entry in
-                            Button {
-                                selectedHistoryID = entry.id
-                            } label: {
-                                HStack(spacing: 11) {
-                                    AccentIcon(systemName: "music.note", color: AppTheme.cyan, size: 34)
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text(entry.projectName).font(.subheadline.weight(.semibold)).lineLimit(1)
-                                        Text([
-                                            entry.alternative.isEmpty ? nil : "Alt. \(entry.alternative)",
-                                            entry.updatedAt.formatted(date: .abbreviated, time: .omitted)
-                                        ].compactMap { $0 }.joined(separator: " · "))
-                                            .font(.caption2).foregroundStyle(.secondary)
-                                    }
-                                    Spacer()
-                                    if !entry.prompt.isEmpty {
-                                        Image(systemName: "sparkles")
-                                            .font(.caption).foregroundStyle(AppTheme.accent)
-                                            .accessibilityHidden(true)
-                                    }
+                LazyVStack(spacing: 7) {
+                    ForEach(history.filteredEntries) { entry in
+                        Button {
+                            flushHistorySave()
+                            selectedHistoryID = entry.id
+                            showsHistory = true
+                        } label: {
+                            HStack(spacing: 10) {
+                                AccentIcon(systemName: "music.note", color: AppTheme.cyan, size: 32)
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(entry.projectName).font(.subheadline.weight(.semibold)).lineLimit(1)
+                                    Text([
+                                        entry.bpm.map { Self.formatBPM($0) + " BPM" },
+                                        entry.musicalKey,
+                                        entry.updatedAt.formatted(date: .abbreviated, time: .omitted)
+                                    ].compactMap { $0 }.joined(separator: " · "))
+                                        .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                                 }
-                                .padding(10)
-                                .background(selectedHistoryID == entry.id ? AppTheme.cyan.opacity(0.13) : Color.clear)
-                                .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
-                                .contentShape(Rectangle())
+                                Spacer(minLength: 4)
+                                if entry.hasLocalEdits {
+                                    Image(systemName: "pencil")
+                                        .font(.caption2).foregroundStyle(AppTheme.cyan)
+                                        .accessibilityLabel(L10n.text("Edited lyrics"))
+                                }
+                                if !entry.prompt.isEmpty {
+                                    Image(systemName: "sparkles")
+                                        .font(.caption).foregroundStyle(AppTheme.accent)
+                                        .accessibilityLabel(L10n.text("Saved Suno prompt"))
+                                }
                             }
-                            .buttonStyle(.plain)
+                            .padding(9)
+                            .background(
+                                showsHistory && selectedHistoryID == entry.id
+                                    ? AppTheme.cyan.opacity(0.13) : Color.clear
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+                            .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityHint(L10n.text("Shows the saved project lyrics and Suno prompt."))
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 14)
                 }
             }
         }
@@ -427,6 +454,10 @@ struct ContentView: View {
                 if showsHistory, let entry = history.entry(id: selectedHistoryID) {
                     HistoryDetailView(entry: entry) {
                         history.delete(id: entry.id)
+                        if currentHistoryID == entry.id {
+                            currentHistoryID = nil
+                            historyIDsByNote = historyIDsByNote.filter { $0.value != entry.id }
+                        }
                         selectedHistoryID = history.entries.first?.id
                     }
                 } else if showsHistory {
@@ -730,7 +761,7 @@ struct ContentView: View {
                     if ["mp3", "wav", "wave"].contains(extensionName) {
                         openAudio(url)
                     } else if extensionName == "logicx" {
-                        model.open(url)
+                        openLogicProject(url)
                     } else {
                         model.errorMessage = String(localized: "Unsupported format. Use a .logicx project or an MP3/WAV file.")
                     }
@@ -745,23 +776,35 @@ struct ContentView: View {
     }
 
     private func openAudio(_ url: URL) {
+        flushHistorySave()
         pendingAudioURL = url
         selectedMode = .metadata
         showsHistory = false
     }
 
+    private func openLogicProject(_ url: URL) {
+        flushHistorySave()
+        model.open(url)
+    }
+
     private func scheduleHistorySave(_ lyrics: String) {
         historySaveTask?.cancel()
         guard let entryID = currentHistoryID else { return }
+        hasPendingHistoryLyricsSave = true
         historySaveTask = Task {
             try? await Task<Never, Never>.sleep(nanoseconds: 600_000_000)
             guard !Task.isCancelled else { return }
             history.updateLyrics(entryID: entryID, lyrics: lyrics)
+            hasPendingHistoryLyricsSave = false
+            historySaveTask = nil
         }
     }
 
     private func flushHistorySave() {
+        guard hasPendingHistoryLyricsSave else { return }
         historySaveTask?.cancel()
+        historySaveTask = nil
+        hasPendingHistoryLyricsSave = false
         guard let entryID = currentHistoryID, let lyrics = model.selectedNote?.text else { return }
         history.updateLyrics(entryID: entryID, lyrics: lyrics)
     }

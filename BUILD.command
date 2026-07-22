@@ -30,7 +30,15 @@ fi
 SWIFTC="$(/usr/bin/xcrun --find swiftc)"
 [[ -x "$SWIFTC" ]] || fail "The Swift compiler from Command Line Tools could not be found."
 [[ -f "$INFO_PLIST" ]] || fail "Info.plist could not be found. Do not move BUILD.command out of the extracted folder."
-[[ -f "$APP_ICON_SOURCE" ]] || fail "The transparent AppIcon.png source could not be found."
+[[ -f "$APP_ICON_SOURCE" ]] || fail "The AppIcon.png source could not be found."
+
+ICON_WIDTH="$(/usr/bin/sips -g pixelWidth "$APP_ICON_SOURCE" 2>/dev/null | /usr/bin/awk '/pixelWidth/ {print $2}')"
+ICON_HEIGHT="$(/usr/bin/sips -g pixelHeight "$APP_ICON_SOURCE" 2>/dev/null | /usr/bin/awk '/pixelHeight/ {print $2}')"
+ICON_HAS_ALPHA="$(/usr/bin/sips -g hasAlpha "$APP_ICON_SOURCE" 2>/dev/null | /usr/bin/awk '/hasAlpha/ {print $2}')"
+[[ "$ICON_WIDTH" == "$ICON_HEIGHT" && "$ICON_WIDTH" -ge 1024 ]] \
+    || fail "AppIcon.png must be square and at least 1024 × 1024 pixels."
+[[ "$ICON_HAS_ALPHA" == "no" ]] \
+    || fail "AppIcon.png must be fully opaque so the macOS icon fills its complete mask."
 
 SDK_PATH="$(/usr/bin/xcrun --sdk macosx --show-sdk-path 2>/dev/null)" \
     || fail "The macOS SDK from Command Line Tools could not be found. Run Software Update to update the Apple tools."
@@ -179,6 +187,7 @@ CORE_TEST="$BUILD_ROOT/CoreRegressionTests"
     "$SCRIPT_DIR/LogicLyrics/Services/MP3Converter.swift" \
     "$SCRIPT_DIR/LogicLyrics/Services/ServiceProtocols.swift" \
     "$SCRIPT_DIR/LogicLyrics/Services/UpdateService.swift" \
+    "$SCRIPT_DIR/LogicLyrics/Services/HistoryStore.swift" \
     "$SCRIPT_DIR/LogicLyrics/ViewModel/ProjectViewModel.swift" \
     "$SCRIPT_DIR/Tests/CoreRegressionTests.swift" \
     || fail "The regression tests could not be compiled."

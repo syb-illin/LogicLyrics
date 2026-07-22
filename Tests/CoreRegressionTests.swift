@@ -7,6 +7,9 @@ enum CoreRegressionTests {
     static func main() async throws {
         try testAdjacentSections()
         try testLegacyHistoryMigration()
+        try testHistoryDeduplicatesLegacyProjectRows()
+        try testHistorySeparatesSourceEditsAndRecoveredText()
+        try testHistoryStartupMergePrefersLiveProject()
         try testLogicSourceProtection()
         try testLogicEmptyNoteCreation()
         try testActiveLogicProjectNotesSelection()
@@ -38,6 +41,73 @@ enum CoreRegressionTests {
         let data = try JSONSerialization.data(withJSONObject: legacy)
         let entry = try JSONDecoder().decode(SongHistoryEntry.self, from: data)
         try require(entry.noteKey == "legacy", "Legacy history note key")
+        try require(entry.sourceLyrics == "Text", "Legacy lyrics retained as source")
+        try require(entry.needsSourceReconciliation, "Legacy source requires reconciliation")
+    }
+
+    @MainActor
+    private static func testHistoryDeduplicatesLegacyProjectRows() throws {
+        let path = "/tmp/Album/../Album/Plaid.logicx"
+        let technical = try legacyHistoryEntry(
+            id: UUID(), path: path, noteKey: "005#0",
+            lyrics: "Sample Library - Indie Rock Drum Loop 130",
+            prompt: "", updatedAt: Date(timeIntervalSinceReferenceDate: 200)
+        )
+        let projectNotes = try legacyHistoryEntry(
+            id: UUID(), path: "/tmp/Album/Plaid.logicx", noteKey: "005#2",
+            lyrics: "Demo Song\n[Verse 1]\nFirst lyric line\n[Chorus]\nSecond lyric line",
+            prompt: "Saved Suno prompt", updatedAt: Date(timeIntervalSinceReferenceDate: 100)
+        )
+
+        let consolidated = HistoryStore.consolidated([technical, projectNotes])
+        try require(consolidated.count == 1, "One history row per Logic project")
+        let entry = try requireValue(consolidated.first, "Consolidated history entry")
+        try require(entry.sourceLyrics.contains("First lyric line"), "Rich Project Notes win over technical RTF")
+        try require(entry.prompt == "Saved Suno prompt", "Prompt preserved during deduplication")
+        try require(entry.recoveredLyrics.contains("Sample Library - Indie Rock Drum Loop 130"), "Discarded legacy text recovered")
+        try require(entry.needsSourceReconciliation, "Deduplicated legacy source remains unverified")
+    }
+
+    private static func testHistorySeparatesSourceEditsAndRecoveredText() throws {
+        var entry = try legacyHistoryEntry(
+            id: UUID(), path: "/tmp/Song.logicx", noteKey: "legacy",
+            lyrics: "Previous saved lyrics", prompt: "", updatedAt: Date()
+        )
+        entry.reconcileSourceLyrics("[Verse 1]\nCurrent Logic lyrics")
+        entry.applyLocalEdit("[Verse 1]\nLocally edited lyrics")
+        entry.reconcileSourceLyrics("[Verse 1]\nUpdated Logic lyrics")
+
+        try require(entry.sourceLyrics.contains("Updated Logic"), "Latest Logic source stored separately")
+        try require(entry.editedLyrics?.contains("Locally edited") == true, "Local edit preserved across source refresh")
+        try require(entry.lyrics == "[Verse 1]\nLocally edited lyrics", "History favors the local edit")
+        try require(entry.recoveredLyrics.contains("Previous saved lyrics"), "Legacy text preserved without becoming current")
+        try require(entry.recoveredLyrics.contains("[Verse 1]\nCurrent Logic lyrics"), "Previous source revision preserved")
+
+        let roundTrip = try JSONDecoder().decode(SongHistoryEntry.self, from: JSONEncoder().encode(entry))
+        try require(roundTrip == entry, "History schema 3 round trip")
+    }
+
+    @MainActor
+    private static func testHistoryStartupMergePrefersLiveProject() throws {
+        let live = SongHistoryEntry(
+            id: UUID(), projectName: "Plaid", projectPath: "/tmp/Plaid.logicx",
+            noteKey: "005#2", alternative: "005",
+            lyrics: "Demo Song\n[Verse 1]\nLive project lyrics", prompt: "",
+            referenceArtist: "", allowsFemaleBackingVocals: false,
+            bpm: 130, musicalKey: "F major", createdAt: Date(), updatedAt: Date()
+        )
+        let cached = try legacyHistoryEntry(
+            id: UUID(), path: "/tmp/Plaid.logicx", noteKey: "005#1",
+            lyrics: "Sample Library - Indie Rock", prompt: "Existing prompt",
+            updatedAt: Date().addingTimeInterval(60)
+        )
+
+        let merged = HistoryStore.consolidated([cached, live], preferredIDs: [live.id])
+        let entry = try requireValue(merged.first, "Startup-merged history entry")
+        try require(entry.id == live.id, "Active UI history identity remains stable")
+        try require(entry.sourceLyrics == live.sourceLyrics, "Live project wins asynchronous startup race")
+        try require(entry.prompt == "Existing prompt", "Existing prompt survives startup merge")
+        try require(entry.recoveredLyrics.contains("Sample Library - Indie Rock"), "Stale cache retained only as recovered text")
     }
 
     private static func testLogicSourceProtection() throws {
@@ -231,6 +301,34 @@ enum CoreRegressionTests {
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         let data = try PropertyListSerialization.data(fromPropertyList: values, format: .binary, options: 0)
         try data.write(to: url)
+    }
+
+    private static func legacyHistoryEntry(
+        id: UUID, path: String, noteKey: String, lyrics: String,
+        prompt: String, updatedAt: Date
+    ) throws -> SongHistoryEntry {
+        let legacy: [String: Any] = [
+            "id": id.uuidString,
+            "projectName": "Plaid",
+            "projectPath": path,
+            "noteKey": noteKey,
+            "alternative": "005",
+            "lyrics": lyrics,
+            "prompt": prompt,
+            "referenceArtist": "",
+            "allowsFemaleBackingVocals": false,
+            "createdAt": Date(timeIntervalSinceReferenceDate: 50).timeIntervalSinceReferenceDate,
+            "updatedAt": updatedAt.timeIntervalSinceReferenceDate
+        ]
+        return try JSONDecoder().decode(
+            SongHistoryEntry.self,
+            from: JSONSerialization.data(withJSONObject: legacy)
+        )
+    }
+
+    private static func requireValue<T>(_ value: T?, _ message: String) throws -> T {
+        guard let value else { throw TestFailure(message) }
+        return value
     }
 
     private static func require(_ condition: @autoclosure () -> Bool, _ message: String) throws {
