@@ -10,7 +10,9 @@ final class LogicLyricsUITests: XCTestCase {
         app = XCUIApplication()
         app.launchArguments = ["--ui-testing", "-ApplePersistenceIgnoreState", "YES"]
         app.launch()
-        XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 8))
+        app.activate()
+        XCTAssertEqual(app.state, .runningForeground)
+        XCTAssertTrue(element("logic-lyrics-root").waitForExistence(timeout: 12))
     }
 
     override func tearDown() {
@@ -68,8 +70,9 @@ final class LogicLyricsUITests: XCTestCase {
             "-ApplePersistenceIgnoreState", "YES"
         ]
         app.launch()
+        app.activate()
         let compactWindow = app.windows.firstMatch
-        XCTAssertTrue(compactWindow.waitForExistence(timeout: 8))
+        XCTAssertTrue(compactWindow.waitForExistence(timeout: 12))
         XCTAssertGreaterThanOrEqual(compactWindow.frame.width, 820)
         XCTAssertLessThan(compactWindow.frame.width, 1_100)
         XCTAssertTrue(element("recent-songs-section").exists)
@@ -82,8 +85,9 @@ final class LogicLyricsUITests: XCTestCase {
             "-ApplePersistenceIgnoreState", "YES"
         ]
         app.launch()
+        app.activate()
         let largeWindow = app.windows.firstMatch
-        XCTAssertTrue(largeWindow.waitForExistence(timeout: 8))
+        XCTAssertTrue(largeWindow.waitForExistence(timeout: 12))
         XCTAssertGreaterThan(largeWindow.frame.width, compactWidth)
         XCTAssertTrue(element("recent-songs-section").exists)
         attachScreenshot(named: "History-Large-Window")

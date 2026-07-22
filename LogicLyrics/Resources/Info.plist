@@ -31,6 +31,8 @@
     <string>public.app-category.music</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
     <key>NSHighResolutionCapable</key>
     <true/>
 </dict>
