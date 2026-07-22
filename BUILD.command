@@ -164,17 +164,22 @@ CORE_TEST="$BUILD_ROOT/CoreRegressionTests"
     -sdk "$SDK_PATH" \
     -target "$TARGET" \
     -framework AppKit \
+    -framework SwiftUI \
     -o "$CORE_TEST" \
     "$SCRIPT_DIR/LogicLyrics/Model/ExtractedNote.swift" \
     "$SCRIPT_DIR/LogicLyrics/Model/Localization.swift" \
     "$SCRIPT_DIR/LogicLyrics/Model/LyricSection.swift" \
     "$SCRIPT_DIR/LogicLyrics/Model/Observability.swift" \
+    "$SCRIPT_DIR/LogicLyrics/Model/OperationState.swift" \
     "$SCRIPT_DIR/LogicLyrics/Model/SongHistoryEntry.swift" \
     "$SCRIPT_DIR/LogicLyrics/Services/LogicProjectReader.swift" \
     "$SCRIPT_DIR/LogicLyrics/Services/LogicProjectWriter.swift" \
     "$SCRIPT_DIR/LogicLyrics/Services/AudioMetadataWriter.swift" \
     "$SCRIPT_DIR/LogicLyrics/Services/AudioMetadataReader.swift" \
+    "$SCRIPT_DIR/LogicLyrics/Services/MP3Converter.swift" \
+    "$SCRIPT_DIR/LogicLyrics/Services/ServiceProtocols.swift" \
     "$SCRIPT_DIR/LogicLyrics/Services/UpdateService.swift" \
+    "$SCRIPT_DIR/LogicLyrics/ViewModel/ProjectViewModel.swift" \
     "$SCRIPT_DIR/Tests/CoreRegressionTests.swift" \
     || fail "The regression tests could not be compiled."
 "$CORE_TEST" || fail "A critical regression test failed."

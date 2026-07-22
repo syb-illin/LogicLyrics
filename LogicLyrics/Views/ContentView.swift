@@ -98,7 +98,6 @@ struct ContentView: View {
                 AppLog.updates.info("Automatic update check skipped because it is disabled")
             }
             model.onProjectLoaded = { name, path, notes, bpm, musicalKey in
-                var restored = [String: String]()
                 var identifiers = [String: UUID]()
                 for note in notes {
                     let identifier = history.recordProject(
@@ -106,13 +105,11 @@ struct ContentView: View {
                         lyrics: note.text, bpm: bpm, musicalKey: musicalKey
                     )
                     identifiers[note.id] = identifier
-                    if let saved = history.entry(id: identifier)?.lyrics { restored[note.id] = saved }
                 }
                 historyIDsByNote = identifiers
                 currentHistoryID = notes.first.flatMap { identifiers[$0.id] }
                 selectedHistoryID = nil
                 showsHistory = false
-                return restored
             }
         }
         .onChange(of: scenePhase) { _, phase in
