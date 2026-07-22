@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "capturedAt": "2026-07-22T16:30:52.998110Z",
+  "capturedAt": "2026-07-22T19:07:45.770034Z",
   "repository": {
     "fullName": "syb-illin/LogicLyrics",
     "url": "https://github.com/syb-illin/LogicLyrics",
@@ -12,10 +12,45 @@
     "openIssues": 0
   },
   "downloads": {
-    "app": 8,
-    "allAssets": 22
+    "app": 9,
+    "allAssets": 24
   },
   "releases": [
+    {
+      "tag": "v2.3.0",
+      "name": "Logic Lyrics v2.3.0",
+      "publishedAt": "2026-07-22T16:34:20Z",
+      "url": "https://github.com/syb-illin/LogicLyrics/releases/tag/v2.3.0",
+      "prerelease": false,
+      "appDownloads": 1,
+      "allAssetDownloads": 2,
+      "assets": [
+        {
+          "name": "LogicLyrics-macOS-source.zip",
+          "downloads": 0,
+          "size": 4450294,
+          "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.3.0/LogicLyrics-macOS-source.zip"
+        },
+        {
+          "name": "LogicLyrics-macOS-source.zip.sha256",
+          "downloads": 0,
+          "size": 95,
+          "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.3.0/LogicLyrics-macOS-source.zip.sha256"
+        },
+        {
+          "name": "LogicLyrics.app.zip",
+          "downloads": 1,
+          "size": 2223735,
+          "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.3.0/LogicLyrics.app.zip"
+        },
+        {
+          "name": "LogicLyrics.app.zip.sha256",
+          "downloads": 1,
+          "size": 86,
+          "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.3.0/LogicLyrics.app.zip.sha256"
+        }
+      ]
+    },
     {
       "tag": "v2.2.5",
       "name": "Logic Lyrics v2.2.5",
@@ -258,14 +293,15 @@
       },
       {
         "date": "2026-07-22",
-        "capturedAt": "2026-07-22T16:30:52.998110Z",
-        "appDownloads": 8,
-        "allAssetDownloads": 22,
+        "capturedAt": "2026-07-22T19:07:45.770034Z",
+        "appDownloads": 9,
+        "allAssetDownloads": 24,
         "stars": 0,
         "forks": 0,
         "watchers": 0,
         "openIssues": 0,
         "releases": {
+          "v2.3.0": 1,
           "v2.2.5": 2,
           "v2.2.4": 2,
           "v2.2.3": 1,
