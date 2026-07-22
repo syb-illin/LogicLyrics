@@ -4,6 +4,8 @@ struct SongHistoryEntry: Codable, Identifiable, Hashable, Sendable {
     let id: UUID
     var projectName: String
     var projectPath: String
+    private(set) var projectFileID: String?
+    private(set) var projectBookmark: Data?
     var noteKey: String
     var alternative: String
     private(set) var sourceLyrics: String
@@ -29,7 +31,7 @@ struct SongHistoryEntry: Codable, Identifiable, Hashable, Sendable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, projectName, projectPath, noteKey, alternative
+        case id, projectName, projectPath, projectFileID, projectBookmark, noteKey, alternative
         case lyrics // Schema 1–2 compatibility and downgrade safety.
         case sourceLyrics, editedLyrics, recoveredLyrics, needsSourceReconciliation
         case prompt, referenceArtist, allowsFemaleBackingVocals, bpm, musicalKey, createdAt, updatedAt
@@ -38,11 +40,14 @@ struct SongHistoryEntry: Codable, Identifiable, Hashable, Sendable {
     init(
         id: UUID, projectName: String, projectPath: String, noteKey: String, alternative: String,
         lyrics: String, prompt: String, referenceArtist: String, allowsFemaleBackingVocals: Bool,
-        bpm: Double?, musicalKey: String?, createdAt: Date, updatedAt: Date
+        bpm: Double?, musicalKey: String?, createdAt: Date, updatedAt: Date,
+        projectFileID: String? = nil, projectBookmark: Data? = nil
     ) {
         self.id = id
         self.projectName = projectName
         self.projectPath = projectPath
+        self.projectFileID = projectFileID
+        self.projectBookmark = projectBookmark
         self.noteKey = noteKey
         self.alternative = alternative
         sourceLyrics = lyrics
@@ -63,6 +68,8 @@ struct SongHistoryEntry: Codable, Identifiable, Hashable, Sendable {
         id = try values.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
         projectName = try values.decodeIfPresent(String.self, forKey: .projectName) ?? L10n.text("Logic Project")
         projectPath = try values.decodeIfPresent(String.self, forKey: .projectPath) ?? ""
+        projectFileID = try values.decodeIfPresent(String.self, forKey: .projectFileID)
+        projectBookmark = try values.decodeIfPresent(Data.self, forKey: .projectBookmark)
         noteKey = try values.decodeIfPresent(String.self, forKey: .noteKey) ?? "legacy"
         alternative = try values.decodeIfPresent(String.self, forKey: .alternative) ?? ""
 
@@ -94,6 +101,8 @@ struct SongHistoryEntry: Codable, Identifiable, Hashable, Sendable {
         try values.encode(id, forKey: .id)
         try values.encode(projectName, forKey: .projectName)
         try values.encode(projectPath, forKey: .projectPath)
+        try values.encodeIfPresent(projectFileID, forKey: .projectFileID)
+        try values.encodeIfPresent(projectBookmark, forKey: .projectBookmark)
         try values.encode(noteKey, forKey: .noteKey)
         try values.encode(alternative, forKey: .alternative)
         try values.encode(lyrics, forKey: .lyrics)
@@ -139,6 +148,36 @@ struct SongHistoryEntry: Codable, Identifiable, Hashable, Sendable {
     mutating func replaceEditedLyrics(_ value: String?) {
         editedLyrics = value
         normalizeCollections()
+    }
+
+    mutating func restoreRevision(_ value: String) {
+        let previousEdit = editedLyrics
+        editedLyrics = nil
+        recoveredLyrics.removeAll { $0 == value }
+        if let previousEdit { recover(previousEdit) }
+        applyLocalEdit(value)
+    }
+
+    mutating func revertToSource() {
+        let previousEdit = editedLyrics
+        editedLyrics = nil
+        if let previousEdit { recover(previousEdit) }
+        normalizeCollections()
+    }
+
+    mutating func updateProjectLocation(path: String, fileID: String?, bookmark: Data?) {
+        projectPath = path
+        projectFileID = fileID
+        projectBookmark = bookmark
+    }
+
+    func exportableCopy() -> SongHistoryEntry {
+        var copy = self
+        // Security-scoped bookmarks and filesystem IDs are machine-specific
+        // capabilities and must never leave the Mac in a portable archive.
+        copy.projectBookmark = nil
+        copy.projectFileID = nil
+        return copy
     }
 
     mutating func markSourceForReconciliation(_ value: Bool) {

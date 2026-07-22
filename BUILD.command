@@ -152,6 +152,8 @@ SOURCES=(
     "$SCRIPT_DIR/LogicLyrics/Services/MP3Converter.swift"
     "$SCRIPT_DIR/LogicLyrics/Services/ServiceProtocols.swift"
     "$SCRIPT_DIR/LogicLyrics/Services/UpdateService.swift"
+    "$SCRIPT_DIR/LogicLyrics/Services/ProjectLocator.swift"
+    "$SCRIPT_DIR/LogicLyrics/Services/HistoryArchiveService.swift"
     "$SCRIPT_DIR/LogicLyrics/Services/HistoryStore.swift"
     "$SCRIPT_DIR/LogicLyrics/ViewModel/AudioMetadataViewModel.swift"
     "$SCRIPT_DIR/LogicLyrics/ViewModel/ProjectViewModel.swift"
@@ -187,6 +189,8 @@ CORE_TEST="$BUILD_ROOT/CoreRegressionTests"
     "$SCRIPT_DIR/LogicLyrics/Services/MP3Converter.swift" \
     "$SCRIPT_DIR/LogicLyrics/Services/ServiceProtocols.swift" \
     "$SCRIPT_DIR/LogicLyrics/Services/UpdateService.swift" \
+    "$SCRIPT_DIR/LogicLyrics/Services/ProjectLocator.swift" \
+    "$SCRIPT_DIR/LogicLyrics/Services/HistoryArchiveService.swift" \
     "$SCRIPT_DIR/LogicLyrics/Services/HistoryStore.swift" \
     "$SCRIPT_DIR/LogicLyrics/ViewModel/ProjectViewModel.swift" \
     "$SCRIPT_DIR/Tests/CoreRegressionTests.swift" \

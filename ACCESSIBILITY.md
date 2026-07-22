@@ -16,6 +16,8 @@ Logic Lyrics targets practical macOS accessibility across VoiceOver, keyboard us
 - Success and error states use text/icons in addition to color.
 - Editors support selection, editing, and standard macOS text navigation.
 - Controls use native SwiftUI components so focus rings, contrast adaptation, and keyboard behavior follow macOS conventions.
+- Stable accessibility identifiers cover history navigation, transfer actions, project recovery, revisions, and window-layout smoke tests.
+- CI runs semantic element-description/detection audits and captures migrated-history screenshots at compact and large window sizes.
 
 ## Release checklist
 
@@ -28,4 +30,4 @@ Before release, test on the oldest supported macOS version and the current macOS
 5. Light/dark appearance if the app later stops enforcing its current dark presentation.
 6. Error, cancellation, empty-state, and long-localized-string paths.
 
-Automated checks and semantic modifiers reduce regressions, but they do not replace assistive-technology testing with real workflows.
+Automated XCUITest audits and semantic modifiers reduce regressions, but they do not replace assistive-technology testing with real workflows.
