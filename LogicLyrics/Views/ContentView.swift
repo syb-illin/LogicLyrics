@@ -277,6 +277,8 @@ struct ContentView: View {
                 .fixedSize()
                 .help(L10n.text("Import or export song history"))
                 .accessibilityLabel(L10n.text("History transfer actions"))
+                .accessibilityHint(L10n.text("Import or export song history"))
+                .accessibilityValue(L10n.text("Import or export song history"))
                 .accessibilityIdentifier("history-transfer-menu")
             }
 
