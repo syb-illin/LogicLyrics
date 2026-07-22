@@ -245,6 +245,12 @@ struct ContentView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(24)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(
+            selectedMode == .metadata
+                ? L10n.text("Audio file import")
+                : L10n.text("Logic project import")
+        )
     }
 
     private var recentSongsSection: some View {

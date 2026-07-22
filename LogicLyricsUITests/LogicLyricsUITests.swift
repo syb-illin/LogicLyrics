@@ -22,6 +22,7 @@ final class LogicLyricsUITests: XCTestCase {
 
         let recovered = element("history-recovered-revisions", in: app)
         XCTAssertTrue(recovered.waitForExistence(timeout: 3))
+        element("history-detail", in: app).scroll(byDeltaX: 0, deltaY: -1_200)
         let restore = app.buttons["Restore recovered text 1"]
         XCTAssertTrue(restore.waitForExistence(timeout: 3))
         restore.click()
