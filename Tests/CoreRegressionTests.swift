@@ -3,13 +3,15 @@ import Foundation
 
 @main
 enum CoreRegressionTests {
-    static func main() throws {
+    @MainActor
+    static func main() async throws {
         try testAdjacentSections()
         try testLegacyHistoryMigration()
         try testLogicSourceProtection()
         try testLogicEmptyNoteCreation()
         try testActiveLogicProjectNotesSelection()
         try testTechnicalRichTextIsNotLyrics()
+        try await testHistoryObserverCannotReplaceLiveLyrics()
         try testID3v24RoundTripAndPreservation()
         try testSemanticVersionComparison()
         print("Core regression tests: OK")
@@ -131,6 +133,33 @@ enum CoreRegressionTests {
         try require(result.notes.count == 1 && result.notes[0].isDraft, "Technical RTF rejected as lyrics")
     }
 
+    @MainActor
+    private static func testHistoryObserverCannotReplaceLiveLyrics() async throws {
+        let liveLyrics = "Demo Song\n[Verse 1]\nLyrics from the currently open Logic project"
+        let note = ExtractedNote(alternative: "005", index: 1, text: liveLyrics)
+        let result = LogicProjectReader.Result(notes: [note], bpm: 130, musicalKey: "F major")
+        let model = ProjectViewModel(reader: StubLogicProjectReader(result: result))
+        let cachedHistoryLyrics = "Sample Library - Indie Rock Drum Loop 130"
+        var observedLyrics: String?
+        model.onProjectLoaded = { _, _, notes, _, _ in
+            // History can observe the source but has no return channel through
+            // which its stale cached value can replace the current project.
+            observedLyrics = notes.first?.text
+        }
+
+        model.open(URL(fileURLWithPath: "/tmp/Selection.logicx"))
+        for _ in 0..<300 {
+            if !model.isLoading { break }
+            try await Task<Never, Never>.sleep(nanoseconds: 10_000_000)
+        }
+
+        try require(!model.isLoading, "Project view model load completed")
+        try require(cachedHistoryLyrics != liveLyrics, "Regression fixture contains stale history")
+        try require(observedLyrics == liveLyrics, "History observed the extracted lyrics")
+        try require(model.selectedNote?.text == liveLyrics, "Live project lyrics remain the editor source")
+        try require(model.sections.count == 1, "Live lyrics drive section parsing")
+    }
+
     private static func testID3v24RoundTripAndPreservation() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
@@ -213,4 +242,12 @@ private struct TestFailure: LocalizedError {
     let message: String
     init(_ message: String) { self.message = message }
     var errorDescription: String? { message }
+}
+
+private struct StubLogicProjectReader: LogicProjectReading {
+    let result: LogicProjectReader.Result
+
+    func readProject(at projectURL: URL) throws -> LogicProjectReader.Result {
+        result
+    }
 }

@@ -2,6 +2,12 @@
 
 All notable user-facing changes are documented here. Releases use semantic versions and every shipped build receives a new build number.
 
+## 2.2.5 — build 30
+
+- Fixed cached history replacing freshly extracted Project Notes after a Logic project opens.
+- Made the open Logic project the immutable source of truth for each new editor session while preserving history as a separate workspace.
+- Added an asynchronous view-model regression test covering the complete reader-to-editor handoff.
+
 ## 2.2.4 — build 29
 
 - Fixed Project Notes detection in Logic projects containing unrelated rich-text loop and region metadata.

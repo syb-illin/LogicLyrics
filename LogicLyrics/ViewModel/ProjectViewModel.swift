@@ -4,7 +4,10 @@ import UniformTypeIdentifiers
 
 @MainActor
 final class ProjectViewModel: ObservableObject {
-    var onProjectLoaded: ((String, String, [ExtractedNote], Double?, String?) -> [String: String])?
+    /// Observes a completed project load so history can record it. The callback
+    /// deliberately cannot return replacement lyrics: the open Logic project is
+    /// always the source of truth for the current editor session.
+    var onProjectLoaded: ((String, String, [ExtractedNote], Double?, String?) -> Void)?
     @Published private(set) var projectName = ""
     @Published private(set) var notes: [ExtractedNote] = []
     @Published private(set) var bpm: Double?
@@ -197,12 +200,7 @@ final class ProjectViewModel: ObservableObject {
         bpm = result.bpm
         musicalKey = result.musicalKey
         selectedNoteID = result.notes.first?.id
-        let savedLyrics = onProjectLoaded?(projectName, url.path, result.notes, result.bpm, result.musicalKey) ?? [:]
-        for index in notes.indices {
-            if let saved = savedLyrics[notes[index].id], !saved.isEmpty {
-                notes[index].text = saved
-            }
-        }
+        onProjectLoaded?(projectName, url.path, result.notes, result.bpm, result.musicalKey)
         refreshSections()
         finishOperation(operationID)
     }
