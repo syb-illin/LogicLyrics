@@ -742,15 +742,26 @@ struct ContentView: View {
                 if selectedMode == .metadata { showAudioImporter = true } else { showImporter = true }
             }
             .keyboardShortcut("o", modifiers: .command)
+            .accessibilityLabel(selectedMode == .metadata ? L10n.text("Open Audio") : L10n.text("Open"))
+            .accessibilityHint(selectedMode == .metadata
+                ? L10n.text("Open an MP3 or WAV file")
+                : L10n.text("Open a Logic Pro project"))
+            .accessibilityIdentifier("toolbar-open")
             if selectedMode != .metadata {
                 Button("Copy", systemImage: "doc.on.doc") { model.copySelectedNote() }
                     .disabled(model.selectedNote == nil)
                     .keyboardShortcut("c", modifiers: [.command, .shift])
+                    .accessibilityLabel(L10n.text("Copy"))
+                    .accessibilityHint(L10n.text("Copy the selected project note"))
+                    .accessibilityIdentifier("toolbar-copy")
                 Menu("Export", systemImage: "square.and.arrow.up") {
                     Button("Text (.txt)") { model.exportSelectedNote(asMarkdown: false) }
                     Button("Markdown (.md)") { model.exportSelectedNote(asMarkdown: true) }
                 }
                 .disabled(model.selectedNote == nil)
+                .accessibilityLabel(L10n.text("Export"))
+                .accessibilityHint(L10n.text("Export the selected project note"))
+                .accessibilityIdentifier("toolbar-export")
             }
         }
         ToolbarItem {
@@ -760,18 +771,25 @@ struct ContentView: View {
                     confirmsUpdateInstallation = true
                 }
                 .help(L10n.text("Download, verify, and compile the update automatically"))
+                .accessibilityIdentifier("toolbar-updates")
             case .checking:
-                ProgressView().controlSize(.small).help(L10n.text("Checking for updates"))
+                ProgressView()
+                    .controlSize(.small)
+                    .help(L10n.text("Checking for updates"))
+                    .accessibilityLabel(L10n.text("Checking for updates"))
+                    .accessibilityIdentifier("toolbar-updates")
             case .current:
                 Button("Up to Date", systemImage: "checkmark.circle.fill") {
                     updater.check(silent: false)
                 }
                 .help(L10n.text("Check again"))
+                .accessibilityIdentifier("toolbar-updates")
             default:
                 Button("Updates", systemImage: "arrow.triangle.2.circlepath") {
                     updater.check(silent: false)
                 }
                 .help(L10n.text("Check for updates"))
+                .accessibilityIdentifier("toolbar-updates")
             }
         }
     }

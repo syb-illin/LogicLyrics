@@ -50,6 +50,7 @@ final class LogicLyricsUITests: XCTestCase {
         XCTAssertFalse(element("history-locate-project", in: app).label.isEmpty)
         XCTAssertFalse(element("history-revert-edit", in: app).label.isEmpty)
         XCTAssertFalse(element("history-transfer-menu", in: app).label.isEmpty)
+        XCTAssertFalse(element("toolbar-export", in: app).label.isEmpty)
         try app.performAccessibilityAudit(for: [.sufficientElementDescription, .elementDetection]) { issue in
             if let element = issue.element {
                 let frame = element.frame

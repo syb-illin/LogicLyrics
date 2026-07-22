@@ -71,6 +71,7 @@
 "Older values were preserved during history migration. They may include previous edits or technical text detected by older versions." = "Older values were preserved during history migration. They may include previous edits or technical text detected by older versions.";
 "Edit the lyrics. Changes are saved automatically in local history." = "Edit the lyrics. Changes are saved automatically in local history.";
 "Copy" = "Copy";
+"Copy the selected project note" = "Copy the selected project note";
 "Copied" = "Copied";
 "Copy All" = "Copy All";
 "Text (.txt)" = "Text (.txt)";
@@ -91,6 +92,7 @@
 "Logic Lyrics will close, rebuild the verified update, preserve a backup, and reopen automatically." = "Logic Lyrics will close, rebuild the verified update, preserve a backup, and reopen automatically.";
 "Updates are never installed without your confirmation." = "Updates are never installed without your confirmation.";
 "Export" = "Export";
+"Export the selected project note" = "Export the selected project note";
 "STRUCTURE" = "STRUCTURE";
 "Copy this section" = "Copy this section";
 "Song history" = "Song history";

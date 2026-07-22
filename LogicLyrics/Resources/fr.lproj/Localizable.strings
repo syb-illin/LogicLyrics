@@ -71,6 +71,7 @@
 "Older values were preserved during history migration. They may include previous edits or technical text detected by older versions." = "Les anciennes valeurs ont été conservées pendant la migration. Elles peuvent contenir des modifications précédentes ou du texte technique détecté par d’anciennes versions.";
 "Edit the lyrics. Changes are saved automatically in local history." = "Modifiez les paroles. Les changements sont enregistrés automatiquement dans l’historique local.";
 "Copy" = "Copier";
+"Copy the selected project note" = "Copier la note de projet sélectionnée";
 "Copied" = "Copié";
 "Copy All" = "Tout copier";
 "Text (.txt)" = "Texte (.txt)";
@@ -91,6 +92,7 @@
 "Logic Lyrics will close, rebuild the verified update, preserve a backup, and reopen automatically." = "Logic Lyrics va se fermer, reconstruire la mise à jour vérifiée, conserver une sauvegarde, puis se rouvrir automatiquement.";
 "Updates are never installed without your confirmation." = "Les mises à jour ne sont jamais installées sans votre confirmation.";
 "Export" = "Exporter";
+"Export the selected project note" = "Exporter la note de projet sélectionnée";
 "STRUCTURE" = "STRUCTURE";
 "Copy this section" = "Copier cette section";
 "Song history" = "Historique des morceaux";
