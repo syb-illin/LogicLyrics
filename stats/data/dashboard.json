@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "capturedAt": "2026-07-29T06:10:15.635379Z",
+  "capturedAt": "2026-07-30T06:02:22.863090Z",
   "repository": {
     "fullName": "syb-illin/LogicLyrics",
     "url": "https://github.com/syb-illin/LogicLyrics",
@@ -468,6 +468,26 @@
       {
         "date": "2026-07-29",
         "capturedAt": "2026-07-29T06:10:15.635379Z",
+        "appDownloads": 9,
+        "allAssetDownloads": 24,
+        "stars": 0,
+        "forks": 0,
+        "watchers": 0,
+        "openIssues": 0,
+        "releases": {
+          "v2.4.0": 0,
+          "v2.3.0": 1,
+          "v2.2.5": 2,
+          "v2.2.4": 2,
+          "v2.2.3": 1,
+          "v2.2.2": 1,
+          "v2.2.1": 1,
+          "v2.2.0": 1
+        }
+      },
+      {
+        "date": "2026-07-30",
+        "capturedAt": "2026-07-30T06:02:22.863090Z",
         "appDownloads": 9,
         "allAssetDownloads": 24,
         "stars": 0,
