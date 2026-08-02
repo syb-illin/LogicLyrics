@@ -155,7 +155,7 @@ struct LyricsReaderView: View {
             .font(.system(size: 16, weight: .regular))
             .lineSpacing(6)
             .textSelection(.enabled)
-            .frame(maxWidth: .infinity, minHeight: 360, alignment: .topLeading)
+            .frame(maxWidth: .infinity, minHeight: 280, alignment: .topLeading)
             .appPanel(radius: 16, padding: 24)
             .accessibilityLabel(L10n.text("Lyrics text"))
             .accessibilityIdentifier("lyrics-text")

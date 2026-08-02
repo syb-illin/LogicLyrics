@@ -22,7 +22,7 @@ final class LogicLyricsUITests: XCTestCase {
         // SwiftUI's fileImporter is exposed by XCTest as a separate native
         // panel window on macOS, rather than consistently as a sheet/dialog.
         // The panel's Cancel button is the stable accessibility contract.
-        let cancel = app.buttons["Cancel"]
+        let cancel = app.buttons.matching(identifier: "CancelButton").firstMatch
         XCTAssertTrue(
             cancel.waitForExistence(timeout: 5),
             "The File menu command did not present the Logic project picker."
@@ -77,7 +77,9 @@ final class LogicLyricsUITests: XCTestCase {
         XCTAssertFalse(copyLyrics.label.isEmpty)
         XCTAssertEqual(copyLyrics.frame.midY, openProject.frame.midY, accuracy: 1)
         XCTAssertEqual(copyLyrics.frame.height, openProject.frame.height, accuracy: 1)
-        XCTAssertFalse(element("toolbar-open", in: app).label.isEmpty)
+        XCTAssertFalse(
+            app.buttons.matching(identifier: "toolbar-open").firstMatch.label.isEmpty
+        )
         XCTAssertFalse(element("recent-songs-section", in: app).label.isEmpty)
         try app.performAccessibilityAudit(for: [.sufficientElementDescription, .elementDetection]) { issue in
             if let element = issue.element {
