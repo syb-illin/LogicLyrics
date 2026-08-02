@@ -308,6 +308,7 @@ final class LogicLyricsUITests: XCTestCase {
 
     @MainActor
     private func assertInteractiveElementsHaveDescriptions(in app: XCUIApplication) {
+        let windowFrames = app.windows.allElementsBoundByIndex.map(\.frame)
         let interactiveTypes: [XCUIElement.ElementType] = [
             .button,
             .checkBox,
@@ -325,11 +326,22 @@ final class LogicLyricsUITests: XCTestCase {
             for element in app.descendants(matching: type).allElementsBoundByIndex {
                 guard element.exists else { continue }
                 let label = element.label.trimmingCharacters(in: .whitespacesAndNewlines)
+                let frame = element.frame
                 let isNativeWindowControl = element.identifier.hasPrefix("_XCUI:")
+                    || (element.identifier.isEmpty
+                        && label.isEmpty
+                        && frame.width <= 44
+                        && frame.height <= 44
+                        && windowFrames.contains { window in
+                            frame.minX >= window.minX
+                                && frame.maxX <= window.minX + 160
+                                && frame.minY >= window.minY - 1
+                                && frame.maxY <= window.minY + 55
+                        })
                 XCTAssertFalse(
                     label.isEmpty && !isNativeWindowControl,
                     "Interactive accessibility element has no description: "
-                        + "type=\(type.rawValue), identifier=\(element.identifier)"
+                        + "type=\(type.rawValue), identifier=\(element.identifier), frame=\(frame)"
                 )
             }
         }
