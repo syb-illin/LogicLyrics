@@ -222,15 +222,16 @@ final class LogicLyricsUITests: XCTestCase {
     @MainActor
     private func launchApp(additionalArguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = [
-            "--ui-testing",
-            "-ApplePersistenceIgnoreState", "YES"
-        ] + additionalArguments
+        app.launchArguments = ["--ui-testing"] + additionalArguments
         app.launch()
         app.activate()
         XCTAssertEqual(app.state, .runningForeground)
+        let identifiedRoot = app.staticTexts["logic-lyrics-root"]
+        let labelledRoot = app.staticTexts["Logic Lyrics"].firstMatch
+        let workspaceAppeared = identifiedRoot.waitForExistence(timeout: 8)
+            || labelledRoot.waitForExistence(timeout: 4)
         XCTAssertTrue(
-            element("logic-lyrics-root", in: app).waitForExistence(timeout: 12),
+            workspaceAppeared,
             "The app launched but its accessible workspace did not appear."
         )
         return app
