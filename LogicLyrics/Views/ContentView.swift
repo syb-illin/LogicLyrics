@@ -123,10 +123,10 @@ struct ContentView: View {
                     .accessibilityIdentifier("logic-lyrics-root")
                 Text(L10n.text("Logic Project Reader"))
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.secondaryText)
                 Text(L10n.format("v%@ · build %@", Self.appVersion, Self.buildNumber))
                     .font(.system(size: 9, weight: .medium))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(AppTheme.tertiaryText)
             }
             Spacer(minLength: 8)
             Button(action: requestProjectImport) {
@@ -158,7 +158,7 @@ struct ContentView: View {
                                 .lineLimit(1)
                             Text(L10n.format("Alternative %@", model.selectedNote?.alternative ?? "—"))
                                 .font(.caption2)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(AppTheme.secondaryText)
                         }
                         Spacer()
                         CapsuleStatus(text: L10n.text("Logic"), systemName: "checkmark")
@@ -183,7 +183,7 @@ struct ContentView: View {
                         Divider().opacity(0.25)
                         Text(L10n.format("%d sections detected", model.sections.count))
                             .font(.caption.weight(.medium))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppTheme.secondaryText)
                     }
                 }
                 .contentShape(Rectangle())
@@ -222,7 +222,7 @@ struct ContentView: View {
                 Text(title)
                     .font(.system(size: 8, weight: .bold))
                     .tracking(0.5)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.secondaryText)
                 Text(value)
                     .font(.caption.weight(.semibold))
                     .lineLimit(1)
@@ -274,7 +274,7 @@ struct ContentView: View {
                 Text(L10n.text("Lyrics from Logic, without the clutter"))
                     .font(.title.weight(.semibold))
                 Text(L10n.text("Open or drop a .logicx project to read its Project Notes, tempo and key."))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.secondaryText)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 520)
             }
@@ -284,7 +284,7 @@ struct ContentView: View {
                 .accessibilityIdentifier("empty-open-project")
             Text(L10n.text("Your project stays on this Mac and is never modified."))
                 .font(.caption)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(AppTheme.tertiaryText)
         }
         .padding(44)
         .accessibilityElement(children: .contain)

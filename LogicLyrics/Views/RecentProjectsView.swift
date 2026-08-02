@@ -11,11 +11,11 @@ struct RecentProjectsView: View {
                 Text(L10n.text("RECENT PROJECTS"))
                     .font(.caption2.weight(.bold))
                     .tracking(0.8)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.secondaryText)
                 Spacer()
                 Text("\(history.filteredEntries.count)")
                     .font(.caption2.monospacedDigit().weight(.bold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.secondaryText)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(resultCountAccessibilityLabel)
                     .accessibilityIdentifier("recent-songs-count")
@@ -24,7 +24,7 @@ struct RecentProjectsView: View {
 
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.secondaryText)
                     .accessibilityHidden(true)
                 TextField(L10n.text("Search"), text: $history.searchText)
                     .textFieldStyle(.plain)
@@ -47,13 +47,13 @@ struct RecentProjectsView: View {
                 VStack(spacing: 9) {
                     Image(systemName: "clock.arrow.circlepath")
                         .font(.system(size: 22))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.secondaryText)
                         .accessibilityHidden(true)
                     Text(history.entries.isEmpty
                          ? L10n.text("No recent projects")
                          : L10n.text("No matching projects"))
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.secondaryText)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 18)
@@ -69,7 +69,7 @@ struct RecentProjectsView: View {
                                         .lineLimit(1)
                                     Text(metadata(for: entry))
                                         .font(.caption2)
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(AppTheme.secondaryText)
                                         .lineLimit(1)
                                 }
                                 Spacer(minLength: 4)

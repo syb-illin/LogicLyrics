@@ -222,12 +222,15 @@ final class LogicLyricsUITests: XCTestCase {
     @MainActor
     private func launchApp(additionalArguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["--ui-testing"] + additionalArguments
+        app.launchArguments = [
+            "--ui-testing",
+            "-ApplePersistenceIgnoreState", "YES"
+        ] + additionalArguments
         app.launch()
         app.activate()
         XCTAssertEqual(app.state, .runningForeground)
         XCTAssertTrue(
-            app.staticTexts["logic-lyrics-root"].waitForExistence(timeout: 12),
+            element("logic-lyrics-root", in: app).waitForExistence(timeout: 12),
             "The app launched but its accessible workspace did not appear."
         )
         return app
@@ -267,11 +270,15 @@ final class LogicLyricsUITests: XCTestCase {
     @MainActor
     private func performAccessibilityAudit(on app: XCUIApplication) throws {
         try app.performAccessibilityAudit { issue in
-            if let element = issue.element {
+            print(
+                "Accessibility audit issue: audit=\(issue.auditType.rawValue), "
+                + "details=\(issue.detailedDescription)"
+            )
+            if issue.auditType == .sufficientElementDescription,
+               let element = issue.element {
                 let frame = element.frame
                 let windowFrame = app.windows.firstMatch.frame
-                let lacksDescription = issue.auditType == .sufficientElementDescription
-                    && element.identifier.isEmpty
+                let lacksDescription = element.identifier.isEmpty
                     && element.label.isEmpty
                 let isNativeWindowContainer = lacksDescription
                     && element.elementType == .group
@@ -298,9 +305,8 @@ final class LogicLyricsUITests: XCTestCase {
                     return true
                 }
                 print(
-                    "Accessibility audit issue: audit=\(issue.auditType.rawValue), type=\(element.elementType.rawValue), "
-                    + "identifier=\(element.identifier), label=\(element.label), frame=\(element.frame), "
-                    + "details=\(issue.detailedDescription)"
+                    "Accessibility element: type=\(element.elementType.rawValue), "
+                    + "identifier=\(element.identifier), label=\(element.label), frame=\(element.frame)"
                 )
             }
             return false

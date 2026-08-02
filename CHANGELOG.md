@@ -10,6 +10,7 @@ All notable user-facing changes are documented here. Releases use semantic versi
 - Added pure policy and macOS UI regressions for title-only matching, lyrics-only false positives, empty Project Notes, combined filters, result counts, and the action label.
 - Added automated English/French localization-key parity and a French VoiceOver/UI regression for the new controls.
 - Enforced localization across every SwiftUI surface and audited the empty workspace, lyrics history, no-lyrics state, Settings, About, VoiceOver semantics, and window sizes in English and French.
+- Replaced low-contrast secondary caption styling with an adaptive accessible text palette and made UI-test window restoration deterministic across languages.
 
 ## 2.5.0 — build 34
 

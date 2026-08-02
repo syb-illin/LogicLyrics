@@ -5,6 +5,11 @@ enum AppTheme {
     static let cyan = Color(red: 0.32, green: 0.62, blue: 0.70)
     static let coral = Color(red: 0.76, green: 0.43, blue: 0.48)
     static let green = Color(red: 0.34, green: 0.64, blue: 0.49)
+    // Semantic hierarchy with WCAG-safe contrast in both macOS appearances.
+    // SwiftUI's default secondary/tertiary opacity can fail for caption text
+    // over material and custom gradient surfaces.
+    static let secondaryText = Color.primary.opacity(0.80)
+    static let tertiaryText = Color.primary.opacity(0.70)
 
     static let background = LinearGradient(
         colors: [
@@ -76,7 +81,7 @@ struct CapsuleStatus: View {
                 .foregroundStyle(color)
                 .accessibilityHidden(true)
             Text(text)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.secondaryText)
         }
             .font(.caption.weight(.medium))
             .padding(.horizontal, 9)
@@ -107,7 +112,7 @@ struct ProcessingOverlay: View {
                     TimelineView(.periodic(from: .now, by: 1)) { context in
                         Text(elapsed(from: startedAt, to: context.date))
                             .font(.caption.monospacedDigit())
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppTheme.secondaryText)
                     }
                     if let cancel {
                         Button(L10n.text("Cancel"), role: .cancel, action: cancel).buttonStyle(.bordered)

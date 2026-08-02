@@ -81,7 +81,7 @@ struct LyricsReaderView: View {
                      ? L10n.text("Snapshot from the last successful read")
                      : L10n.text("Read directly from Logic Project Notes"))
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.secondaryText)
             }
             Spacer()
             if let onOpenProject {
@@ -116,7 +116,7 @@ struct LyricsReaderView: View {
                         .lineLimit(2)
                     Text(sectionSummary)
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.secondaryText)
                 }
                 Spacer()
             }
@@ -169,7 +169,7 @@ struct LyricsReaderView: View {
                 Spacer()
                 Text(L10n.format("%d detected", document.sections.count))
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.secondaryText)
             }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 180), spacing: 10)], spacing: 10) {
                 ForEach(Array(document.sections.enumerated()), id: \.element.id) { index, section in
@@ -199,7 +199,7 @@ struct LyricsReaderView: View {
                 .font(.title3.weight(.semibold))
             Text(L10n.text("This Logic alternative does not currently contain readable Project Notes."))
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.secondaryText)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, minHeight: 320)

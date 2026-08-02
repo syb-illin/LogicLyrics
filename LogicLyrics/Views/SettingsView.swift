@@ -12,7 +12,7 @@ struct AppSettingsView: View {
                 Toggle(L10n.text("Automatically check for updates"), isOn: $automaticallyChecksForUpdates)
                 Text(L10n.text("Checks silently when Logic Lyrics opens. Updates are never installed without your confirmation."))
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.secondaryText)
                 HStack(spacing: 10) {
                     Button(L10n.text("Check Now")) { updater.check(silent: false) }
                         .disabled(updater.state == .checking)
@@ -36,7 +36,7 @@ struct AppSettingsView: View {
                 Button(L10n.text("Copy System Diagnostics")) { AppDiagnostics.copyToPasteboard() }
                 Text(L10n.text("Diagnostics contain app and system information plus privacy-safe Logic Lyrics events. Lyrics and file paths are never logged."))
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.secondaryText)
             }
         }
         .formStyle(.grouped)
@@ -69,11 +69,13 @@ struct AppSettingsView: View {
     private var updateCheckResult: some View {
         switch updater.state {
         case .idle:
-            Text(L10n.text("No update check has been run.")).foregroundStyle(.secondary)
+            Text(L10n.text("No update check has been run."))
+                .foregroundStyle(AppTheme.secondaryText)
         case .checking:
             ProgressView().controlSize(.small)
                 .accessibilityLabel(L10n.text("Checking for updates"))
-            Text(L10n.text("Checking for updates…")).foregroundStyle(.secondary)
+            Text(L10n.text("Checking for updates…"))
+                .foregroundStyle(AppTheme.secondaryText)
         case .current:
             Label(L10n.text("Logic Lyrics is up to date."), systemImage: "checkmark.circle.fill")
                 .foregroundStyle(AppTheme.green)
