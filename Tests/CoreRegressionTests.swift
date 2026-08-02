@@ -12,6 +12,7 @@ enum CoreRegressionTests {
         try testReaderQualityTieBreakers()
         try testReaderDecodeFailureFallsBackToDraft()
         try testReaderDefensiveRTFBranches()
+        try testHistorySearchPolicy()
         try testLegacyHistoryMigration()
         try testHistoryDeduplicatesLegacyProjectRows()
         try testHistorySeparatesSourceEditsAndRecoveredText()
@@ -198,6 +199,55 @@ enum CoreRegressionTests {
         try require(
             LogicProjectReader.advancePastControlSequence(in: Data("\\bin2 ab".utf8), from: 0) == 8,
             "A positive RTF binary count skips its payload"
+        )
+    }
+
+    private static func testHistorySearchPolicy() throws {
+        let createdAt = Date(timeIntervalSinceReferenceDate: 700_000_000)
+        let atLast = historyEntry(
+            name: "at last",
+            lyrics: "No matching word in these lyrics",
+            createdAt: createdAt
+        )
+        let lyricsOnlyMatch = historyEntry(
+            name: "a myth",
+            lyrics: "The last train leaves tonight",
+            createdAt: createdAt
+        )
+        let emptyLyrics = historyEntry(
+            name: "instrumental draft",
+            lyrics: "  \n ",
+            createdAt: createdAt
+        )
+        let entries = [atLast, lyricsOnlyMatch, emptyLyrics]
+
+        try require(
+            HistorySearch.filter(entries, query: "", onlyWithoutLyrics: false).map(\.id)
+                == entries.map(\.id),
+            "An empty history query preserves every entry"
+        )
+        try require(
+            HistorySearch.filter(entries, query: "  LAST  ", onlyWithoutLyrics: false).map(\.id)
+                == [atLast.id],
+            "History search is trimmed, case-insensitive and title-only"
+        )
+        try require(
+            HistorySearch.filter(entries, query: "missing", onlyWithoutLyrics: false).isEmpty,
+            "An unmatched title query returns no history entries"
+        )
+        try require(
+            HistorySearch.filter(entries, query: "", onlyWithoutLyrics: true).map(\.id)
+                == [emptyLyrics.id],
+            "The no-lyrics filter recognizes whitespace-only Project Notes"
+        )
+        try require(
+            HistorySearch.filter(entries, query: "instrumental", onlyWithoutLyrics: true).map(\.id)
+                == [emptyLyrics.id],
+            "Title search and the no-lyrics filter compose"
+        )
+        try require(
+            HistorySearch.filter(entries, query: "last", onlyWithoutLyrics: true).isEmpty,
+            "The no-lyrics filter excludes a title that has Project Notes"
         )
     }
 
@@ -481,6 +531,19 @@ enum CoreRegressionTests {
         return try JSONDecoder().decode(
             SongHistoryEntry.self,
             from: JSONSerialization.data(withJSONObject: legacy)
+        )
+    }
+
+    private static func historyEntry(
+        name: String,
+        lyrics: String,
+        createdAt: Date
+    ) -> SongHistoryEntry {
+        SongHistoryEntry(
+            id: UUID(), projectName: name, projectPath: "/tmp/\(name).logicx",
+            noteKey: "000#1", alternative: "000", lyrics: lyrics,
+            prompt: "", referenceArtist: "", allowsFemaleBackingVocals: false,
+            bpm: nil, musicalKey: nil, createdAt: createdAt, updatedAt: createdAt
         )
     }
 

@@ -5,6 +5,13 @@ enum AppTheme {
     static let cyan = Color(red: 0.32, green: 0.62, blue: 0.70)
     static let coral = Color(red: 0.76, green: 0.43, blue: 0.48)
     static let green = Color(red: 0.34, green: 0.64, blue: 0.49)
+    static let surface = Color(red: 0.055, green: 0.057, blue: 0.067)
+    static let raisedSurface = Color(red: 0.078, green: 0.080, blue: 0.094)
+    // Semantic hierarchy with WCAG-safe contrast in both macOS appearances.
+    // SwiftUI's default secondary/tertiary opacity can fail for caption text
+    // over material and custom gradient surfaces.
+    static let secondaryText = Color.white
+    static let tertiaryText = Color.white
 
     static let background = LinearGradient(
         colors: [
@@ -26,9 +33,9 @@ struct AppPanel: ViewModifier {
             .padding(padding)
             .background {
                 if reduceTransparency {
-                    Color(red: 0.085, green: 0.087, blue: 0.10)
+                    AppTheme.raisedSurface
                 } else {
-                    Color.white.opacity(0.035)
+                    AppTheme.raisedSurface
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
@@ -75,12 +82,12 @@ struct CapsuleStatus: View {
             Image(systemName: systemName)
                 .foregroundStyle(color)
                 .accessibilityHidden(true)
-            Text(L10n.text(text))
-                .foregroundStyle(.secondary)
+            Text(text)
+                .foregroundStyle(AppTheme.secondaryText)
         }
-            .font(.caption.weight(.medium))
+            .font(.callout.weight(.semibold))
             .padding(.horizontal, 9)
-            .padding(.vertical, 5)
+            .padding(.vertical, 6)
             .background(Color.white.opacity(0.04))
             .clipShape(Capsule())
             .overlay { Capsule().stroke(Color.white.opacity(0.055), lineWidth: 1) }
@@ -99,15 +106,18 @@ struct ProcessingOverlay: View {
             ZStack {
                 Color.black.opacity(0.48).ignoresSafeArea()
                 VStack(spacing: 14) {
-                    ProgressView().controlSize(.large).tint(AppTheme.accent)
+                    ProgressView()
+                        .controlSize(.large)
+                        .tint(AppTheme.accent)
+                        .accessibilityLabel(L10n.text("Operation in progress"))
                     Text(message).font(.headline).multilineTextAlignment(.center)
                     TimelineView(.periodic(from: .now, by: 1)) { context in
                         Text(elapsed(from: startedAt, to: context.date))
                             .font(.caption.monospacedDigit())
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppTheme.secondaryText)
                     }
                     if let cancel {
-                        Button("Cancel", role: .cancel, action: cancel).buttonStyle(.bordered)
+                        Button(L10n.text("Cancel"), role: .cancel, action: cancel).buttonStyle(.bordered)
                     }
                 }
                 .padding(26)
@@ -132,6 +142,8 @@ struct ProcessingOverlay: View {
 
     private func elapsed(from start: Date, to end: Date) -> String {
         let seconds = max(0, Int(end.timeIntervalSince(start)))
-        return seconds < 60 ? "\(seconds) s" : String(format: "%d min %02d s", seconds / 60, seconds % 60)
+        return seconds < 60
+            ? L10n.format("%d s", seconds)
+            : L10n.format("%d min %02d s", seconds / 60, seconds % 60)
     }
 }

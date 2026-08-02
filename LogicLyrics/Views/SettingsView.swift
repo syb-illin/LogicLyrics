@@ -8,39 +8,51 @@ struct AppSettingsView: View {
 
     var body: some View {
         Form {
-            Section("Updates") {
-                Toggle("Automatically check for updates", isOn: $automaticallyChecksForUpdates)
-                Text("Checks silently when Logic Lyrics opens. Updates are never installed without your confirmation.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            Section(L10n.text("Updates")) {
+                Toggle(L10n.text("Automatically check for updates"), isOn: $automaticallyChecksForUpdates)
+                Text(L10n.text("Checks silently when Logic Lyrics opens. Updates are never installed without your confirmation."))
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(.white)
                 HStack(spacing: 10) {
-                    Button("Check Now") { updater.check(silent: false) }
+                    Button(L10n.text("Check Now")) { updater.check(silent: false) }
                         .disabled(updater.state == .checking)
                     updateCheckResult
                 }
                 if case .available = updater.state {
-                    Button("Install Update") { confirmsUpdateInstallation = true }
+                    Button(L10n.text("Install Update")) { confirmsUpdateInstallation = true }
                         .buttonStyle(.borderedProminent)
                 }
             }
 
-            Section("Privacy & Diagnostics") {
-                LabeledContent("Project processing", value: "Entirely on this Mac")
-                LabeledContent("Project modification", value: "Never")
-                Button("Copy System Diagnostics") { AppDiagnostics.copyToPasteboard() }
-                Text("Diagnostics contain app and system information plus privacy-safe Logic Lyrics events. Lyrics and file paths are never logged.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            Section(L10n.text("Privacy & Diagnostics")) {
+                LabeledContent(
+                    L10n.text("Project processing"),
+                    value: L10n.text("Entirely on this Mac")
+                )
+                .foregroundStyle(.white)
+                LabeledContent(
+                    L10n.text("Project modification"),
+                    value: L10n.text("Never")
+                )
+                .foregroundStyle(.white)
+                Button(L10n.text("Copy System Diagnostics")) { AppDiagnostics.copyToPasteboard() }
+                Text(L10n.text("Diagnostics contain app and system information plus privacy-safe Logic Lyrics events. Lyrics and file paths are never logged."))
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(.white)
             }
         }
         .formStyle(.grouped)
         .padding(20)
         .frame(width: 520, height: 420)
-        .alert("Logic Lyrics", isPresented: Binding(
+        .preferredColorScheme(.dark)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(L10n.text("Logic Lyrics settings"))
+        .accessibilityIdentifier("settings-view")
+        .alert(L10n.text("Logic Lyrics"), isPresented: Binding(
             get: { updater.errorMessage != nil },
             set: { if !$0 { updater.errorMessage = nil } }
         )) {
-            Button("OK", role: .cancel) { updater.errorMessage = nil }
+            Button(L10n.text("OK"), role: .cancel) { updater.errorMessage = nil }
         } message: {
             Text(updater.errorMessage ?? "")
         }
@@ -49,10 +61,10 @@ struct AppSettingsView: View {
             isPresented: $confirmsUpdateInstallation,
             titleVisibility: .visible
         ) {
-            Button("Not Now", role: .cancel) {}
-            Button("Install Update") { updater.installAvailableUpdate() }
+            Button(L10n.text("Not Now"), role: .cancel) {}
+            Button(L10n.text("Install Update")) { updater.installAvailableUpdate() }
         } message: {
-            Text("Logic Lyrics will close, rebuild the verified update, preserve a backup, and reopen automatically.")
+            Text(L10n.text("Logic Lyrics will close, rebuild the verified update, preserve a backup, and reopen automatically."))
         }
     }
 
@@ -60,13 +72,15 @@ struct AppSettingsView: View {
     private var updateCheckResult: some View {
         switch updater.state {
         case .idle:
-            Text("No update check has been run.").foregroundStyle(.secondary)
+            Text(L10n.text("No update check has been run."))
+                .foregroundStyle(AppTheme.secondaryText)
         case .checking:
             ProgressView().controlSize(.small)
                 .accessibilityLabel(L10n.text("Checking for updates"))
-            Text("Checking for updates…").foregroundStyle(.secondary)
+            Text(L10n.text("Checking for updates…"))
+                .foregroundStyle(AppTheme.secondaryText)
         case .current:
-            Label("Logic Lyrics is up to date.", systemImage: "checkmark.circle.fill")
+            Label(L10n.text("Logic Lyrics is up to date."), systemImage: "checkmark.circle.fill")
                 .foregroundStyle(AppTheme.green)
         case .available(let version):
             Label(L10n.format("Version %@ is available.", version), systemImage: "arrow.down.circle.fill")

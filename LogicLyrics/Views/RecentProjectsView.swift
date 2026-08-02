@@ -8,23 +8,23 @@ struct RecentProjectsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("RECENT PROJECTS")
+                Text(L10n.text("RECENT PROJECTS"))
                     .font(.caption2.weight(.bold))
                     .tracking(0.8)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.secondaryText)
                 Spacer()
-                Text("\(history.entries.count)")
-                    .font(.caption2.monospacedDigit().weight(.bold))
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel(L10n.format("%d songs", history.entries.count))
+                Text(resultCountAccessibilityLabel)
+                    .font(.caption.monospacedDigit().weight(.bold))
+                    .foregroundStyle(AppTheme.secondaryText)
+                    .accessibilityIdentifier("recent-songs-count")
             }
             .padding(.horizontal, 8)
 
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.secondaryText)
                     .accessibilityHidden(true)
-                TextField("Search", text: $history.searchText)
+                TextField(L10n.text("Search"), text: $history.searchText)
                     .textFieldStyle(.plain)
                     .accessibilityLabel(L10n.text("Search recent songs"))
                     .accessibilityIdentifier("history-search-field")
@@ -33,17 +33,25 @@ struct RecentProjectsView: View {
             .background(Color.primary.opacity(0.055))
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
+            Toggle(L10n.text("No lyrics"), isOn: $history.showsOnlyProjectsWithoutLyrics)
+                .toggleStyle(.checkbox)
+                .controlSize(.small)
+                .font(.caption)
+                .padding(.horizontal, 8)
+                .accessibilityHint(L10n.text("Shows only Logic projects whose Project Notes are empty."))
+                .accessibilityIdentifier("missing-lyrics-filter")
+
             if history.filteredEntries.isEmpty {
                 VStack(spacing: 9) {
                     Image(systemName: "clock.arrow.circlepath")
                         .font(.system(size: 22))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.secondaryText)
                         .accessibilityHidden(true)
                     Text(history.entries.isEmpty
                          ? L10n.text("No recent projects")
                          : L10n.text("No matching projects"))
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.secondaryText)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 18)
@@ -59,7 +67,7 @@ struct RecentProjectsView: View {
                                         .lineLimit(1)
                                     Text(metadata(for: entry))
                                         .font(.caption2)
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(AppTheme.secondaryText)
                                         .lineLimit(1)
                                 }
                                 Spacer(minLength: 4)
@@ -72,9 +80,14 @@ struct RecentProjectsView: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .accessibilityElement(children: .combine)
-                        .accessibilityHint(L10n.text("Shows the lyrics saved from this Logic project."))
-                        .accessibilityIdentifier("history-row-\(entry.id.uuidString.lowercased())")
+                        .accessibilityRepresentation {
+                            Button(entry.projectName) { onSelect(entry.id) }
+                                .accessibilityLabel(
+                                    L10n.format("%@: %@", entry.projectName, metadata(for: entry))
+                                )
+                                .accessibilityHint(L10n.text("Shows the lyrics saved from this Logic project."))
+                                .accessibilityIdentifier("history-row-\(entry.id.uuidString.lowercased())")
+                        }
                     }
                 }
             }
@@ -92,6 +105,12 @@ struct RecentProjectsView: View {
         ]
         .compactMap { $0 }
         .joined(separator: " · ")
+    }
+
+    private var resultCountAccessibilityLabel: String {
+        history.filteredEntries.count == 1
+            ? L10n.text("1 song")
+            : L10n.format("%d songs", history.filteredEntries.count)
     }
 
     private static func formatBPM(_ value: Double) -> String {

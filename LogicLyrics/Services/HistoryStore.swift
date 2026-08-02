@@ -68,6 +68,7 @@ actor HistoryRepository {
 final class HistoryStore: ObservableObject {
     @Published private(set) var entries: [SongHistoryEntry] = []
     @Published var searchText = ""
+    @Published var showsOnlyProjectsWithoutLyrics = false
     @Published private(set) var persistenceError: UserAlert?
 
     private let repository: HistoryRepository?
@@ -78,12 +79,11 @@ final class HistoryStore: ObservableObject {
     private var saveRequestedDuringInitialLoad = false
 
     var filteredEntries: [SongHistoryEntry] {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else { return entries }
-        return entries.filter {
-            $0.projectName.localizedCaseInsensitiveContains(query)
-            || $0.searchableLyrics.localizedCaseInsensitiveContains(query)
-        }
+        HistorySearch.filter(
+            entries,
+            query: searchText,
+            onlyWithoutLyrics: showsOnlyProjectsWithoutLyrics
+        )
     }
 
     init(locator: any ProjectLocating = ProjectLocator()) {
@@ -140,7 +140,27 @@ final class HistoryStore: ObservableObject {
             bpm: 112, musicalKey: "A minor", createdAt: createdAt,
             updatedAt: createdAt.addingTimeInterval(100)
         )
-        return HistoryStore(inMemoryEntries: [plaid, second])
+        let atLast = SongHistoryEntry(
+            id: UUID(uuidString: "33333333-3333-3333-3333-333333333333") ?? UUID(),
+            projectName: "at last", projectPath: "/tmp/at last.logicx",
+            noteKey: "000#1", alternative: "000",
+            lyrics: "[Verse 1]\nA completely unrelated lyric", prompt: "",
+            referenceArtist: "", allowsFemaleBackingVocals: false,
+            bpm: 110, musicalKey: "C major", createdAt: createdAt,
+            updatedAt: createdAt.addingTimeInterval(50)
+        )
+        let noLyrics = SongHistoryEntry(
+            id: UUID(uuidString: "44444444-4444-4444-4444-444444444444") ?? UUID(),
+            projectName: "instrumental draft", projectPath: "/tmp/instrumental draft.logicx",
+            noteKey: "000#0", alternative: "000", lyrics: "", prompt: "",
+            referenceArtist: "", allowsFemaleBackingVocals: false,
+            bpm: 118, musicalKey: "D minor", createdAt: createdAt,
+            updatedAt: createdAt.addingTimeInterval(25)
+        )
+        // Deliberately match only another project's lyrics. A title-only
+        // search for "last" must still exclude Plaid.
+        plaid.applyLocalEdit("Demo Song\n[Verse 1]\nThe last train leaves\n[Chorus]\nStay with me")
+        return HistoryStore(inMemoryEntries: [plaid, second, atLast, noLyrics])
     }
 
     @discardableResult

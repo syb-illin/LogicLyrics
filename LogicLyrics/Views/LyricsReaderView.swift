@@ -81,19 +81,19 @@ struct LyricsReaderView: View {
                      ? L10n.text("Snapshot from the last successful read")
                      : L10n.text("Read directly from Logic Project Notes"))
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.secondaryText)
             }
             Spacer()
             if let onOpenProject {
-                Button("Reopen Project", systemImage: "folder", action: onOpenProject)
+                Button(L10n.text("Open Logic Project"), systemImage: "folder", action: onOpenProject)
                     .buttonStyle(.bordered)
                     .controlSize(.large)
                     .accessibilityIdentifier("history-open-project")
             }
             if !document.lyrics.isEmpty {
                 TransientCopyButton(
-                    title: "Copy Lyrics",
-                    copiedTitle: "Copied",
+                    title: L10n.text("Copy Lyrics"),
+                    copiedTitle: L10n.text("Copied"),
                     prominent: true,
                     accessibilityIdentifier: "lyrics-copy-all"
                 ) {
@@ -103,7 +103,7 @@ struct LyricsReaderView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 14)
-        .background(Color.white.opacity(0.025))
+        .background(AppTheme.raisedSurface)
     }
 
     private var titleBlock: some View {
@@ -116,7 +116,7 @@ struct LyricsReaderView: View {
                         .lineLimit(2)
                     Text(sectionSummary)
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.secondaryText)
                 }
                 Spacer()
             }
@@ -164,12 +164,12 @@ struct LyricsReaderView: View {
     private var sectionsCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("Sections")
+                Text(L10n.text("Sections"))
                     .font(.headline)
                 Spacer()
                 Text(L10n.format("%d detected", document.sections.count))
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.secondaryText)
             }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 180), spacing: 10)], spacing: 10) {
                 ForEach(Array(document.sections.enumerated()), id: \.element.id) { index, section in
@@ -195,11 +195,11 @@ struct LyricsReaderView: View {
                 .font(.system(size: 36, weight: .light))
                 .foregroundStyle(AppTheme.cyan)
                 .accessibilityHidden(true)
-            Text("No Project Notes Found")
+            Text(L10n.text("No Project Notes Found"))
                 .font(.title3.weight(.semibold))
-            Text("This Logic alternative does not currently contain readable Project Notes.")
+            Text(L10n.text("This Logic alternative does not currently contain readable Project Notes."))
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.secondaryText)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, minHeight: 320)
@@ -302,7 +302,9 @@ private struct TransientCopyButton: View {
         }
         .controlSize(title.isEmpty ? .small : .large)
         .help(L10n.text("Copy to clipboard"))
-        .accessibilityLabel(isCopied ? L10n.text("Copied") : L10n.text("Copy"))
+        .accessibilityLabel(
+            isCopied ? L10n.text("Copied") : (title.isEmpty ? L10n.text("Copy") : title)
+        )
         .accessibilityIdentifier(accessibilityIdentifier)
         .task(id: isCopied) {
             guard isCopied else { return }

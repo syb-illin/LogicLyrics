@@ -2,6 +2,27 @@
 
 All notable user-facing changes are documented here. Releases use semantic versions and every shipped build receives a new build number.
 
+## 2.5.1 — build 35
+
+- Fixed recent-project search so it matches project names only instead of silently matching text buried in current or recovered lyrics.
+- Added a native **No lyrics** checkbox that filters projects whose current Logic Project Notes are empty and composes with title search.
+- Updated the result count live while filtering and renamed the history action to the clearer **Open Logic Project**.
+- Added pure policy and macOS UI regressions for title-only matching, lyrics-only false positives, empty Project Notes, combined filters, result counts, and the action label.
+- Added automated English/French localization-key parity and a French VoiceOver/UI regression for the new controls.
+- Enforced localization across every SwiftUI surface and audited the empty workspace, lyrics history, no-lyrics state, Settings, About, VoiceOver semantics, and window sizes in English and French.
+- Replaced low-contrast secondary caption styling with an adaptive accessible text palette and made multilingual UI-test startup detection resilient.
+- Made the main scene reliably reopen in every language while preserving a single-window workflow, with native macOS audits plus deterministic accessible-name validation for every interactive control.
+- Gives the result count a native static-text role, increases Settings caption legibility, and renders the bundled French catalog deterministically in macOS UI tests without changing production locale behavior.
+- Uses guaranteed high-contrast text on the app’s dark surfaces and gives Settings the same explicit dark appearance as the main workspace.
+- Replaces translucent reading surfaces with visually equivalent opaque surfaces so assistive contrast analysis is deterministic across every open app window.
+- Increased small status, result-count, and empty-state typography contrast, and gave every recent-song control an explicit localized VoiceOver label.
+- Added an independent pixel-level WCAG AA contrast measurement so macOS XCTest false positives are accepted only when the rendered UI proves a ratio of at least 4.5:1.
+- Forced the matching dark AppKit appearance for native title bars and replaced each visual history row with one explicit, localized VoiceOver button representation.
+- Removed the redundant low-contrast native navigation title and verifies that every history row maps to a labelled button.
+- Requires readable labels for every product-owned interactive element while recognizing macOS traffic-light controls by their stable native accessibility identifiers.
+- Gives the sidebar’s icon-only command an explicit tested identity and keeps every app-identified control subject to the accessible-name gate while leaving anonymous AppKit implementation controls to the native element-detection audit.
+- Excludes only zero-area hidden AppKit menu proxies from the visible-control name check; opened File and About menu actions remain covered by dedicated UI scenarios.
+
 ## 2.5.0 — build 34
 
 - Refocused Logic Lyrics on one job: reading `.logicx` Project Notes, tempo, key and section markers, then copying the lyrics.

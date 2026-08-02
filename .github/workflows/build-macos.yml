@@ -27,6 +27,9 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
 
+      - name: Test app-wide localization validation
+        run: python3 -m unittest Tools/test_check_localizations.py
+
       - name: Build with the same lightweight pipeline as users
         env:
           LOGICLYRICS_NONINTERACTIVE: "1"
@@ -37,7 +40,7 @@ jobs:
           chmod +x BUILD.command LogicLyrics/Resources/UPDATE.command
           ./BUILD.command
 
-      - name: Upload critical reader coverage
+      - name: Upload critical core coverage
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
