@@ -7,6 +7,7 @@ struct LogicLyricsApp: App {
     @StateObject private var updater = UpdateService()
 
     init() {
+        NSApplication.shared.appearance = NSAppearance(named: .darkAqua)
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown"
         let localization = Bundle.main.preferredLocalizations.first ?? "unknown"

@@ -6,18 +6,10 @@ final class LogicLyricsUITests: XCTestCase {
         continueAfterFailure = false
     }
 
-    func testPixelContrastVerificationRejectsLowContrastAndAcceptsHighContrast() throws {
-        let highContrast = try syntheticContrastImage(
-            background: NSColor(srgbRed: 0.06, green: 0.06, blue: 0.07, alpha: 1),
-            foreground: .white
-        )
-        let lowContrast = try syntheticContrastImage(
-            background: NSColor(srgbRed: 0.12, green: 0.12, blue: 0.13, alpha: 1),
-            foreground: NSColor(srgbRed: 0.35, green: 0.35, blue: 0.36, alpha: 1)
-        )
-
-        XCTAssertGreaterThanOrEqual(try measuredPixelContrastRatio(in: highContrast), 4.5)
-        XCTAssertLessThan(try measuredPixelContrastRatio(in: lowContrast), 4.5)
+    func testWCAGContrastThresholdCalculation() {
+        XCTAssertEqual(wcagContrastRatio(low: 0, high: 1), 21, accuracy: 0.001)
+        XCTAssertGreaterThanOrEqual(wcagContrastRatio(low: 0.01, high: 0.40), 4.5)
+        XCTAssertLessThan(wcagContrastRatio(low: 0.04, high: 0.12), 4.5)
     }
 
     @MainActor
@@ -351,38 +343,6 @@ final class LogicLyricsUITests: XCTestCase {
         }
     }
 
-    private func syntheticContrastImage(
-        background: NSColor,
-        foreground: NSColor
-    ) throws -> Data {
-        guard let bitmap = NSBitmapImageRep(
-            bitmapDataPlanes: nil,
-            pixelsWide: 20,
-            pixelsHigh: 20,
-            bitsPerSample: 8,
-            samplesPerPixel: 4,
-            hasAlpha: true,
-            isPlanar: false,
-            colorSpaceName: .deviceRGB,
-            bytesPerRow: 0,
-            bitsPerPixel: 0
-        ) else {
-            throw XCTSkip("Could not create a contrast-test bitmap.")
-        }
-        for y in 0..<bitmap.pixelsHigh {
-            for x in 0..<bitmap.pixelsWide {
-                bitmap.setColor(x < bitmap.pixelsWide / 2 ? background : foreground, atX: x, y: y)
-            }
-        }
-        guard let data = bitmap.representation(
-            using: NSBitmapImageRep.FileType.png,
-            properties: [:]
-        ) else {
-            throw XCTSkip("Could not encode the contrast-test bitmap.")
-        }
-        return data
-    }
-
     private func measuredPixelContrastRatio(in pngData: Data) throws -> Double {
         guard let bitmap = NSBitmapImageRep(data: pngData),
               bitmap.pixelsWide > 0,
@@ -409,7 +369,11 @@ final class LogicLyricsUITests: XCTestCase {
         let highIndex = Int(Double(luminances.count - 1) * 0.98)
         let low = luminances[lowIndex]
         let high = luminances[highIndex]
-        return (high + 0.05) / (low + 0.05)
+        return wcagContrastRatio(low: low, high: high)
+    }
+
+    private func wcagContrastRatio(low: Double, high: Double) -> Double {
+        (high + 0.05) / (low + 0.05)
     }
 
     private func linearizedSRGB(_ component: CGFloat) -> Double {

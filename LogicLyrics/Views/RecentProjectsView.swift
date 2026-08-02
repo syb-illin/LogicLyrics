@@ -78,14 +78,16 @@ struct RecentProjectsView: View {
                             )
                             .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
                             .contentShape(Rectangle())
-                            .accessibilityHidden(true)
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel(
-                            L10n.format("%@: %@", entry.projectName, metadata(for: entry))
-                        )
-                        .accessibilityHint(L10n.text("Shows the lyrics saved from this Logic project."))
-                        .accessibilityIdentifier("history-row-\(entry.id.uuidString.lowercased())")
+                        .accessibilityRepresentation {
+                            Button(entry.projectName) { onSelect(entry.id) }
+                                .accessibilityLabel(
+                                    L10n.format("%@: %@", entry.projectName, metadata(for: entry))
+                                )
+                                .accessibilityHint(L10n.text("Shows the lyrics saved from this Logic project."))
+                                .accessibilityIdentifier("history-row-\(entry.id.uuidString.lowercased())")
+                        }
                     }
                 }
             }
