@@ -149,7 +149,7 @@ final class LogicLyricsUITests: XCTestCase {
         attachScreenshot(of: app, named: "Settings-English-Accessible")
         closeFrontWindow(in: app)
 
-        openAbout(in: app, menuTitle: "About Logic Lyrics")
+        openAbout(in: app)
         XCTAssertTrue(
             app.staticTexts[
                 "Reads tempo, key and lyrics directly from Logic Pro Project Notes without modifying your project."
@@ -197,7 +197,7 @@ final class LogicLyricsUITests: XCTestCase {
         attachScreenshot(of: app, named: "Reglages-Francais-Accessibles")
         closeFrontWindow(in: app)
 
-        openAbout(in: app, menuTitle: "À propos de Logic Lyrics")
+        openAbout(in: app)
         XCTAssertTrue(
             app.staticTexts[
                 "Lit le tempo, la tonalité et les paroles directement depuis les notes du projet Logic Pro, sans modifier le projet."
@@ -261,13 +261,8 @@ final class LogicLyricsUITests: XCTestCase {
     }
 
     @MainActor
-    private func openAbout(in app: XCUIApplication, menuTitle: String) {
-        let appMenu = app.menuBars.menuBarItems["Logic Lyrics"]
-        XCTAssertTrue(appMenu.waitForExistence(timeout: 3))
-        appMenu.click()
-        let aboutItem = app.menuItems[menuTitle]
-        XCTAssertTrue(aboutItem.waitForExistence(timeout: 3))
-        aboutItem.click()
+    private func openAbout(in app: XCUIApplication) {
+        app.typeKey("a", modifierFlags: [.command, .option])
     }
 
     @MainActor

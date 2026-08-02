@@ -39,6 +39,7 @@ struct LogicLyricsApp: App {
                         .credits: credits
                     ])
                 }
+                .keyboardShortcut("a", modifiers: [.command, .option])
                 .accessibilityIdentifier("about-menu-item")
             }
             CommandMenu(L10n.text("Diagnostics")) {
