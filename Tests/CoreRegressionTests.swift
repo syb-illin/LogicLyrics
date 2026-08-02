@@ -151,6 +151,10 @@ enum CoreRegressionTests {
         defer { try? FileManager.default.removeItem(at: root) }
         try writeProjectData(["Readable\nProject notes"], alternative: "000", project: project)
 
+        try require(
+            LogicProjectReader.decodeRTF(Data("not an RTF document".utf8)) == nil,
+            "Malformed rich text is rejected"
+        )
         let reader = LogicProjectReader(decodeRTFDocument: { _ in nil })
         let result = try reader.readProject(at: project)
         try require(

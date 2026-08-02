@@ -22,7 +22,9 @@ struct LogicProjectReader: Sendable {
     private let decodeRTFDocument: @Sendable (Data) -> String?
 
     init(
-        decodeRTFDocument: @escaping @Sendable (Data) -> String? = LogicProjectReader.decodeRTF
+        decodeRTFDocument: @escaping @Sendable (Data) -> String? = {
+            LogicProjectReader.decodeRTF($0)
+        }
     ) {
         self.decodeRTFDocument = decodeRTFDocument
     }
@@ -270,7 +272,7 @@ struct LogicProjectReader: Sendable {
 
     private func asciiDigit(_ byte: UInt8) -> Bool { (48...57).contains(byte) }
 
-    private static func decodeRTF(_ data: Data) -> String? {
+    static func decodeRTF(_ data: Data) -> String? {
         guard let value = try? NSAttributedString(
             data: data,
             options: [.documentType: NSAttributedString.DocumentType.rtf],
