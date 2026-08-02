@@ -10,6 +10,7 @@ enum CoreRegressionTests {
         try testReaderErrors()
         try testReaderAlternativeAndMetadataEdges()
         try testReaderQualityTieBreakers()
+        try testReaderDecodeFailureFallsBackToDraft()
         try testLegacyHistoryMigration()
         try testHistoryDeduplicatesLegacyProjectRows()
         try testHistorySeparatesSourceEditsAndRecoveredText()
@@ -142,6 +143,20 @@ enum CoreRegressionTests {
         )
         let lengthResult = try LogicProjectReader().readProject(at: length)
         try require(lengthResult.notes[0].text.hasPrefix("A much longer"), "Longer text wins the final tie")
+    }
+
+    private static func testReaderDecodeFailureFallsBackToDraft() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let project = root.appendingPathComponent("Decode-Failure.logicx", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try writeProjectData(["Readable\nProject notes"], alternative: "000", project: project)
+
+        let reader = LogicProjectReader(decodeRTFDocument: { _ in nil })
+        let result = try reader.readProject(at: project)
+        try require(
+            result.notes.count == 1 && result.notes[0].isDraft && result.notes[0].text.isEmpty,
+            "An undecodable rich-text document degrades to an empty draft"
+        )
     }
 
     private static func testLegacyHistoryMigration() throws {

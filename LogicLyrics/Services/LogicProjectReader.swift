@@ -19,6 +19,13 @@ enum LogicProjectError: LocalizedError, Equatable {
 
 struct LogicProjectReader: Sendable {
     private static let signature = Data("{\\rtf1".utf8)
+    private let decodeRTFDocument: @Sendable (Data) -> String?
+
+    init(
+        decodeRTFDocument: @escaping @Sendable (Data) -> String? = LogicProjectReader.decodeRTF
+    ) {
+        self.decodeRTFDocument = decodeRTFDocument
+    }
 
     private struct NoteCandidate {
         let index: Int
@@ -143,7 +150,7 @@ struct LogicProjectReader: Sendable {
         var seenTexts = Set<String>()
         var nonEmptyIndex = 0
         for rtf in try extractRTFDocuments(from: data) {
-            guard let text = decodeRTF(rtf) else { continue }
+            guard let text = decodeRTFDocument(rtf) else { continue }
             let cleaned = clean(text)
             guard !cleaned.isEmpty else { continue }
             guard seenTexts.insert(cleaned).inserted else { continue }
@@ -263,7 +270,7 @@ struct LogicProjectReader: Sendable {
 
     private func asciiDigit(_ byte: UInt8) -> Bool { (48...57).contains(byte) }
 
-    private func decodeRTF(_ data: Data) -> String? {
+    private static func decodeRTF(_ data: Data) -> String? {
         guard let value = try? NSAttributedString(
             data: data,
             options: [.documentType: NSAttributedString.DocumentType.rtf],
