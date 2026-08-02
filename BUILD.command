@@ -117,7 +117,9 @@ SOURCES=(
     "$SCRIPT_DIR/LogicLyrics/Services/LogicProjectReader.swift"
     "$SCRIPT_DIR/LogicLyrics/Services/ServiceProtocols.swift"
     "$SCRIPT_DIR/LogicLyrics/Services/UpdateService.swift"
+    "$SCRIPT_DIR/LogicLyrics/Services/UpdateInstaller.swift"
     "$SCRIPT_DIR/LogicLyrics/Services/ProjectLocator.swift"
+    "$SCRIPT_DIR/LogicLyrics/Services/ProjectBookmarkManager.swift"
     "$SCRIPT_DIR/LogicLyrics/Services/HistoryStore.swift"
     "$SCRIPT_DIR/LogicLyrics/ViewModel/ProjectViewModel.swift"
     "$SCRIPT_DIR/LogicLyrics/Views/DesignSystem.swift"
@@ -177,7 +179,9 @@ fi
     "$SCRIPT_DIR/LogicLyrics/Services/LogicProjectReader.swift" \
     "$SCRIPT_DIR/LogicLyrics/Services/ServiceProtocols.swift" \
     "$SCRIPT_DIR/LogicLyrics/Services/UpdateService.swift" \
+    "$SCRIPT_DIR/LogicLyrics/Services/UpdateInstaller.swift" \
     "$SCRIPT_DIR/LogicLyrics/Services/ProjectLocator.swift" \
+    "$SCRIPT_DIR/LogicLyrics/Services/ProjectBookmarkManager.swift" \
     "$SCRIPT_DIR/LogicLyrics/Services/HistoryStore.swift" \
     "$SCRIPT_DIR/LogicLyrics/ViewModel/ProjectViewModel.swift" \
     "$SCRIPT_DIR/Tests/CoreRegressionTests.swift" \

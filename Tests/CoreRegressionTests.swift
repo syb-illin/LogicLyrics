@@ -12,6 +12,7 @@ enum CoreRegressionTests {
         try testHistorySearchPolicy()
         try testSchemaFiveEntryMigration()
         try await testHistoryRepositoryMigrationAndFailures()
+        try await testHistoryStorePersistenceLifecycle()
         try testHistoryConsolidationAndManagement()
         try testProjectLocatorIdentityAndValidation()
         try await testProjectViewModelWorkflow()
@@ -37,6 +38,7 @@ enum CoreRegressionTests {
         try require(custom.count == 2 && custom[0].content == "Body", "Custom sections remain supported")
         try require(custom[1].content.isEmpty, "Empty structural section")
         try require(LyricSectionParser.parse("[female singing]\nInstruction only").isEmpty, "Standalone directive")
+        try require(LyricSectionParser.parse("[   ]\nEmpty label").isEmpty, "Empty marker label")
     }
 
     private static func testReaderErrors() throws {
@@ -90,6 +92,7 @@ enum CoreRegressionTests {
         try require(active.bpm == 130.5 && active.musicalKey == "F major", "Alternative metadata")
         try require(active.diagnostics.outcome == .selected, "Successful diagnostic")
         try require(active.diagnostics.selectedCandidateIndex == 0, "Selected RTF index")
+        try require(!active.diagnostics.localizedSummary.isEmpty, "Selected diagnostic summary")
 
         let named = try reader.readProject(at: project, preferredAlternative: "custom")
         try require(named.selectedAlternative == "custom", "Explicit alternative wins")
@@ -130,18 +133,30 @@ enum CoreRegressionTests {
         let emptyResult = try reader.readProject(at: empty)
         try require(emptyResult.notes[0].isDraft, "No RTF creates an empty snapshot")
         try require(emptyResult.diagnostics.outcome == .noEmbeddedRichText, "No-RTF diagnostic")
+        try require(!emptyResult.diagnostics.localizedSummary.isEmpty, "No-RTF diagnostic summary")
 
         let undecodable = root.appendingPathComponent("Undecodable.logicx", isDirectory: true)
         try writeProjectData(["Readable\nText"], alternative: "000", project: undecodable)
         let decodeFailure = try LogicProjectReader(decodeRTFDocument: { _ in nil })
             .readProject(at: undecodable)
         try require(decodeFailure.diagnostics.outcome == .richTextCouldNotBeDecoded, "Decode diagnostic")
+        try require(!decodeFailure.diagnostics.localizedSummary.isEmpty, "Decode diagnostic summary")
 
         let technical = root.appendingPathComponent("Technical.logicx", isDirectory: true)
         try writeProjectData(["Sample Library Loop 130"], alternative: "000", project: technical)
         let technicalResult = try reader.readProject(at: technical)
         try require(technicalResult.notes[0].isDraft, "Single-line technical RTF rejected")
         try require(technicalResult.diagnostics.outcome == .noLikelyProjectNotes, "Plausibility diagnostic")
+        try require(!technicalResult.diagnostics.localizedSummary.isEmpty, "Plausibility summary")
+
+        let numeric = root.appendingPathComponent("Numeric.logicx", isDirectory: true)
+        try writeProjectData(["Numeric\nAlternative"], alternative: "003", project: numeric)
+        try writePlist(
+            ["ActiveVariant": 3],
+            to: numeric.appendingPathComponent("Resources/ProjectInformation.plist")
+        )
+        let numericResult = try reader.readProject(at: numeric)
+        try require(numericResult.selectedAlternative == "003", "NSNumber active alternative")
     }
 
     private static func testReaderCandidateQualityAndDefensiveRTF() throws {
@@ -292,6 +307,56 @@ enum CoreRegressionTests {
     }
 
     @MainActor
+    private static func testHistoryStorePersistenceLifecycle() async throws {
+        try require(HistoryStore.uiTestingFixtures().count == 4, "Deterministic UI history fixtures")
+        let date = Date(timeIntervalSinceReferenceDate: 700_000_000)
+        let persisted = historyEntry(name: "Persisted", lyrics: "Saved\nLyrics", date: date)
+        let successRepository = TestHistoryRepository(loadResult: .success([persisted]))
+        let successStore = HistoryStore(repository: successRepository)
+        try await waitUntil { successStore.entries.count == 1 }
+        try require(successStore.entry(id: persisted.id) != nil, "Asynchronous history load")
+        try await waitUntil { successRepository.observedSaveCount > 0 }
+
+        let loadFailureRepository = TestHistoryRepository(
+            loadResult: .failure(TestFailure("load failure"))
+        )
+        let failedLoadStore = HistoryStore(repository: loadFailureRepository)
+        try await waitUntil { failedLoadStore.persistenceError != nil }
+        failedLoadStore.dismissPersistenceError()
+        try require(failedLoadStore.persistenceError == nil, "History load error dismissal")
+
+        let root = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let liveURL = root.appendingPathComponent("DuringLoad.logicx", isDirectory: true)
+        try FileManager.default.createDirectory(at: liveURL, withIntermediateDirectories: true)
+        let locator = TestProjectLocator(existingURLs: [liveURL])
+        let delayedRepository = TestHistoryRepository(
+            loadResult: .success([persisted]),
+            loadDelayNanoseconds: 80_000_000
+        )
+        let raceStore = HistoryStore(repository: delayedRepository, locator: locator)
+        let liveResult = LogicProjectReader.Result(
+            notes: [ExtractedNote(alternative: "000", index: 0, text: "Live\nLyrics")],
+            bpm: 123,
+            musicalKey: "E minor"
+        )
+        _ = raceStore.recordProject(name: "DuringLoad", url: liveURL, result: liveResult)
+        try await waitUntil { raceStore.entries.count == 2 }
+        try await waitUntil { delayedRepository.observedSaveCount > 0 }
+
+        let saveFailureRepository = TestHistoryRepository(
+            loadResult: .success([]),
+            saveError: TestFailure("save failure")
+        )
+        let saveFailureStore = HistoryStore(
+            inMemoryEntries: [persisted],
+            repository: saveFailureRepository
+        )
+        saveFailureStore.togglePin(entryID: persisted.id)
+        try await waitUntil { saveFailureStore.persistenceError != nil }
+    }
+
+    @MainActor
     private static func testHistoryConsolidationAndManagement() throws {
         let root = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: root) }
@@ -372,6 +437,22 @@ enum CoreRegressionTests {
             try require(ProjectLocatorError.unavailable.errorDescription?.isEmpty == false, "Locator error localized")
             try require(ProjectLocatorError.invalidProject.errorDescription?.isEmpty == false, "Invalid error localized")
         }
+
+
+        let fallbackBookmarks = TestBookmarkManager(
+            securityCreate: nil,
+            plainCreate: Data([9]),
+            securityResolution: nil,
+            plainResolution: renamed
+        )
+        let fallbackLocator = ProjectLocator(bookmarks: fallbackBookmarks)
+        let fallbackCapture = fallbackLocator.capture(renamed)
+        try require(fallbackCapture.bookmark == Data([9]), "Non-security bookmark fallback")
+        let fallbackResolve = try fallbackLocator.resolve(path: "/missing.logicx", bookmark: Data([9]))
+        try require(fallbackResolve.url == renamed.standardizedFileURL, "Non-security bookmark resolution")
+
+        let missingCapture = fallbackLocator.capture(root.appendingPathComponent("Absent.logicx"))
+        try require(missingCapture.fileID == nil, "Missing project has no filesystem identity")
     }
 
     @MainActor
@@ -421,6 +502,8 @@ enum CoreRegressionTests {
         try require(!model.isSourceModified, "Refresh clears stale state")
 
         reader.error = LogicProjectError.unreadableProject
+        model.checkForExternalChanges()
+        try await Task<Never, Never>.sleep(nanoseconds: 50_000_000)
         model.refresh()
         try await waitUntil { !model.isLoading }
         try require(model.errorMessage != nil, "Refresh error visible")
@@ -431,12 +514,29 @@ enum CoreRegressionTests {
         failing.open(url)
         try await waitUntil { !failing.isLoading }
         try require(failing.projectURL == nil && failing.notes.isEmpty, "Initial failure clears document")
+
+        let slowReader = TestLogicReader(results: ["001": first], fallback: first)
+        slowReader.readDelay = 0.15
+        let cancelling = ProjectViewModel(reader: slowReader)
+        cancelling.open(url, preferredAlternative: "001")
+        try await Task<Never, Never>.sleep(nanoseconds: 10_000_000)
+        cancelling.cancelProcessing()
+        try await waitUntil { !cancelling.isLoading }
     }
 
     @MainActor
     private static func testUpdateServiceAndReleaseValidation() async throws {
         let valid = updateRelease(version: "99.0.0")
         try UpdateService.validate(valid)
+        for error in [
+            UpdateService.UpdateError.invalidRelease,
+            .incompleteRelease,
+            .missingUpdater,
+            .unwritableInstallation,
+            .cannotLaunch
+        ] {
+            try require(error.errorDescription?.isEmpty == false, "Localized updater error")
+        }
         for invalid in [
             UpdateRelease(version: "", sourceArchiveURL: valid.sourceArchiveURL, sourceChecksumURL: valid.sourceChecksumURL, releasePageURL: nil, releaseNotes: ""),
             UpdateRelease(version: "99.0.0", sourceArchiveURL: URL(string: "https://evil.example/file.zip"), sourceChecksumURL: valid.sourceChecksumURL, releasePageURL: nil, releaseNotes: "")
@@ -447,11 +547,21 @@ enum CoreRegressionTests {
             } catch is UpdateService.UpdateError {}
         }
 
-        let available = UpdateService(releaseClient: TestReleaseClient(result: .success(valid)))
+        let installer = TestUpdateInstaller()
+        let available = UpdateService(
+            releaseClient: TestReleaseClient(result: .success(valid)),
+            installer: installer
+        )
         available.check(silent: false)
         try await waitUntil { available.state != .checking }
         try require(available.state == .available(version: "99.0.0"), "Available update state")
         try require(available.availableRelease == valid, "Verified release retained")
+        available.installAvailableUpdate()
+        try require(installer.installedVersions == ["99.0.0"], "Verified update delegated to installer")
+
+        installer.error = TestFailure("installer failure")
+        available.installAvailableUpdate()
+        try require(available.errorMessage?.contains("installer failure") == true, "Installer error visible")
 
         let current = UpdateService(releaseClient: TestReleaseClient(result: .success(updateRelease(version: "0.0.0"))))
         current.check(silent: false)
@@ -462,6 +572,53 @@ enum CoreRegressionTests {
         failure.check(silent: false)
         try await waitUntil { failure.state != .checking }
         try require(failure.state == .idle && failure.errorMessage != nil, "Manual update error")
+
+        let silentFailure = UpdateService(
+            releaseClient: TestReleaseClient(result: .failure(URLError(.timedOut)))
+        )
+        silentFailure.check(silent: true)
+        try await waitUntil { silentFailure.state != .checking }
+        try require(silentFailure.errorMessage == nil, "Automatic update error remains silent")
+        current.check(silent: true)
+        try require(current.state == .current, "Redundant automatic update check skipped")
+
+        let idle = UpdateService(releaseClient: TestReleaseClient(result: .success(valid)))
+        idle.installAvailableUpdate()
+        try require(idle.errorMessage != nil, "Install without verified release rejected")
+
+        try await testGitHubReleaseClientDecoding()
+    }
+
+    private static func testGitHubReleaseClientDecoding() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [TestURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        let endpoint = URL(string: "https://api.github.test/releases/latest")!
+        TestURLProtocol.handler = { request in
+            let body = """
+            {
+              "tag_name": "v3.1.4",
+              "html_url": "https://github.com/syb-illin/LogicLyrics/releases/tag/v3.1.4",
+              "body": "Release body",
+              "assets": [
+                {"name":"LogicLyrics-macOS-source.zip","browser_download_url":"https://github.com/syb-illin/LogicLyrics/releases/download/v3.1.4/LogicLyrics-macOS-source.zip"},
+                {"name":"LogicLyrics-macOS-source.zip.sha256","browser_download_url":"https://github.com/syb-illin/LogicLyrics/releases/download/v3.1.4/LogicLyrics-macOS-source.zip.sha256"}
+              ]
+            }
+            """
+            return (200, Data(body.utf8))
+        }
+        let release = try await GitHubReleaseClient(session: session, endpoint: endpoint).latestRelease()
+        try require(release.version == "3.1.4", "GitHub tag decoding")
+        try require(release.releaseNotes == "Release body", "GitHub release notes decoding")
+
+        TestURLProtocol.handler = { _ in (500, Data()) }
+        do {
+            _ = try await GitHubReleaseClient(session: session, endpoint: endpoint).latestRelease()
+            throw TestFailure("Non-200 release response must fail")
+        } catch let error as URLError {
+            try require(error.code == .badServerResponse, "GitHub HTTP failure")
+        }
     }
 
     private static func testSemanticVersionComparison() throws {
@@ -573,6 +730,7 @@ private final class TestLogicReader: LogicProjectReading, @unchecked Sendable {
     private let fallback: LogicProjectReader.Result?
     var currentToken: String
     var error: Error?
+    var readDelay: TimeInterval = 0
 
     init(
         results: [String: LogicProjectReader.Result] = [:],
@@ -591,15 +749,23 @@ private final class TestLogicReader: LogicProjectReading, @unchecked Sendable {
 
     func readProject(at projectURL: URL, preferredAlternative: String?) throws -> LogicProjectReader.Result {
         lock.lock()
-        defer { lock.unlock() }
-        if let error { throw error }
+        let capturedError = error
+        let capturedDelay = readDelay
+        let selected = preferredAlternative.flatMap { results[$0] } ?? fallback
+        lock.unlock()
+        if capturedDelay > 0 { Thread.sleep(forTimeInterval: capturedDelay) }
+        if let capturedError { throw capturedError }
         if let preferredAlternative, let result = results[preferredAlternative] {
+            lock.lock()
             currentToken = result.sourceStateToken
+            lock.unlock()
             return result
         }
-        guard let fallback else { throw LogicProjectError.unreadableProject }
-        currentToken = fallback.sourceStateToken
-        return fallback
+        guard let selected else { throw LogicProjectError.unreadableProject }
+        lock.lock()
+        currentToken = selected.sourceStateToken
+        lock.unlock()
+        return selected
     }
 
     func projectStateToken(at projectURL: URL, preferredAlternative: String?) throws -> String {
@@ -631,4 +797,100 @@ private final class TestProjectLocator: ProjectLocating, @unchecked Sendable {
 private struct TestReleaseClient: UpdateReleaseChecking {
     let result: Result<UpdateRelease, Error>
     func latestRelease() async throws -> UpdateRelease { try result.get() }
+}
+
+private final class TestHistoryRepository: HistoryPersisting, @unchecked Sendable {
+    private let lock = NSLock()
+    private let loadResult: Result<[SongHistoryEntry], Error>
+    private let loadDelayNanoseconds: UInt64
+    private let saveError: Error?
+    private var saveCount = 0
+
+    init(
+        loadResult: Result<[SongHistoryEntry], Error>,
+        loadDelayNanoseconds: UInt64 = 0,
+        saveError: Error? = nil
+    ) {
+        self.loadResult = loadResult
+        self.loadDelayNanoseconds = loadDelayNanoseconds
+        self.saveError = saveError
+    }
+
+    var observedSaveCount: Int {
+        lock.withLock { saveCount }
+    }
+
+    func load() async throws -> [SongHistoryEntry] {
+        if loadDelayNanoseconds > 0 {
+            try await Task<Never, Never>.sleep(nanoseconds: loadDelayNanoseconds)
+        }
+        return try loadResult.get()
+    }
+
+    func save(_ entries: [SongHistoryEntry]) async throws {
+        if let saveError { throw saveError }
+        lock.withLock { saveCount += 1 }
+    }
+}
+
+private final class TestUpdateInstaller: UpdateInstalling, @unchecked Sendable {
+    private let lock = NSLock()
+    var error: Error?
+    private var versions: [String] = []
+
+    var installedVersions: [String] {
+        lock.lock()
+        defer { lock.unlock() }
+        return versions
+    }
+
+    @MainActor
+    func install(_ release: UpdateRelease) throws {
+        if let error { throw error }
+        lock.lock()
+        versions.append(release.version)
+        lock.unlock()
+    }
+}
+
+private struct TestBookmarkManager: ProjectBookmarkManaging {
+    let securityCreate: Data?
+    let plainCreate: Data?
+    let securityResolution: URL?
+    let plainResolution: URL?
+
+    func create(for url: URL, securityScoped: Bool) -> Data? {
+        securityScoped ? securityCreate : plainCreate
+    }
+
+    func resolve(_ data: Data, securityScoped: Bool) -> URL? {
+        securityScoped ? securityResolution : plainResolution
+    }
+}
+
+private final class TestURLProtocol: URLProtocol, @unchecked Sendable {
+    nonisolated(unsafe) static var handler: ((URLRequest) throws -> (Int, Data))?
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+    override func startLoading() {
+        do {
+            guard let handler = Self.handler else { throw URLError(.unknown) }
+            let (status, data) = try handler(request)
+            let response = HTTPURLResponse(
+                url: request.url ?? URL(string: "https://invalid.test")!,
+                statusCode: status,
+                httpVersion: "HTTP/1.1",
+                headerFields: ["Content-Type": "application/json"]
+            )!
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: data)
+            client?.urlProtocolDidFinishLoading(self)
+        } catch {
+            client?.urlProtocol(self, didFailWithError: error)
+        }
+    }
+
+    override func stopLoading() {}
 }

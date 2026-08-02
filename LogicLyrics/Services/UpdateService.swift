@@ -84,6 +84,7 @@ final class UpdateService: ObservableObject {
     enum UpdateError: LocalizedError {
         case invalidRelease
         case incompleteRelease
+        case missingUpdater
         case unwritableInstallation
         case cannotLaunch
 
@@ -93,6 +94,8 @@ final class UpdateService: ObservableObject {
                 L10n.text("The release version is missing or invalid.")
             case .incompleteRelease:
                 L10n.text("The release does not contain the two required update files.")
+            case .missingUpdater:
+                L10n.text("The updater is missing from the application.")
             case .unwritableInstallation:
                 L10n.text("The app is installed in a read-only folder. Move it to Downloads or Applications with the required permissions.")
             case .cannotLaunch:
@@ -105,10 +108,15 @@ final class UpdateService: ObservableObject {
     @Published private(set) var availableRelease: UpdateRelease?
     @Published var errorMessage: String?
     private let releaseClient: any UpdateReleaseChecking
+    private let installer: any UpdateInstalling
     private var checkTask: Task<Void, Never>?
 
-    init(releaseClient: any UpdateReleaseChecking = GitHubReleaseClient()) {
+    init(
+        releaseClient: any UpdateReleaseChecking = GitHubReleaseClient(),
+        installer: any UpdateInstalling = TerminalUpdateInstaller()
+    ) {
         self.releaseClient = releaseClient
+        self.installer = installer
     }
 
     deinit { checkTask?.cancel() }
@@ -162,36 +170,13 @@ final class UpdateService: ObservableObject {
     func installAvailableUpdate() {
         guard case .available(let version) = state,
               let release = availableRelease,
-              release.version == version,
-              let archiveURL = release.sourceArchiveURL,
-              let checksumURL = release.sourceChecksumURL,
-              let bundled = Bundle.main.url(forResource: "UPDATE", withExtension: "command") else {
+              release.version == version else {
             errorMessage = L10n.text("The updater is missing from the application.")
             return
         }
         do {
             try Self.validate(release)
-            let directory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-                .appendingPathComponent("com.sybillin.LogicLyrics/updater", isDirectory: true)
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            let executable = directory.appendingPathComponent("UPDATE.command")
-            let currentApplication = Bundle.main.bundleURL.standardizedFileURL
-            guard currentApplication.pathExtension.lowercased() == "app",
-                  FileManager.default.isWritableFile(
-                    atPath: currentApplication.deletingLastPathComponent().path
-                  ) else {
-                throw UpdateError.unwritableInstallation
-            }
-            try Data(contentsOf: bundled).write(to: executable, options: .atomic)
-            try Self.write(currentApplication.path, named: "target-path.txt", in: directory)
-            try Self.write(version, named: "expected-version.txt", in: directory)
-            try Self.write(archiveURL.absoluteString, named: "archive-url.txt", in: directory)
-            try Self.write(checksumURL.absoluteString, named: "checksum-url.txt", in: directory)
-            try FileManager.default.setAttributes(
-                [.posixPermissions: 0o755],
-                ofItemAtPath: executable.path
-            )
-            guard NSWorkspace.shared.open(executable) else { throw UpdateError.cannotLaunch }
+            try installer.install(release)
             AppLog.updates.notice("Updater launched pinned_version=\(version, privacy: .public)")
         } catch {
             let errorType = String(describing: type(of: error))
@@ -217,13 +202,6 @@ final class UpdateService: ObservableObject {
         url.scheme?.lowercased() == "https"
             && url.host?.lowercased() == "github.com"
             && url.path.hasPrefix("/syb-illin/LogicLyrics/releases/download/")
-    }
-
-    private static func write(_ value: String, named name: String, in directory: URL) throws {
-        try Data(value.utf8).write(
-            to: directory.appendingPathComponent(name),
-            options: [.atomic, .completeFileProtectionUnlessOpen]
-        )
     }
 
     private static var currentVersion: String {

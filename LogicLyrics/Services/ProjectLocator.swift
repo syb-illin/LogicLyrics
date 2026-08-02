@@ -27,24 +27,22 @@ protocol ProjectLocating {
 
 struct ProjectLocator: ProjectLocating {
     private let fileManager: FileManager
+    private let bookmarks: any ProjectBookmarkManaging
 
-    init(fileManager: FileManager = .default) {
+    init(
+        fileManager: FileManager = .default,
+        bookmarks: any ProjectBookmarkManaging = FoundationProjectBookmarkManager()
+    ) {
         self.fileManager = fileManager
+        self.bookmarks = bookmarks
     }
 
     func capture(_ url: URL) -> ProjectLocation {
         let standardizedURL = url.standardizedFileURL
         let didAccess = standardizedURL.startAccessingSecurityScopedResource()
         defer { if didAccess { standardizedURL.stopAccessingSecurityScopedResource() } }
-        let bookmark = (try? standardizedURL.bookmarkData(
-            options: [.withSecurityScope],
-            includingResourceValuesForKeys: [.fileResourceIdentifierKey],
-            relativeTo: nil
-        )) ?? (try? standardizedURL.bookmarkData(
-            options: [],
-            includingResourceValuesForKeys: [.fileResourceIdentifierKey],
-            relativeTo: nil
-        ))
+        let bookmark = bookmarks.create(for: standardizedURL, securityScoped: true)
+            ?? bookmarks.create(for: standardizedURL, securityScoped: false)
         return ProjectLocation(
             url: standardizedURL,
             fileID: stableFileID(for: standardizedURL),
@@ -63,21 +61,10 @@ struct ProjectLocator: ProjectLocating {
     }
 
     private func resolveBookmark(_ bookmark: Data) -> URL? {
-        var isStale = false
-        if let url = try? URL(
-            resolvingBookmarkData: bookmark,
-            options: [.withSecurityScope, .withoutUI],
-            relativeTo: nil,
-            bookmarkDataIsStale: &isStale
-        ) {
+        if let url = bookmarks.resolve(bookmark, securityScoped: true) {
             return url.standardizedFileURL
         }
-        if let url = try? URL(
-            resolvingBookmarkData: bookmark,
-            options: [.withoutUI],
-            relativeTo: nil,
-            bookmarkDataIsStale: &isStale
-        ) {
+        if let url = bookmarks.resolve(bookmark, securityScoped: false) {
             return url.standardizedFileURL
         }
         return nil

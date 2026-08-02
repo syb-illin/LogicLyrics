@@ -170,6 +170,15 @@ final class HistoryStore: ObservableObject {
         hasFinishedInitialLoad = true
     }
 
+    init(
+        repository: any HistoryPersisting,
+        locator: any ProjectLocating = ProjectLocator()
+    ) {
+        self.repository = repository
+        self.locator = locator
+        load()
+    }
+
     deinit {
         loadTask?.cancel()
         saveTask?.cancel()
@@ -179,6 +188,10 @@ final class HistoryStore: ObservableObject {
         guard ProcessInfo.processInfo.arguments.contains("--ui-testing") else {
             return HistoryStore()
         }
+        return HistoryStore(inMemoryEntries: uiTestingFixtures())
+    }
+
+    static func uiTestingFixtures() -> [SongHistoryEntry] {
         let createdAt = Date(timeIntervalSinceReferenceDate: 700_000_000)
         let make: (String, String, String, Double, String, TimeInterval, Bool) -> SongHistoryEntry = {
             id, name, lyrics, bpm, key, offset, pinned in
@@ -203,7 +216,7 @@ final class HistoryStore: ObservableObject {
                 updatedAt: createdAt.addingTimeInterval(offset)
             )
         }
-        return HistoryStore(inMemoryEntries: [
+        return [
             make(
                 "11111111-1111-1111-1111-111111111111", "Plaid",
                 "Demo Song\n[Verse 1]\nLive project lyrics\n[Chorus]\nStay with me",
@@ -221,7 +234,7 @@ final class HistoryStore: ObservableObject {
                 "44444444-4444-4444-4444-444444444444", "instrumental draft",
                 "", 118, "D minor", 25, false
             )
-        ])
+        ]
     }
 
     @discardableResult
