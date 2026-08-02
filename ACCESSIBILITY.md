@@ -1,33 +1,27 @@
 # Accessibility
 
-Logic Lyrics targets practical macOS accessibility across VoiceOver, keyboard use, display accommodations, and clear error recovery.
+Logic Lyrics targets practical macOS accessibility across VoiceOver, keyboard use, display accommodations and clear error recovery.
 
 ## Implemented behavior
 
-- Meaningful icon-only controls have explicit VoiceOver labels and hints.
-- Decorative icons are hidden from the accessibility tree.
-- BPM, key, technical audio values, section-copy actions, artwork state, lyrics, and generated prompts expose semantic labels.
-- Related status content is combined into concise VoiceOver elements.
-- File selection is available through buttons and keyboard commands; drag and drop is never the only path.
-- Primary shortcuts include Open (`Command-O`), Copy All (`Shift-Command-C`), history (`Shift-Command-H`), prompt generation (`Command-Return`), and diagnostics (`Option-Command-D`).
-- Processing overlays announce their state and retain a Cancel control.
-- Reduce Motion disables decorative animation.
-- Reduce Transparency replaces material backgrounds with opaque surfaces.
-- Success and error states use text/icons in addition to color.
-- Editors support selection, editing, and standard macOS text navigation.
-- Controls use native SwiftUI components so focus rings, contrast adaptation, and keyboard behavior follow macOS conventions.
-- Stable accessibility identifiers cover history navigation, transfer actions, project recovery, revisions, and window-layout smoke tests.
-- CI runs semantic element-description/detection audits and captures migrated-history screenshots at compact and large window sizes.
+- Icon-only controls have explicit VoiceOver labels and hints; decorative icons are hidden.
+- BPM, key, alternative, lyrics and section-copy actions expose semantic labels.
+- File selection is available through buttons and **File → Open Logic Pro Project…** (`Command-O`); drag and drop is never the only path.
+- Complete lyrics can be copied with `Shift-Command-C` or a labelled button.
+- Processing state is announced and retains a Cancel control.
+- Reduce Motion disables decorative transitions; Reduce Transparency replaces translucent surfaces.
+- Status never relies on color alone, selectable text uses native macOS behavior, and controls use native focus rings.
+- Stable accessibility identifiers cover the picker, reader, clipboard actions, recent projects and window-layout tests.
+- CI runs semantic VoiceOver audits, control-alignment assertions and compact/large screenshots.
 
 ## Release checklist
 
-Before release, test on the oldest supported macOS version and the current macOS version with:
+Before release, test the oldest supported and current macOS versions with:
 
-1. VoiceOver navigation from an empty launch through Logic import, lyrics editing, section copying, Suno prompt creation, history, and audio metadata.
-2. Full Keyboard Access with no mouse or drag-and-drop.
-3. Reduce Motion and Reduce Transparency enabled.
-4. Increased contrast and a large display text setting.
-5. Light/dark appearance if the app later stops enforcing its current dark presentation.
-6. Error, cancellation, empty-state, and long-localized-string paths.
+1. VoiceOver navigation from empty launch through File-menu import, metadata reading, full-lyrics copy, section copy and recent-project reopening.
+2. Full Keyboard Access with no mouse or drag and drop.
+3. Reduce Motion and Reduce Transparency.
+4. Increased contrast and large display text.
+5. Empty notes, unreadable project, cancellation and long localized strings.
 
-Automated XCUITest audits and semantic modifiers reduce regressions, but they do not replace assistive-technology testing with real workflows.
+Automated XCUITest audits reduce regressions but do not replace real assistive-technology testing.

@@ -1,71 +1,57 @@
-# Logic Lyrics 2.4.1 — architecture and invariants
+# Logic Lyrics 2.5.0 — architecture and invariants
+
+## Product boundary
+
+Logic Lyrics has one responsibility: read the active alternative of a local `.logicx` project and present its Project Notes, BPM, key and section markers for clipboard use. It does not modify Logic projects, process audio, call generative AI or send application telemetry.
 
 ## Layers
 
-- `Model`: immutable values and domain state without UI dependencies.
-- `Services`: Logic parsing/writing, audio inspection/tagging, MP3 conversion, updates, and persistence.
-- `ServiceProtocols`: injectable ports used by view models and regression tests.
-- `ViewModel`: `MainActor`-isolated presentation state, validation, and orchestration.
-- `Views`: SwiftUI rendering and user interaction only.
+- **Model** contains immutable, `Sendable` domain values and deterministic section parsing.
+- **Services** contain Logic package parsing, project bookmark resolution, versioned history persistence and GitHub release lookup.
+- **ViewModel** is a `MainActor`-isolated state machine that coordinates one replaceable Logic-read operation.
+- **Views** are split into composition (`ContentView`), recent projects (`RecentProjectsView`) and read-only lyrics presentation (`LyricsReaderView`).
+- **App commands** inject the File-menu action through SwiftUI focused values instead of notifications or global mutable UI state.
 
-This is a pragmatic MVVM/service architecture. Protocol-based dependency inversion keeps filesystem and encoder behavior testable, actors serialize persistence, and value types carry parsed data across concurrency boundaries.
+This is intentionally small MVVM with ports at external boundaries. Value types are preferred; classes are reserved for observable identity and actor-isolated state.
 
 ## Applied patterns
 
-- **MVVM** keeps SwiftUI rendering separate from validation and workflow orchestration.
-- **Repository** isolates versioned history persistence behind an actor.
-- **Strategy + dependency injection** make Logic reading/writing, audio inspection/tagging, MP3 conversion, and GitHub release checks replaceable in tests.
-- **State machine** represents update and long-running operation states explicitly instead of combining unrelated booleans.
-- **Transactional write** builds Logic and audio outputs in temporary locations before publishing them.
-- **Single source of truth** gives the main window and Settings one app-owned update service, preventing duplicate network checks and inconsistent results.
-- **Adapter** confines GitHub’s JSON response and HTTP behavior to `GitHubReleaseClient`.
-- **Project locator** encapsulates filesystem identity and security-scoped bookmark capture/resolution.
-- **Transfer object + service** keeps portable history archives versioned, validated, and independent from local persistence.
-- **Focused command injection** routes macOS menu actions to the active scene without global notifications, singleton UI state, or view-model coupling.
-- **Design system** centralizes palette, surfaces, icon treatment, status chips, control sizing, and reduced-transparency behavior.
-
-Swift value types, protocol-oriented design, and actors are preferred over class-only “pure OOP.” Classes are reserved for identity-bearing observable state and injected services where reference semantics are useful.
+- **MVVM** separates parsing/orchestration from SwiftUI rendering.
+- **Repository actor** serializes atomic history reads and writes.
+- **Dependency inversion** exposes only `LogicProjectReading` to the presentation model.
+- **State machine + operation identity** makes progress, cancellation and stale-result rejection explicit.
+- **Adapter** confines GitHub HTTP/JSON behavior to `GitHubReleaseClient`.
+- **Project locator** encapsulates filesystem identity and security-scoped bookmark recovery.
+- **Focused command injection** routes `Command-O` to the active scene.
+- **Design system** centralizes restrained surfaces, icon treatment, status chips and accessibility accommodations.
 
 ## Safety and performance invariants
 
-1. A source Logic project is never modified.
-2. A Logic copy is assembled in a temporary package; the source and any existing destination remain intact until validation succeeds.
-3. Audio output is produced transactionally and is never published as a partial file.
-4. History is encoded away from UI work and written atomically.
-5. Replaceable operations have an identity; an obsolete result cannot overwrite a newer selection.
-6. Long-running work and the LAME process cooperate with cancellation.
-7. File handles and security-scoped resources close in `defer` blocks.
-8. `ProjectData` scans use mapped `Data` and avoid a full `[UInt8]` duplicate.
-9. User-impacting failures surface through accessible alerts instead of being silently ignored.
-10. History schema 4 stores one row per stable project identity, independently preserving source lyrics, an optional local edit, recovered revisions, and a security-scoped bookmark.
-11. Update and LAME archives are verified by SHA-256 before execution.
-12. Unified logs never include user content, filenames, paths, project names, lyrics, prompts, artwork, or tag values.
-13. Logic parsing selects the active alternative and excludes single-line technical rich text from Project Notes results.
-14. History observes project loads but cannot replace the live lyrics extracted from the currently open Logic project.
-15. Initial history loading completes before any queued save can publish, preventing a fast project open from erasing persisted history.
-16. Portable history exports strip machine-specific file identities and bookmark capabilities; imports validate size and content before a merge.
-17. Reverting or restoring lyrics always preserves the displaced local value as a recoverable revision.
+1. Source `.logicx` packages are never written or replaced.
+2. Only the active Logic alternative is selected; unrelated single-line technical RTF is rejected as lyrics.
+3. Mapped `Data` avoids an unnecessary full byte-array copy while scanning `ProjectData`.
+4. Parser loops check cooperative cancellation at bounded intervals.
+5. An operation UUID prevents an older read from overwriting a newer project selection.
+6. Owned tasks are cancelled on replacement and object destruction; detached work captures view models weakly.
+7. Section identifiers are deterministic within a document, preventing avoidable SwiftUI row churn.
+8. History is loaded and saved by an actor, encoded atomically and protected against the initial-load/save race.
+9. History uses stable file identity and security-scoped bookmarks to recover moved or renamed projects.
+10. Logs never contain lyrics, names, filenames, paths, URLs, bookmarks or other user content.
+11. Diagnostic log export is limited to this process, the last 30 minutes and at most 200 entries.
+12. User-impacting failures surface through accessible alerts; normal picker cancellation remains silent.
 
-## Concurrency and lifecycle
-
-View models own cancelable task handles and capture themselves weakly in detached work. UI mutations return to the main actor. Operation identifiers reject stale completions. Temporary conversion files are removed in `defer`, and transient clipboard feedback tasks are canceled before replacement or view disappearance.
-
-No source review can prove the absence of every runtime leak. Release validation therefore combines strict concurrency compilation and regression tests with recommended Instruments sessions (`Leaks`, `Allocations`, and `Time Profiler`) over repeated open/edit/convert/cancel/window-close cycles.
+No static review can mathematically prove the absence of every runtime leak. Release validation therefore combines complete strict-concurrency compilation, cancellation tests, repeated UI workflows and recommended Instruments runs with Leaks, Allocations and Time Profiler.
 
 ## Build validation
 
 `BUILD.command`:
 
-- compiles with complete strict-concurrency checking and concurrency warnings;
-- executes core regression tests before building the app;
-- validates English and French localization resources and `Info.plist`;
-- signs the final bundle and verifies its signature;
-- self-tests the bundled LAME binary;
-- rejects LAME dependencies on Homebrew or `/usr/local`;
+- requires only Apple Command Line Tools;
+- rejects any Swift application file omitted from its explicit source manifest;
+- compiles with complete strict-concurrency checking and warnings;
+- runs core reader/history/update regression tests before building the app;
+- validates localizations and `Info.plist`;
+- signs and verifies the final bundle;
 - optionally notarizes and staples Developer ID builds.
 
-GitHub Actions runs the same lightweight pipeline on macOS and publishes checksummed app and source archives for tagged releases.
-
-The Xcode UI-test target runs native File-menu/picker invocation, history navigation, control-alignment assertions, migration-state screenshots, semantic accessibility audits, and compact/large window checks on every build workflow.
-
-The separate GitHub statistics workflow treats the GitHub REST API as an external adapter, stores a versioned history on the dedicated `github-stats` branch, and deploys a static Pages artifact. Public release metrics remain available when privileged Traffic metrics cannot be read; the dashboard exposes that degraded state instead of fabricating zero values.
+GitHub Actions runs the same lightweight build, then executes native File-menu/picker, recent-project navigation, clipboard, VoiceOver, alignment and compact/large-window UI tests. Tagged runs publish checksummed app and source archives.

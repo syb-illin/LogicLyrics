@@ -1,7 +1,9 @@
 import Foundation
 
 struct LyricSection: Identifiable, Hashable, Sendable {
-    let id = UUID()
+    /// Stable within one lyrics document, avoiding needless SwiftUI row churn
+    /// when the same Project Notes are rendered again.
+    let id: Int
     let label: String
     let content: String
 
@@ -12,7 +14,7 @@ enum LyricSectionParser {
     private static let adjacentMarkers = try? NSRegularExpression(pattern: #"\]\s*\["#)
     private static let marker = try? NSRegularExpression(pattern: #"(?m)^\s*\[([^\]\r\n]+)\]\s*$"#)
 
-    // Suno accepts free-form section labels. This recognizes any standalone
+    // Project Notes may use custom section labels. Recognize any standalone
     // bracketed marker rather than maintaining a brittle fixed vocabulary.
     static func parse(_ lyrics: String) -> [LyricSection] {
         let original = lyrics as NSString
@@ -32,7 +34,7 @@ enum LyricSectionParser {
             let bodyEnd = index + 1 < matches.count ? matches[index + 1].range.location : source.length
             let body = source.substring(with: NSRange(location: bodyStart, length: max(0, bodyEnd - bodyStart)))
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-            return LyricSection(label: label, content: body)
+            return LyricSection(id: index, label: label, content: body)
         }
     }
 }

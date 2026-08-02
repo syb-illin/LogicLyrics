@@ -320,3 +320,29 @@
 "Export Song History" = "Export Song History";
 "Import Song History" = "Import Song History";
 "Imported songs are merged safely; current local versions are never overwritten." = "Imported songs are merged safely; current local versions are never overwritten.";
+
+/* Focused Logic project reader — 2.5 */
+"Logic Project Reader" = "Logic Project Reader";
+"Current Logic project" = "Current Logic project";
+"RECENT PROJECTS" = "RECENT PROJECTS";
+"No recent projects" = "No recent projects";
+"No matching projects" = "No matching projects";
+"Shows the lyrics saved from this Logic project." = "Shows the lyrics saved from this Logic project.";
+"Project lyrics" = "Project lyrics";
+"Saved Lyrics" = "Saved Lyrics";
+"Snapshot from the last successful read" = "Snapshot from the last successful read";
+"Read directly from Logic Project Notes" = "Read directly from Logic Project Notes";
+"Reopen Project" = "Reopen Project";
+"Copy Lyrics" = "Copy Lyrics";
+"Lyrics text" = "Lyrics text";
+"Sections" = "Sections";
+"%d detected" = "%d detected";
+"No Project Notes Found" = "No Project Notes Found";
+"This Logic alternative does not currently contain readable Project Notes." = "This Logic alternative does not currently contain readable Project Notes.";
+"No section markers detected" = "No section markers detected";
+"Lyrics from Logic, without the clutter" = "Lyrics from Logic, without the clutter";
+"Open or drop a .logicx project to read its Project Notes, tempo and key." = "Open or drop a .logicx project to read its Project Notes, tempo and key.";
+"Your project stays on this Mac and is never modified." = "Your project stays on this Mac and is never modified.";
+"Unsupported format. Choose a .logicx project." = "Unsupported format. Choose a .logicx project.";
+"Reads tempo, key and lyrics directly from Logic Pro Project Notes without modifying your project." = "Reads tempo, key and lyrics directly from Logic Pro Project Notes without modifying your project.";
+"Copy to clipboard" = "Copy to clipboard";

@@ -19,19 +19,21 @@ final class LogicLyricsUITests: XCTestCase {
         XCTAssertTrue(openProject.isEnabled)
         openProject.click()
 
-        let sheet = app.sheets.firstMatch
-        let dialog = app.dialogs.firstMatch
+        // SwiftUI's fileImporter is exposed by XCTest as a separate native
+        // panel window on macOS, rather than consistently as a sheet/dialog.
+        // The panel's Cancel button is the stable accessibility contract.
+        let cancel = app.buttons["Cancel"]
         XCTAssertTrue(
-            sheet.waitForExistence(timeout: 5) || dialog.waitForExistence(timeout: 1),
+            cancel.waitForExistence(timeout: 5),
             "The File menu command did not present the Logic project picker."
         )
-        let picker = sheet.exists ? sheet : dialog
-        XCTAssertTrue(picker.buttons["Cancel"].exists)
-        picker.buttons["Cancel"].click()
+        attachScreenshot(of: app, named: "Logic-Project-Open-Picker")
+        cancel.click()
+        XCTAssertTrue(cancel.waitForNonExistence(timeout: 3))
     }
 
     @MainActor
-    func testHistoryNavigationSearchAndMigrationActions() {
+    func testRecentProjectNavigationSearchAndCopyActions() {
         let app = launchApp()
         defer { app.terminate() }
 
@@ -41,15 +43,13 @@ final class LogicLyricsUITests: XCTestCase {
         XCTAssertTrue(humanGeology.exists)
 
         plaid.click()
-        XCTAssertTrue(element("history-detail", in: app).waitForExistence(timeout: 3))
-        XCTAssertTrue(app.staticTexts["Project Lyrics"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.staticTexts["Edited Lyrics"].exists)
-
-        let recovered = element("history-recovered-revisions", in: app)
-        XCTAssertTrue(recovered.waitForExistence(timeout: 3))
-        XCTAssertTrue(element("history-revert-edit", in: app).waitForExistence(timeout: 3))
-        element("history-revert-edit", in: app).click()
-        XCTAssertTrue(app.staticTexts["Edited Lyrics"].waitForNonExistence(timeout: 3))
+        XCTAssertTrue(element("lyrics-reader", in: app).waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Saved Lyrics"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Plaid"].exists)
+        let copyLyrics = element("lyrics-copy-all", in: app)
+        XCTAssertTrue(copyLyrics.waitForExistence(timeout: 3))
+        copyLyrics.click()
+        XCTAssertTrue(app.buttons["Copied"].waitForExistence(timeout: 2))
 
         let search = element("history-search-field", in: app)
         search.click()
@@ -59,11 +59,11 @@ final class LogicLyricsUITests: XCTestCase {
         humanGeology.click()
         XCTAssertTrue(app.staticTexts["Human Geology"].waitForExistence(timeout: 3))
 
-        attachScreenshot(of: app, named: "History-Migrated-State")
+        attachScreenshot(of: app, named: "Recent-Project-Lyrics")
     }
 
     @MainActor
-    func testHistoryVoiceOverSemantics() throws {
+    func testReaderVoiceOverSemanticsAndActionAlignment() throws {
         let app = launchApp()
         defer { app.terminate() }
 
@@ -71,20 +71,14 @@ final class LogicLyricsUITests: XCTestCase {
         XCTAssertTrue(plaid.waitForExistence(timeout: 5))
         plaid.click()
         let openProject = element("history-open-project", in: app)
-        let locateProject = element("history-locate-project", in: app)
-        let revertEdit = element("history-revert-edit", in: app)
-        let deleteEntry = element("history-delete", in: app)
+        let copyLyrics = element("lyrics-copy-all", in: app)
         XCTAssertTrue(openProject.waitForExistence(timeout: 3))
         XCTAssertFalse(openProject.label.isEmpty)
-        XCTAssertFalse(locateProject.label.isEmpty)
-        XCTAssertFalse(revertEdit.label.isEmpty)
-        XCTAssertFalse(deleteEntry.label.isEmpty)
-        for action in [locateProject, revertEdit, deleteEntry] {
-            XCTAssertEqual(action.frame.midY, openProject.frame.midY, accuracy: 1)
-            XCTAssertEqual(action.frame.height, openProject.frame.height, accuracy: 1)
-        }
-        XCTAssertFalse(element("history-transfer-menu", in: app).label.isEmpty)
-        XCTAssertFalse(element("toolbar-export", in: app).exists)
+        XCTAssertFalse(copyLyrics.label.isEmpty)
+        XCTAssertEqual(copyLyrics.frame.midY, openProject.frame.midY, accuracy: 1)
+        XCTAssertEqual(copyLyrics.frame.height, openProject.frame.height, accuracy: 1)
+        XCTAssertFalse(element("toolbar-open", in: app).label.isEmpty)
+        XCTAssertFalse(element("recent-songs-section", in: app).label.isEmpty)
         try app.performAccessibilityAudit(for: [.sufficientElementDescription, .elementDetection]) { issue in
             if let element = issue.element {
                 let frame = element.frame
@@ -109,13 +103,9 @@ final class LogicLyricsUITests: XCTestCase {
                     && frame.height <= 34
                     && frame.minX >= windowFrame.minX
                     && frame.maxX <= windowFrame.maxX
-                let isLabeledSwiftUIMenu = issue.auditType == .sufficientElementDescription
-                    && element.identifier == "history-transfer-menu"
-                    && !element.label.isEmpty
                 if isNativeWindowContainer
                     || isSidebarScrollContainer
-                    || isSystemTouchBarElement
-                    || isLabeledSwiftUIMenu {
+                    || isSystemTouchBarElement {
                     // XCTest exposes non-focusable hosting, split-view, virtual Touch Bar and scroll wrappers as empty elements.
                     // Their labelled, interactive descendants remain covered by this same audit.
                     return true

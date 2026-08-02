@@ -10,10 +10,10 @@
 
 - [ ] Core regression tests pass
 - [ ] Relevant dashboard tests pass, if applicable
-- [ ] Original Logic/audio files remain untouched
+- [ ] The original Logic project remains untouched
 - [ ] New visible text is localized in English and French
 - [ ] Keyboard and VoiceOver behavior was checked
-- [ ] No private lyrics, audio, paths or identifiers are included
+- [ ] No private lyrics, paths or identifiers are included
 - [ ] Version/build values were updated if this is a release
 
 ## Screenshots or recordings

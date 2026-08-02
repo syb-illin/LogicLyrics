@@ -68,6 +68,10 @@ final class UpdateService: ObservableObject {
         self.releaseClient = releaseClient
     }
 
+    deinit {
+        checkTask?.cancel()
+    }
+
     func check(silent: Bool = true) {
         if silent, state != .idle {
             AppLog.updates.debug("Redundant automatic update check skipped")

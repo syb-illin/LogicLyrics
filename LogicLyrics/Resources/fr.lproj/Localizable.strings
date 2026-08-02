@@ -320,3 +320,29 @@
 "Export Song History" = "Exporter l’historique des morceaux";
 "Import Song History" = "Importer l’historique des morceaux";
 "Imported songs are merged safely; current local versions are never overwritten." = "Les morceaux importés sont fusionnés en toute sécurité ; les versions locales actuelles ne sont jamais remplacées.";
+
+/* Lecteur de projet Logic recentré — 2.5 */
+"Logic Project Reader" = "Lecteur de projets Logic";
+"Current Logic project" = "Projet Logic actuel";
+"RECENT PROJECTS" = "PROJETS RÉCENTS";
+"No recent projects" = "Aucun projet récent";
+"No matching projects" = "Aucun projet correspondant";
+"Shows the lyrics saved from this Logic project." = "Affiche les paroles enregistrées depuis ce projet Logic.";
+"Project lyrics" = "Paroles du projet";
+"Saved Lyrics" = "Paroles enregistrées";
+"Snapshot from the last successful read" = "Copie issue de la dernière lecture réussie";
+"Read directly from Logic Project Notes" = "Lues directement depuis les notes du projet Logic";
+"Reopen Project" = "Rouvrir le projet";
+"Copy Lyrics" = "Copier les paroles";
+"Lyrics text" = "Texte des paroles";
+"Sections" = "Sections";
+"%d detected" = "%d détectées";
+"No Project Notes Found" = "Aucune note de projet trouvée";
+"This Logic alternative does not currently contain readable Project Notes." = "Cette alternative Logic ne contient actuellement aucune note de projet lisible.";
+"No section markers detected" = "Aucun marqueur de section détecté";
+"Lyrics from Logic, without the clutter" = "Les paroles de Logic, sans superflu";
+"Open or drop a .logicx project to read its Project Notes, tempo and key." = "Ouvrez ou déposez un projet .logicx pour lire ses notes, son tempo et sa tonalité.";
+"Your project stays on this Mac and is never modified." = "Votre projet reste sur ce Mac et n’est jamais modifié.";
+"Unsupported format. Choose a .logicx project." = "Format non pris en charge. Choisissez un projet .logicx.";
+"Reads tempo, key and lyrics directly from Logic Pro Project Notes without modifying your project." = "Lit le tempo, la tonalité et les paroles directement depuis les notes du projet Logic Pro, sans modifier le projet.";
+"Copy to clipboard" = "Copier dans le presse-papiers";

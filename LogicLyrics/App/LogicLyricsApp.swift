@@ -29,7 +29,7 @@ struct LogicLyricsApp: App {
             CommandGroup(replacing: .appInfo) {
                 Button(L10n.text("About Logic Lyrics")) {
                     let credits = NSAttributedString(
-                        string: L10n.text("Extracts lyrics from Logic Pro Project Notes and prepares Suno AI prompts that preserve your vocal identity."),
+                        string: L10n.text("Reads tempo, key and lyrics directly from Logic Pro Project Notes without modifying your project."),
                         attributes: [.foregroundColor: NSColor.secondaryLabelColor]
                     )
                     NSApplication.shared.orderFrontStandardAboutPanel(options: [
