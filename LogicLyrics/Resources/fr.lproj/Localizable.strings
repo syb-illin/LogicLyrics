@@ -350,3 +350,17 @@
 "Unsupported format. Choose a .logicx project." = "Format non pris en charge. Choisissez un projet .logicx.";
 "Reads tempo, key and lyrics directly from Logic Pro Project Notes without modifying your project." = "Lit le tempo, la tonalité et les paroles directement depuis les notes du projet Logic Pro, sans modifier le projet.";
 "Copy to clipboard" = "Copier dans le presse-papiers";
+"Checks silently when Logic Lyrics opens. Updates are never installed without your confirmation." = "Effectue une vérification silencieuse à l’ouverture de Logic Lyrics. Les mises à jour ne sont jamais installées sans votre confirmation.";
+"Privacy & Diagnostics" = "Confidentialité et diagnostics";
+"Project processing" = "Traitement du projet";
+"Entirely on this Mac" = "Entièrement sur ce Mac";
+"Project modification" = "Modification du projet";
+"Never" = "Jamais";
+"Diagnostics contain app and system information plus privacy-safe Logic Lyrics events. Lyrics and file paths are never logged." = "Les diagnostics contiennent des informations sur l’app et le système, ainsi que des événements Logic Lyrics respectueux de la confidentialité. Les paroles et chemins de fichiers ne sont jamais enregistrés.";
+"Logic Lyrics settings" = "Réglages de Logic Lyrics";
+"v%@ · build %@" = "v%@ · build %@";
+"%@ (build %@)" = "%@ (version %@)";
+"%d s" = "%d s";
+"%d min %02d s" = "%d min %02d s";
+"Current Logic project: %@" = "Projet Logic actuel : %@";
+"Shows the currently loaded project lyrics." = "Affiche les paroles du projet actuellement chargé.";

@@ -78,7 +78,24 @@ for LANGUAGE in en fr; do
     [[ -f "$LOCALIZATION_SOURCE" ]] || fail "The $LANGUAGE localization is missing."
     /bin/mkdir -p "$PRODUCT/Contents/Resources/$LANGUAGE.lproj"
     /usr/bin/ditto "$LOCALIZATION_SOURCE" "$PRODUCT/Contents/Resources/$LANGUAGE.lproj/Localizable.strings"
+    LOCALIZATION_KEYS="$BUILD_ROOT/localization-$LANGUAGE.keys"
+    LOCALIZATION_DUPLICATES="$BUILD_ROOT/localization-$LANGUAGE-duplicates.txt"
+    LC_ALL=C /usr/bin/sed -E -n 's/^"(([^"\\]|\\.)*)"[[:space:]]*=.*/\1/p' "$LOCALIZATION_SOURCE" \
+        | /usr/bin/sort > "$LOCALIZATION_KEYS"
+    /usr/bin/uniq -d "$LOCALIZATION_KEYS" > "$LOCALIZATION_DUPLICATES"
+    [[ ! -s "$LOCALIZATION_DUPLICATES" ]] \
+        || fail "The $LANGUAGE localization contains duplicate keys."
 done
+if ! /usr/bin/cmp -s "$BUILD_ROOT/localization-en.keys" "$BUILD_ROOT/localization-fr.keys"; then
+    print "\nEnglish and French localization keys are not aligned:"
+    /usr/bin/diff -u "$BUILD_ROOT/localization-en.keys" "$BUILD_ROOT/localization-fr.keys" || true
+    fail "Every user-facing localization key must exist in both English and French."
+fi
+/usr/bin/python3 "$SCRIPT_DIR/Tools/check_localizations.py" \
+    "$SCRIPT_DIR/LogicLyrics" \
+    "$SCRIPT_DIR/LogicLyrics/Resources/en.lproj/Localizable.strings" \
+    "$SCRIPT_DIR/LogicLyrics/Resources/fr.lproj/Localizable.strings" \
+    || fail "App-wide English/French localization validation failed."
 SOURCES=(
     "$SCRIPT_DIR/LogicLyrics/App/LogicLyricsApp.swift"
     "$SCRIPT_DIR/LogicLyrics/App/LogicProjectCommands.swift"

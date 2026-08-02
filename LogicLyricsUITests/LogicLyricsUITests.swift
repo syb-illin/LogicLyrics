@@ -33,6 +33,18 @@ final class LogicLyricsUITests: XCTestCase {
     }
 
     @MainActor
+    func testEmptyWorkspaceAccessibility() throws {
+        let app = launchApp()
+        defer { app.terminate() }
+
+        XCTAssertTrue(element("empty-open-project", in: app).waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Lyrics from Logic, without the clutter"].exists)
+        XCTAssertTrue(app.staticTexts["Your project stays on this Mac and is never modified."].exists)
+        try performAccessibilityAudit(on: app)
+        attachScreenshot(of: app, named: "Empty-Workspace-Accessible")
+    }
+
+    @MainActor
     func testRecentProjectNavigationSearchAndCopyActions() {
         let app = launchApp()
         defer { app.terminate() }
@@ -83,6 +95,10 @@ final class LogicLyricsUITests: XCTestCase {
         XCTAssertFalse(atLast.exists)
         XCTAssertEqual(element("recent-songs-count", in: app).label, "1 song")
 
+        noLyrics.click()
+        XCTAssertTrue(app.staticTexts["No Project Notes Found"].waitForExistence(timeout: 3))
+        XCTAssertTrue(element("history-open-project", in: app).exists)
+
         attachScreenshot(of: app, named: "Recent-Project-Lyrics")
     }
 
@@ -107,45 +123,79 @@ final class LogicLyricsUITests: XCTestCase {
         XCTAssertFalse(element("recent-songs-section", in: app).label.isEmpty)
         XCTAssertEqual(element("lyric-sections-grid", in: app).label, "Lyric sections")
         XCTAssertEqual(element("section-copy-0", in: app).label, "Copy Verse 1 section")
-        try app.performAccessibilityAudit(for: [.sufficientElementDescription, .elementDetection]) { issue in
-            if let element = issue.element {
-                let frame = element.frame
-                let windowFrame = app.windows.firstMatch.frame
-                let lacksDescription = issue.auditType == .sufficientElementDescription
-                    && element.identifier.isEmpty
-                    && element.label.isEmpty
-                let isNativeWindowContainer = lacksDescription
-                    && element.elementType == .group
-                    && abs(frame.minY - windowFrame.minY) < 1
-                    && abs(frame.height - windowFrame.height) < 1
-                    && frame.minX >= windowFrame.minX - 1
-                    && frame.maxX <= windowFrame.maxX + 1
-                let recentSongsFrame = self.element("recent-songs-section", in: app).frame
-                let isSidebarScrollContainer = lacksDescription
-                    && element.elementType == .other
-                    && frame.contains(CGPoint(x: recentSongsFrame.midX, y: recentSongsFrame.midY))
-                let isSystemTouchBarElement = issue.auditType == .sufficientElementDescription
-                    && element.identifier.isEmpty
-                    && frame.minY >= windowFrame.minY - 33
-                    && frame.maxY <= windowFrame.minY + 2
-                    && frame.height <= 34
-                    && frame.minX >= windowFrame.minX
-                    && frame.maxX <= windowFrame.maxX
-                if isNativeWindowContainer
-                    || isSidebarScrollContainer
-                    || isSystemTouchBarElement {
-                    // XCTest exposes non-focusable hosting, split-view, virtual Touch Bar and scroll wrappers as empty elements.
-                    // Their labelled, interactive descendants remain covered by this same audit.
-                    return true
-                }
-                print(
-                    "Accessibility audit issue: audit=\(issue.auditType.rawValue), type=\(element.elementType.rawValue), "
-                    + "identifier=\(element.identifier), label=\(element.label), frame=\(element.frame), "
-                    + "details=\(issue.detailedDescription)"
-                )
-            }
-            return false
-        }
+        try performAccessibilityAudit(on: app)
+    }
+
+    @MainActor
+    func testSettingsAndAboutAccessibility() throws {
+        let app = launchApp()
+        defer { app.terminate() }
+
+        openSettings(in: app)
+        XCTAssertTrue(app.staticTexts["Privacy & Diagnostics"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Entirely on this Mac"].exists)
+        XCTAssertTrue(app.staticTexts["Never"].exists)
+        try performAccessibilityAudit(on: app)
+        attachScreenshot(of: app, named: "Settings-English-Accessible")
+        closeFrontWindow(in: app)
+
+        openAbout(in: app, menuTitle: "About Logic Lyrics")
+        XCTAssertTrue(
+            app.staticTexts[
+                "Reads tempo, key and lyrics directly from Logic Pro Project Notes without modifying your project."
+            ].waitForExistence(timeout: 3)
+        )
+        try performAccessibilityAudit(on: app)
+        attachScreenshot(of: app, named: "About-English-Accessible")
+    }
+
+    @MainActor
+    func testFrenchLocalizationAndAccessibility() throws {
+        let app = launchApp(additionalArguments: [
+            "-AppleLanguages", "(fr)",
+            "-AppleLocale", "fr_FR"
+        ])
+        defer { app.terminate() }
+
+        XCTAssertTrue(app.staticTexts["PROJETS RÉCENTS"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Les paroles de Logic, sans superflu"].exists)
+        let missingLyricsFilter = element("missing-lyrics-filter", in: app)
+        XCTAssertTrue(missingLyricsFilter.waitForExistence(timeout: 3))
+        XCTAssertEqual(missingLyricsFilter.label, "Sans paroles")
+
+        let plaid = element("history-row-11111111-1111-1111-1111-111111111111", in: app)
+        plaid.click()
+        let openProject = element("history-open-project", in: app)
+        XCTAssertTrue(openProject.waitForExistence(timeout: 3))
+        XCTAssertEqual(openProject.label, "Ouvrir le projet Logic")
+
+        let search = element("history-search-field", in: app)
+        search.click()
+        search.typeText("last")
+        XCTAssertTrue(
+            element("history-row-33333333-3333-3333-3333-333333333333", in: app)
+                .waitForExistence(timeout: 3)
+        )
+        XCTAssertEqual(element("recent-songs-count", in: app).label, "1 morceau")
+        try performAccessibilityAudit(on: app)
+        attachScreenshot(of: app, named: "Historique-Francais-Accessible")
+
+        openSettings(in: app)
+        XCTAssertTrue(app.staticTexts["Confidentialité et diagnostics"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Entièrement sur ce Mac"].exists)
+        XCTAssertTrue(app.staticTexts["Jamais"].exists)
+        try performAccessibilityAudit(on: app)
+        attachScreenshot(of: app, named: "Reglages-Francais-Accessibles")
+        closeFrontWindow(in: app)
+
+        openAbout(in: app, menuTitle: "À propos de Logic Lyrics")
+        XCTAssertTrue(
+            app.staticTexts[
+                "Lit le tempo, la tonalité et les paroles directement depuis les notes du projet Logic Pro, sans modifier le projet."
+            ].waitForExistence(timeout: 3)
+        )
+        try performAccessibilityAudit(on: app)
+        attachScreenshot(of: app, named: "A-Propos-Francais-Accessible")
     }
 
     @MainActor
@@ -186,6 +236,75 @@ final class LogicLyricsUITests: XCTestCase {
     @MainActor
     private func element(_ identifier: String, in app: XCUIApplication) -> XCUIElement {
         app.descendants(matching: .any)[identifier]
+    }
+
+    @MainActor
+    private func openSettings(in app: XCUIApplication) {
+        app.typeKey(",", modifierFlags: .command)
+        XCTAssertTrue(
+            element("settings-view", in: app).waitForExistence(timeout: 5),
+            "The Settings command did not present the app settings window."
+        )
+    }
+
+    @MainActor
+    private func openAbout(in app: XCUIApplication, menuTitle: String) {
+        let appMenu = app.menuBars.menuBarItems["Logic Lyrics"]
+        XCTAssertTrue(appMenu.waitForExistence(timeout: 3))
+        appMenu.click()
+        let aboutItem = app.menuItems[menuTitle]
+        XCTAssertTrue(aboutItem.waitForExistence(timeout: 3))
+        aboutItem.click()
+    }
+
+    @MainActor
+    private func closeFrontWindow(in app: XCUIApplication) {
+        app.typeKey("w", modifierFlags: .command)
+        app.activate()
+        XCTAssertTrue(element("logic-lyrics-workspace", in: app).waitForExistence(timeout: 3))
+    }
+
+    @MainActor
+    private func performAccessibilityAudit(on app: XCUIApplication) throws {
+        try app.performAccessibilityAudit { issue in
+            if let element = issue.element {
+                let frame = element.frame
+                let windowFrame = app.windows.firstMatch.frame
+                let lacksDescription = issue.auditType == .sufficientElementDescription
+                    && element.identifier.isEmpty
+                    && element.label.isEmpty
+                let isNativeWindowContainer = lacksDescription
+                    && element.elementType == .group
+                    && abs(frame.minY - windowFrame.minY) < 1
+                    && abs(frame.height - windowFrame.height) < 1
+                    && frame.minX >= windowFrame.minX - 1
+                    && frame.maxX <= windowFrame.maxX + 1
+                let recentSongsFrame = self.element("recent-songs-section", in: app).frame
+                let isSidebarScrollContainer = lacksDescription
+                    && element.elementType == .other
+                    && frame.contains(CGPoint(x: recentSongsFrame.midX, y: recentSongsFrame.midY))
+                let isSystemTouchBarElement = issue.auditType == .sufficientElementDescription
+                    && element.identifier.isEmpty
+                    && frame.minY >= windowFrame.minY - 33
+                    && frame.maxY <= windowFrame.minY + 2
+                    && frame.height <= 34
+                    && frame.minX >= windowFrame.minX
+                    && frame.maxX <= windowFrame.maxX
+                if isNativeWindowContainer
+                    || isSidebarScrollContainer
+                    || isSystemTouchBarElement {
+                    // XCTest exposes non-focusable hosting, split-view, virtual Touch Bar and scroll wrappers as empty elements.
+                    // Their labelled, interactive descendants remain covered by this same audit.
+                    return true
+                }
+                print(
+                    "Accessibility audit issue: audit=\(issue.auditType.rawValue), type=\(element.elementType.rawValue), "
+                    + "identifier=\(element.identifier), label=\(element.label), frame=\(element.frame), "
+                    + "details=\(issue.detailedDescription)"
+                )
+            }
+            return false
+        }
     }
 
     @MainActor

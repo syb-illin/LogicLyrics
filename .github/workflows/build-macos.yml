@@ -27,6 +27,9 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
 
+      - name: Test app-wide localization validation
+        run: python3 -m unittest Tools/test_check_localizations.py
+
       - name: Build with the same lightweight pipeline as users
         env:
           LOGICLYRICS_NONINTERACTIVE: "1"

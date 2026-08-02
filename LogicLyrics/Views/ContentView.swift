@@ -42,7 +42,7 @@ struct ContentView: View {
         .accessibilityLabel(L10n.text("Logic Lyrics workspace"))
         .accessibilityIdentifier("logic-lyrics-workspace")
         .tint(AppTheme.accent)
-        .navigationTitle(model.projectName.isEmpty ? "Logic Lyrics" : model.projectName)
+        .navigationTitle(model.projectName.isEmpty ? L10n.text("Logic Lyrics") : model.projectName)
         .toolbar { toolbar }
         .focusedSceneValue(
             \.openLogicProjectAction,
@@ -57,7 +57,7 @@ struct ContentView: View {
             handleProjectImport(result)
         }
         .alert(currentAlertTitle, isPresented: errorBinding) {
-            Button("OK", role: .cancel) {
+            Button(L10n.text("OK"), role: .cancel) {
                 model.errorMessage = nil
                 history.dismissPersistenceError()
                 updater.errorMessage = nil
@@ -70,10 +70,10 @@ struct ContentView: View {
             isPresented: $confirmsUpdateInstallation,
             titleVisibility: .visible
         ) {
-            Button("Not Now", role: .cancel) {}
-            Button("Install Update") { updater.installAvailableUpdate() }
+            Button(L10n.text("Not Now"), role: .cancel) {}
+            Button(L10n.text("Install Update")) { updater.installAvailableUpdate() }
         } message: {
-            Text("Logic Lyrics will close, rebuild the verified update, preserve a backup, and reopen automatically.")
+            Text(L10n.text("Logic Lyrics will close, rebuild the verified update, preserve a backup, and reopen automatically."))
         }
         .onAppear(perform: configureSession)
         .onDisappear {
@@ -118,13 +118,13 @@ struct ContentView: View {
         HStack(spacing: 11) {
             AccentIcon(systemName: "waveform.and.mic", size: 38)
             VStack(alignment: .leading, spacing: 1) {
-                Text("Logic Lyrics")
+                Text(L10n.text("Logic Lyrics"))
                     .font(.headline)
                     .accessibilityIdentifier("logic-lyrics-root")
-                Text("Logic Project Reader")
+                Text(L10n.text("Logic Project Reader"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text("v\(Self.appVersion) · build \(Self.buildNumber)")
+                Text(L10n.format("v%@ · build %@", Self.appVersion, Self.buildNumber))
                     .font(.system(size: 9, weight: .medium))
                     .foregroundStyle(.tertiary)
             }
@@ -146,56 +146,64 @@ struct ContentView: View {
 
     private var currentProjectCard: some View {
         VStack(alignment: .leading, spacing: 13) {
-            HStack(spacing: 10) {
-                AccentIcon(systemName: "music.note", color: AppTheme.cyan, size: 34)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(model.projectName)
-                        .font(.subheadline.weight(.semibold))
-                        .lineLimit(1)
-                    Text(L10n.format("Alternative %@", model.selectedNote?.alternative ?? "—"))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                CapsuleStatus(text: "Logic", systemName: "checkmark")
-            }
+            Button {
+                selectedHistoryID = nil
+            } label: {
+                VStack(alignment: .leading, spacing: 13) {
+                    HStack(spacing: 10) {
+                        AccentIcon(systemName: "music.note", color: AppTheme.cyan, size: 34)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(model.projectName)
+                                .font(.subheadline.weight(.semibold))
+                                .lineLimit(1)
+                            Text(L10n.format("Alternative %@", model.selectedNote?.alternative ?? "—"))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        CapsuleStatus(text: L10n.text("Logic"), systemName: "checkmark")
+                    }
 
-            HStack(spacing: 8) {
-                metadataTile(
-                    title: "TEMPO",
-                    value: model.bpm.map { Self.formatBPM($0) + " BPM" } ?? L10n.text("Not detected"),
-                    systemName: "metronome",
-                    color: AppTheme.cyan
-                )
-                metadataTile(
-                    title: L10n.text("KEY"),
-                    value: model.musicalKey ?? L10n.text("Not detected"),
-                    systemName: "music.note",
-                    color: AppTheme.accent
-                )
+                    HStack(spacing: 8) {
+                        metadataTile(
+                            title: L10n.text("TEMPO"),
+                            value: model.bpm.map { Self.formatBPM($0) + " BPM" } ?? L10n.text("Not detected"),
+                            systemName: "metronome",
+                            color: AppTheme.cyan
+                        )
+                        metadataTile(
+                            title: L10n.text("KEY"),
+                            value: model.musicalKey ?? L10n.text("Not detected"),
+                            systemName: "music.note",
+                            color: AppTheme.accent
+                        )
+                    }
+
+                    if !model.sections.isEmpty {
+                        Divider().opacity(0.25)
+                        Text(L10n.format("%d sections detected", model.sections.count))
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(L10n.format("Current Logic project: %@", model.projectName))
+            .accessibilityHint(L10n.text("Shows the currently loaded project lyrics."))
+            .accessibilityIdentifier("current-project-card")
 
             if model.notes.count > 1 {
-                Picker("Project Notes", selection: $model.selectedNoteID) {
+                Picker(L10n.text("Project Notes"), selection: $model.selectedNoteID) {
                     ForEach(model.notes) { note in
                         Text(note.title).tag(Optional(note.id))
                     }
                 }
                 .pickerStyle(.menu)
             }
-
-            if !model.sections.isEmpty {
-                Divider().opacity(0.25)
-                Text(L10n.format("%d sections detected", model.sections.count))
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
-            }
         }
         .appPanel(radius: 15, padding: 13)
-        .onTapGesture { selectedHistoryID = nil }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(L10n.text("Current Logic project"))
-        .accessibilityIdentifier("current-project-card")
     }
 
     private func metadataTile(
@@ -263,18 +271,18 @@ struct ContentView: View {
         VStack(spacing: 22) {
             AccentIcon(systemName: "text.document", color: AppTheme.accent, size: 72)
             VStack(spacing: 8) {
-                Text("Lyrics from Logic, without the clutter")
+                Text(L10n.text("Lyrics from Logic, without the clutter"))
                     .font(.title.weight(.semibold))
-                Text("Open or drop a .logicx project to read its Project Notes, tempo and key.")
+                Text(L10n.text("Open or drop a .logicx project to read its Project Notes, tempo and key."))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 520)
             }
-            Button("Open a Logic Pro Project", systemImage: "folder.badge.plus", action: requestProjectImport)
+            Button(L10n.text("Open a Logic Pro Project"), systemImage: "folder.badge.plus", action: requestProjectImport)
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .accessibilityIdentifier("empty-open-project")
-            Text("Your project stays on this Mac and is never modified.")
+            Text(L10n.text("Your project stays on this Mac and is never modified."))
                 .font(.caption)
                 .foregroundStyle(.tertiary)
         }
@@ -299,7 +307,7 @@ struct ContentView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItemGroup {
-            Button("Open", systemImage: "folder", action: requestProjectImport)
+            Button(L10n.text("Open"), systemImage: "folder", action: requestProjectImport)
                 .accessibilityLabel(L10n.text("Open Logic project"))
                 .accessibilityHint(L10n.text("Open a Logic Pro project"))
                 .accessibilityIdentifier("toolbar-open")
@@ -331,13 +339,13 @@ struct ContentView: View {
                 .accessibilityLabel(L10n.text("Checking for updates"))
                 .accessibilityIdentifier("toolbar-updates")
         case .current:
-            Button("Up to Date", systemImage: "checkmark.circle") {
+            Button(L10n.text("Up to Date"), systemImage: "checkmark.circle") {
                 updater.check(silent: false)
             }
             .help(L10n.text("Check again"))
             .accessibilityIdentifier("toolbar-updates")
         case .idle:
-            Button("Updates", systemImage: "arrow.triangle.2.circlepath") {
+            Button(L10n.text("Updates"), systemImage: "arrow.triangle.2.circlepath") {
                 updater.check(silent: false)
             }
             .help(L10n.text("Check for updates"))

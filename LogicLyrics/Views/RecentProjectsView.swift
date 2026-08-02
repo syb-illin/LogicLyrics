@@ -8,7 +8,7 @@ struct RecentProjectsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("RECENT PROJECTS")
+                Text(L10n.text("RECENT PROJECTS"))
                     .font(.caption2.weight(.bold))
                     .tracking(0.8)
                     .foregroundStyle(.secondary)
@@ -16,6 +16,7 @@ struct RecentProjectsView: View {
                 Text("\(history.filteredEntries.count)")
                     .font(.caption2.monospacedDigit().weight(.bold))
                     .foregroundStyle(.secondary)
+                    .accessibilityElement(children: .ignore)
                     .accessibilityLabel(resultCountAccessibilityLabel)
                     .accessibilityIdentifier("recent-songs-count")
             }
@@ -25,7 +26,7 @@ struct RecentProjectsView: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
-                TextField("Search", text: $history.searchText)
+                TextField(L10n.text("Search"), text: $history.searchText)
                     .textFieldStyle(.plain)
                     .accessibilityLabel(L10n.text("Search recent songs"))
                     .accessibilityIdentifier("history-search-field")
@@ -34,7 +35,7 @@ struct RecentProjectsView: View {
             .background(Color.primary.opacity(0.055))
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
 
-            Toggle("No lyrics", isOn: $history.showsOnlyProjectsWithoutLyrics)
+            Toggle(L10n.text("No lyrics"), isOn: $history.showsOnlyProjectsWithoutLyrics)
                 .toggleStyle(.checkbox)
                 .controlSize(.small)
                 .font(.caption)

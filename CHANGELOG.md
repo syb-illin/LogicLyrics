@@ -8,6 +8,8 @@ All notable user-facing changes are documented here. Releases use semantic versi
 - Added a native **No lyrics** checkbox that filters projects whose current Logic Project Notes are empty and composes with title search.
 - Updated the result count live while filtering and renamed the history action to the clearer **Open Logic Project**.
 - Added pure policy and macOS UI regressions for title-only matching, lyrics-only false positives, empty Project Notes, combined filters, result counts, and the action label.
+- Added automated English/French localization-key parity and a French VoiceOver/UI regression for the new controls.
+- Enforced localization across every SwiftUI surface and audited the empty workspace, lyrics history, no-lyrics state, Settings, About, VoiceOver semantics, and window sizes in English and French.
 
 ## 2.5.0 — build 34
 

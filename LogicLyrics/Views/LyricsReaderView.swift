@@ -85,15 +85,15 @@ struct LyricsReaderView: View {
             }
             Spacer()
             if let onOpenProject {
-                Button("Open Logic Project", systemImage: "folder", action: onOpenProject)
+                Button(L10n.text("Open Logic Project"), systemImage: "folder", action: onOpenProject)
                     .buttonStyle(.bordered)
                     .controlSize(.large)
                     .accessibilityIdentifier("history-open-project")
             }
             if !document.lyrics.isEmpty {
                 TransientCopyButton(
-                    title: "Copy Lyrics",
-                    copiedTitle: "Copied",
+                    title: L10n.text("Copy Lyrics"),
+                    copiedTitle: L10n.text("Copied"),
                     prominent: true,
                     accessibilityIdentifier: "lyrics-copy-all"
                 ) {
@@ -164,7 +164,7 @@ struct LyricsReaderView: View {
     private var sectionsCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("Sections")
+                Text(L10n.text("Sections"))
                     .font(.headline)
                 Spacer()
                 Text(L10n.format("%d detected", document.sections.count))
@@ -195,9 +195,9 @@ struct LyricsReaderView: View {
                 .font(.system(size: 36, weight: .light))
                 .foregroundStyle(AppTheme.cyan)
                 .accessibilityHidden(true)
-            Text("No Project Notes Found")
+            Text(L10n.text("No Project Notes Found"))
                 .font(.title3.weight(.semibold))
-            Text("This Logic alternative does not currently contain readable Project Notes.")
+            Text(L10n.text("This Logic alternative does not currently contain readable Project Notes."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -302,7 +302,9 @@ private struct TransientCopyButton: View {
         }
         .controlSize(title.isEmpty ? .small : .large)
         .help(L10n.text("Copy to clipboard"))
-        .accessibilityLabel(isCopied ? L10n.text("Copied") : L10n.text("Copy"))
+        .accessibilityLabel(
+            isCopied ? L10n.text("Copied") : (title.isEmpty ? L10n.text("Copy") : title)
+        )
         .accessibilityIdentifier(accessibilityIdentifier)
         .task(id: isCopied) {
             guard isCopied else { return }

@@ -75,7 +75,7 @@ struct CapsuleStatus: View {
             Image(systemName: systemName)
                 .foregroundStyle(color)
                 .accessibilityHidden(true)
-            Text(L10n.text(text))
+            Text(text)
                 .foregroundStyle(.secondary)
         }
             .font(.caption.weight(.medium))
@@ -99,7 +99,10 @@ struct ProcessingOverlay: View {
             ZStack {
                 Color.black.opacity(0.48).ignoresSafeArea()
                 VStack(spacing: 14) {
-                    ProgressView().controlSize(.large).tint(AppTheme.accent)
+                    ProgressView()
+                        .controlSize(.large)
+                        .tint(AppTheme.accent)
+                        .accessibilityLabel(L10n.text("Operation in progress"))
                     Text(message).font(.headline).multilineTextAlignment(.center)
                     TimelineView(.periodic(from: .now, by: 1)) { context in
                         Text(elapsed(from: startedAt, to: context.date))
@@ -107,7 +110,7 @@ struct ProcessingOverlay: View {
                             .foregroundStyle(.secondary)
                     }
                     if let cancel {
-                        Button("Cancel", role: .cancel, action: cancel).buttonStyle(.bordered)
+                        Button(L10n.text("Cancel"), role: .cancel, action: cancel).buttonStyle(.bordered)
                     }
                 }
                 .padding(26)
@@ -132,6 +135,8 @@ struct ProcessingOverlay: View {
 
     private func elapsed(from start: Date, to end: Date) -> String {
         let seconds = max(0, Int(end.timeIntervalSince(start)))
-        return seconds < 60 ? "\(seconds) s" : String(format: "%d min %02d s", seconds / 60, seconds % 60)
+        return seconds < 60
+            ? L10n.format("%d s", seconds)
+            : L10n.format("%d min %02d s", seconds / 60, seconds % 60)
     }
 }

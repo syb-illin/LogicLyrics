@@ -14,7 +14,7 @@ struct LogicLyricsApp: App {
     }
 
     var body: some Scene {
-        Window("Logic Lyrics", id: "main") {
+        Window(L10n.text("Logic Lyrics"), id: "main") {
             ContentView()
                 .environmentObject(updater)
                 .frame(minWidth: 820, minHeight: 620)
@@ -38,12 +38,14 @@ struct LogicLyricsApp: App {
                         .credits: credits
                     ])
                 }
+                .accessibilityIdentifier("about-menu-item")
             }
             CommandMenu(L10n.text("Diagnostics")) {
                 Button(L10n.text("Copy System Diagnostics")) {
                     AppDiagnostics.copyToPasteboard()
                 }
                 .keyboardShortcut("d", modifiers: [.command, .option])
+                .accessibilityIdentifier("diagnostics-copy-menu-item")
             }
         }
 
@@ -56,7 +58,7 @@ struct LogicLyricsApp: App {
     private static var versionLabel: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"
-        return "\(version) (build \(build))"
+        return L10n.format("%@ (build %@)", version, build)
     }
 
     private static var initialWindowSize: CGSize {
