@@ -16,15 +16,32 @@ enum LyricSectionParser {
     private static let adjacentMarkers = try! NSRegularExpression(pattern: #"\]\s*\["#)
     private static let marker = try! NSRegularExpression(pattern: #"(?m)^\s*\[([^\]\r\n]+)\]\s*$"#)
 
-    // Project Notes may use custom section labels. Recognize any standalone
-    // bracketed marker rather than maintaining a brittle fixed vocabulary.
+    private static let structuralPrefixes = [
+        "verse", "chorus", "pre-chorus", "prechorus", "bridge", "intro", "outro",
+        "hook", "refrain", "post-chorus", "post chorus", "interlude", "breakdown",
+        "instrumental", "solo", "coda", "ending"
+    ]
+    private static let performanceDirectiveTerms = [
+        "vocal", "vocals", "singing", "spoken", "whisper", "falsetto", "baritone",
+        "soprano", "alto", "tenor", "male", "female", "duet", "harmony", "harmonies",
+        "backing", "guitar", "piano", "synth", "drum", "bass", "strings", "brass",
+        "clean", "distorted", "soft", "loud", "energetic", "melodic", "production",
+        "tempo", "bpm", "key", "fade", "reverb", "delay"
+    ]
+
+    // Unknown labels remain valid for custom song structures, while common
+    // Suno performance/production directives remain part of the section body.
     static func parse(_ lyrics: String) -> [LyricSection] {
         let original = lyrics as NSString
         let normalized = adjacentMarkers.stringByReplacingMatches(
             in: lyrics, range: NSRange(location: 0, length: original.length), withTemplate: "]\n["
         )
         let source = normalized as NSString
-        let matches = marker.matches(in: normalized, range: NSRange(location: 0, length: source.length))
+        let matches = marker
+            .matches(in: normalized, range: NSRange(location: 0, length: source.length))
+            .filter { match in
+                isStructuralLabel(source.substring(with: match.range(at: 1)))
+            }
         guard !matches.isEmpty else { return [] }
 
         return matches.enumerated().map { index, match in
@@ -36,5 +53,16 @@ enum LyricSectionParser {
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             return LyricSection(id: index, label: label, content: body)
         }
+    }
+
+    private static func isStructuralLabel(_ rawLabel: String) -> Bool {
+        let label = rawLabel
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            .lowercased()
+        guard !label.isEmpty else { return false }
+        if structuralPrefixes.contains(where: { label.hasPrefix($0) }) { return true }
+        let words = Set(label.split(whereSeparator: { !$0.isLetter }).map(String.init))
+        return performanceDirectiveTerms.allSatisfy { !words.contains($0) }
     }
 }

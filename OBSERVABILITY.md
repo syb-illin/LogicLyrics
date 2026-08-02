@@ -6,7 +6,7 @@ GitHub separately provides repository and release statistics. Those distribution
 
 ## Log model
 
-Subsystem: `com.local.LogicLyrics`
+Subsystem: `com.sybillin.LogicLyrics`
 
 - `lifecycle`: launch and diagnostic-copy events
 - `ui`: picker lifecycle and clipboard actions
@@ -26,13 +26,13 @@ Logs must never contain lyrics, project names, filenames, paths, URLs, bookmarks
 ## Inspecting logs
 
 ```sh
-log stream --predicate 'subsystem == "com.local.LogicLyrics"' --level info
+log stream --predicate 'subsystem == "com.sybillin.LogicLyrics"' --level info
 ```
 
 For a bounded support capture:
 
 ```sh
-log show --last 15m --predicate 'subsystem == "com.local.LogicLyrics"' --info
+log show --last 15m --predicate 'subsystem == "com.sybillin.LogicLyrics"' --info
 ```
 
 Use Instruments Time Profiler, Allocations and Leaks for CPU and memory investigations. Logs provide operational context; Instruments remains the runtime source of truth.

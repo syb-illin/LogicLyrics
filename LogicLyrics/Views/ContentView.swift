@@ -20,6 +20,8 @@ struct ContentView: View {
     @State private var presentsProjectImporter = false
     @State private var selectedHistoryID: UUID?
     @State private var confirmsUpdateInstallation = false
+    @State private var pendingHistoryRemovalID: UUID?
+    @State private var confirmsClearHistory = false
 
     private let logicProjectType = UTType(filenameExtension: "logicx") ?? .package
 
@@ -48,6 +50,10 @@ struct ContentView: View {
             \.openLogicProjectAction,
             OpenLogicProjectAction(perform: requestProjectImport)
         )
+        .focusedSceneValue(
+            \.refreshLogicProjectAction,
+            model.projectURL == nil ? nil : RefreshLogicProjectAction(perform: model.refresh)
+        )
         .onDrop(of: [UTType.fileURL], isTargeted: $isDropTargeted, perform: receiveDrop)
         .fileImporter(
             isPresented: $presentsProjectImporter,
@@ -75,13 +81,49 @@ struct ContentView: View {
         } message: {
             Text(L10n.text("Logic Lyrics will close, rebuild the verified update, preserve a backup, and reopen automatically."))
         }
+        .confirmationDialog(
+            L10n.text("Remove this project from history?"),
+            isPresented: Binding(
+                get: { pendingHistoryRemovalID != nil },
+                set: { if !$0 { pendingHistoryRemovalID = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button(L10n.text("Cancel"), role: .cancel) { pendingHistoryRemovalID = nil }
+            Button(L10n.text("Remove from History"), role: .destructive) {
+                if let id = pendingHistoryRemovalID {
+                    history.remove(entryID: id)
+                    if selectedHistoryID == id { selectedHistoryID = nil }
+                }
+                pendingHistoryRemovalID = nil
+            }
+        } message: {
+            Text(L10n.text("The Logic project remains untouched."))
+        }
+        .confirmationDialog(
+            L10n.text("Clear all project history?"),
+            isPresented: $confirmsClearHistory,
+            titleVisibility: .visible
+        ) {
+            Button(L10n.text("Cancel"), role: .cancel) {}
+            Button(L10n.text("Clear History"), role: .destructive) {
+                history.clear()
+                selectedHistoryID = nil
+            }
+        } message: {
+            Text(L10n.text("Saved snapshots will be removed. Logic projects remain untouched."))
+        }
         .onAppear(perform: configureSession)
         .onDisappear {
             model.onProjectLoaded = nil
             history.flush()
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase != .active { history.flush() }
+            if phase == .active {
+                model.checkForExternalChanges()
+            } else {
+                history.flush()
+            }
         }
         .overlay {
             ProcessingOverlay(state: model.operationState, cancel: model.cancelProcessing)
@@ -98,7 +140,13 @@ struct ContentView: View {
                     RecentProjectsView(
                         history: history,
                         selectedID: selectedHistoryID,
-                        onSelect: { selectedHistoryID = $0 }
+                        onSelect: { selectedHistoryID = $0 },
+                        onTogglePin: history.togglePin,
+                        onOpenInLogic: openHistoryProjectInLogic,
+                        onRevealInFinder: revealHistoryProject,
+                        onRemove: { pendingHistoryRemovalID = $0 },
+                        onRemoveMissing: removeMissingHistoryProjects,
+                        onClear: { confirmsClearHistory = true }
                     )
                 }
                 .padding(14)
@@ -195,14 +243,6 @@ struct ContentView: View {
             .accessibilityHint(L10n.text("Shows the currently loaded project lyrics."))
             .accessibilityIdentifier("current-project-card")
 
-            if model.notes.count > 1 {
-                Picker(L10n.text("Project Notes"), selection: $model.selectedNoteID) {
-                    ForEach(model.notes) { note in
-                        Text(note.title).tag(Optional(note.id))
-                    }
-                }
-                .pickerStyle(.menu)
-            }
         }
         .appPanel(radius: 15, padding: 13)
     }
@@ -247,17 +287,27 @@ struct ContentView: View {
     private var workspace: some View {
         Group {
             if let entry = history.entry(id: selectedHistoryID) {
-                LyricsReaderView(document: .history(entry), onOpenProject: {
-                    reopenHistoryProject(entry.id)
-                })
+                LyricsReaderView(
+                    document: .history(entry),
+                    onRefresh: { refreshHistoryProject(entry.id, alternative: entry.alternative) },
+                    onOpenInLogic: { openHistoryProjectInLogic(entry.id) },
+                    onRevealInFinder: { revealHistoryProject(entry.id) }
+                )
             } else if let note = model.selectedNote {
                 LyricsReaderView(
                     document: .project(
                         name: model.projectName,
                         note: note,
                         bpm: model.bpm,
-                        musicalKey: model.musicalKey
-                    )
+                        musicalKey: model.musicalKey,
+                        diagnostics: model.diagnostics,
+                        isSourceModified: model.isSourceModified
+                    ),
+                    availableAlternatives: model.availableAlternatives,
+                    onSelectAlternative: model.selectAlternative,
+                    onRefresh: model.refresh,
+                    onOpenInLogic: openCurrentProjectInLogic,
+                    onRevealInFinder: revealCurrentProject
                 )
             } else {
                 emptyWorkspace
@@ -313,14 +363,6 @@ struct ContentView: View {
                 .accessibilityLabel(L10n.text("Open Logic project"))
                 .accessibilityHint(L10n.text("Open a Logic Pro project"))
                 .accessibilityIdentifier("toolbar-open")
-            if model.selectedNote != nil, selectedHistoryID == nil {
-                Button(model.didCopy ? L10n.text("Copied") : L10n.text("Copy Lyrics"),
-                       systemImage: model.didCopy ? "checkmark" : "doc.on.doc") {
-                    model.copySelectedNote()
-                }
-                .keyboardShortcut("c", modifiers: [.command, .shift])
-                .accessibilityIdentifier("toolbar-copy")
-            }
         }
         ToolbarItem { updateControl }
     }
@@ -361,18 +403,8 @@ struct ContentView: View {
         } else {
             AppLog.updates.info("Automatic update check skipped")
         }
-        model.onProjectLoaded = { name, url, notes, bpm, musicalKey in
-            for note in notes {
-                history.recordProject(
-                    name: name,
-                    url: url,
-                    noteKey: note.id,
-                    alternative: note.alternative,
-                    lyrics: note.text,
-                    bpm: bpm,
-                    musicalKey: musicalKey
-                )
-            }
+        model.onProjectLoaded = { name, url, result in
+            history.recordProject(name: name, url: url, result: result)
             selectedHistoryID = nil
         }
     }
@@ -431,15 +463,69 @@ struct ContentView: View {
         model.open(url)
     }
 
-    private func reopenHistoryProject(_ entryID: UUID) {
+    private func refreshHistoryProject(_ entryID: UUID, alternative: String) {
         do {
-            openProject(try history.resolveProjectURL(entryID: entryID))
+            let url = try history.resolveProjectURL(entryID: entryID)
+            selectedHistoryID = nil
+            model.open(url, preferredAlternative: alternative)
         } catch {
-            locateHistoryProject(entryID, fallbackError: error)
+            locateHistoryProject(entryID, fallbackError: error) { url in
+                selectedHistoryID = nil
+                model.open(url, preferredAlternative: alternative)
+            }
         }
     }
 
-    private func locateHistoryProject(_ entryID: UUID, fallbackError: Error) {
+    private func openCurrentProjectInLogic() {
+        guard let url = model.projectURL else { return }
+        openInLogic(url)
+    }
+
+    private func revealCurrentProject() {
+        guard let url = model.projectURL else { return }
+        NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+
+    private func openHistoryProjectInLogic(_ entryID: UUID) {
+        do { openInLogic(try history.resolveProjectURL(entryID: entryID)) }
+        catch { locateHistoryProject(entryID, fallbackError: error, completion: openInLogic) }
+    }
+
+    private func revealHistoryProject(_ entryID: UUID) {
+        do {
+            NSWorkspace.shared.activateFileViewerSelecting([
+                try history.resolveProjectURL(entryID: entryID)
+            ])
+        } catch {
+            locateHistoryProject(entryID, fallbackError: error) { url in
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+            }
+        }
+    }
+
+    private func openInLogic(_ url: URL) {
+        guard NSWorkspace.shared.open(url) else {
+            model.errorMessage = L10n.text("macOS could not open this project in Logic Pro.")
+            return
+        }
+        AppLog.ui.info("Logic project opened in its default application")
+    }
+
+    private func removeMissingHistoryProjects() {
+        let count = history.removeUnavailableProjects()
+        if let selectedHistoryID, history.entry(id: selectedHistoryID) == nil {
+            self.selectedHistoryID = nil
+        }
+        model.errorMessage = count == 0
+            ? L10n.text("No missing projects were found.")
+            : L10n.format("%d missing projects were removed from history.", count)
+    }
+
+    private func locateHistoryProject(
+        _ entryID: UUID,
+        fallbackError: Error,
+        completion: (URL) -> Void
+    ) {
         let panel = NSOpenPanel()
         panel.title = L10n.text("Locate Logic Project")
         panel.message = L10n.text("Choose the moved or renamed .logicx project to reconnect it with this history entry.")
@@ -454,7 +540,8 @@ struct ContentView: View {
             return
         }
         do {
-            openProject(try history.relocateProject(entryID: entryID, to: url))
+            let resolvedURL = try history.relocateProject(entryID: entryID, to: url)
+            completion(resolvedURL)
         } catch {
             model.errorMessage = error.localizedDescription
         }

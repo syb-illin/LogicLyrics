@@ -2,6 +2,20 @@
 
 All notable user-facing changes are documented here. Releases use semantic versions and every shipped build receives a new build number.
 
+## 2.6.0 — build 36
+
+- Added `Command-R` lyric refresh and lightweight external-change detection with a visible stale-source warning.
+- Added an alternative picker that defaults to Logic’s active alternative and re-reads only the selected `ProjectData`.
+- Added privacy-safe extraction diagnostics explaining missing, undecodable or implausible Project Notes.
+- Distinguished structural lyric markers from Suno vocal and production directives, which now remain in section content.
+- Added history pinning, row removal, missing-project cleanup and clear-all confirmations, plus separate Finder and Logic Pro actions.
+- Migrated history to schema 5, removing retired prompt, editor and revision domains while preserving untouched legacy backups.
+- Changed the production bundle identifier to `com.sybillin.LogicLyrics` with non-destructive old-container history and preference migration.
+- Reduced the app sandbox entitlement to user-selected read-only filesystem access.
+- Pinned updates to the exact approved release assets, verified the expected version and added fault-injected transactional rollback tests.
+- Expanded reader, history repository/store, project locator, view-model, updater, localization, UI and accessibility regression coverage.
+- Added a mandatory documented VoiceOver sign-off protocol because semantic automation cannot validate spoken assistive-technology output.
+
 ## 2.5.1 — build 35
 
 - Fixed recent-project search so it matches project names only instead of silently matching text buried in current or recovered lyrics.

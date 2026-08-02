@@ -5,6 +5,8 @@ import Foundation
 /// general-purpose service container for this intentionally focused app.
 protocol LogicProjectReading: Sendable {
     func readProject(at projectURL: URL) throws -> LogicProjectReader.Result
+    func readProject(at projectURL: URL, preferredAlternative: String?) throws -> LogicProjectReader.Result
+    func projectStateToken(at projectURL: URL, preferredAlternative: String?) throws -> String
 }
 
 extension LogicProjectReader: LogicProjectReading {}

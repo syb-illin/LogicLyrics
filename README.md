@@ -25,7 +25,7 @@
 
 ## What it does
 
-Logic Lyrics opens a `.logicx` package and reads the active alternative's Project Notes, BPM and musical key. It recognizes markers such as `[Verse 1]`, `[Chorus]` and `[Outro]`, lets you copy all lyrics or one section, and keeps a local searchable list of recently read projects.
+Logic Lyrics opens a `.logicx` package and reads Project Notes, BPM and musical key from the active or selected alternative. It recognizes markers such as `[Verse 1]`, `[Chorus]` and `[Outro]`, keeps Suno performance directives inside their section, lets you copy all lyrics or one section, and maintains a searchable local project history.
 
 That is the complete product scope. There is no audio upload, prompt generator, metadata editor, MP3 encoder or Logic-project writer.
 
@@ -52,17 +52,19 @@ If a Developer ID Application identity exists in Keychain, the script detects it
 
 - Native **File → Open Logic Pro Project…** command with `Command-O`.
 - Drag and drop plus a sandboxed `.logicx` picker.
-- Active-alternative Project Notes extraction with technical-RTF false-positive protection.
+- Active-by-default alternative selection with technical-RTF false-positive protection and explicit extraction diagnostics.
+- Manual `Command-R` refresh plus a visible warning when the selected project changes on disk.
 - BPM, key, alternative and section-marker display.
 - One-click clipboard actions for the complete lyrics and each detected section.
-- Searchable local recent-project list that follows moved or renamed files through macOS bookmarks.
+- Searchable, pinnable local history with remove/cleanup actions that follows moved or renamed files through macOS bookmarks.
+- Separate actions to refresh lyrics, reveal a package in Finder or open it in Logic Pro.
 - Automatic update checks that can be disabled, plus visible manual checks and explicit install confirmation.
 - English and French localization, VoiceOver semantics, keyboard access, Reduce Motion and Reduce Transparency support.
 - Privacy-safe Unified Logging and a bounded in-app diagnostic snapshot.
 
 ## Updates
 
-The app can check GitHub Releases silently at launch. Disable this under **Settings → Updates** if desired. Installation only starts after explicit confirmation, verifies the source archive and checksum, rebuilds, then replaces the app at its current location.
+The app can check GitHub Releases silently at launch. Disable this under **Settings → Updates** if desired. Installation only starts after explicit confirmation, pins that exact release, verifies its source archive, checksum and version manifest, rebuilds, then transactionally replaces the app at its current location with rollback protection.
 
 Every release contains the ready-built app plus checksummed app and source archives.
 

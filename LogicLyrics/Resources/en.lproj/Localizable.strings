@@ -318,6 +318,37 @@
 "Locate Logic Project" = "Locate Logic Project";
 "Choose the moved or renamed .logicx project to reconnect it with this history entry." = "Choose the moved or renamed .logicx project to reconnect it with this history entry.";
 "Reconnect" = "Reconnect";
+
+/* Reader workflow 2.6 */
+"Selected Project Notes from %d decoded rich-text candidates." = "Selected Project Notes from %d decoded rich-text candidates.";
+"No embedded rich-text document was found in this alternative." = "No embedded rich-text document was found in this alternative.";
+"%d embedded rich-text documents were found, but none could be decoded." = "%d embedded rich-text documents were found, but none could be decoded.";
+"%d rich-text candidates were decoded, but none looked like multi-line Project Notes." = "%d rich-text candidates were decoded, but none looked like multi-line Project Notes.";
+"Refresh Lyrics" = "Refresh Lyrics";
+"Reads Project Notes from disk again." = "Reads Project Notes from disk again.";
+"Open in Logic Pro" = "Open in Logic Pro";
+"Reveal in Finder" = "Reveal in Finder";
+"Project Actions" = "Project Actions";
+"Offers actions for the Logic project file." = "Offers actions for the Logic project file.";
+"Logic Alternative" = "Logic Alternative";
+"Reads Project Notes from the selected Logic alternative." = "Reads Project Notes from the selected Logic alternative.";
+"This Logic project changed on disk. Refresh Lyrics to read the latest Project Notes." = "This Logic project changed on disk. Refresh Lyrics to read the latest Project Notes.";
+"Pin" = "Pin";
+"Unpin" = "Unpin";
+"Remove from History" = "Remove from History";
+"Actions for %@" = "Actions for %@";
+"Remove Missing Projects" = "Remove Missing Projects";
+"Clear History" = "Clear History";
+"History Actions" = "History Actions";
+"Remove this project from history?" = "Remove this project from history?";
+"The Logic project remains untouched." = "The Logic project remains untouched.";
+"Clear all project history?" = "Clear all project history?";
+"Saved snapshots will be removed. Logic projects remain untouched." = "Saved snapshots will be removed. Logic projects remain untouched.";
+"macOS could not open this project in Logic Pro." = "macOS could not open this project in Logic Pro.";
+"No missing projects were found." = "No missing projects were found.";
+"%d missing projects were removed from history." = "%d missing projects were removed from history.";
+"Release Notes" = "Release Notes";
+"View Release on GitHub" = "View Release on GitHub";
 "Export Song History" = "Export Song History";
 "Import Song History" = "Import Song History";
 "Imported songs are merged safely; current local versions are never overwritten." = "Imported songs are merged safely; current local versions are never overwritten.";

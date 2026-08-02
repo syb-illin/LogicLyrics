@@ -5,9 +5,12 @@ enum UpdatePreferences {
     static let automaticallyChecksForUpdatesKey = "updates.automaticallyChecksForUpdates"
 }
 
-struct UpdateRelease: Sendable {
+struct UpdateRelease: Equatable, Sendable {
     let version: String
-    let assetNames: Set<String>
+    let sourceArchiveURL: URL?
+    let sourceChecksumURL: URL?
+    let releasePageURL: URL?
+    let releaseNotes: String
 }
 
 protocol UpdateReleaseChecking: Sendable {
@@ -35,18 +38,37 @@ struct GitHubReleaseClient: UpdateReleaseChecking {
             throw URLError(.badServerResponse)
         }
         let release = try JSONDecoder().decode(Response.self, from: data)
+        let assets = Dictionary(uniqueKeysWithValues: release.assets.map { ($0.name, $0.downloadURL) })
         return UpdateRelease(
             version: release.tagName.trimmingCharacters(in: CharacterSet(charactersIn: "vV")),
-            assetNames: Set(release.assets.map(\.name))
+            sourceArchiveURL: assets["LogicLyrics-macOS-source.zip"],
+            sourceChecksumURL: assets["LogicLyrics-macOS-source.zip.sha256"],
+            releasePageURL: release.htmlURL,
+            releaseNotes: release.body ?? ""
         )
     }
 
     private struct Response: Decodable {
         let tagName: String
         let assets: [Asset]
+        let htmlURL: URL?
+        let body: String?
 
-        struct Asset: Decodable { let name: String }
-        enum CodingKeys: String, CodingKey { case tagName = "tag_name"; case assets }
+        struct Asset: Decodable {
+            let name: String
+            let downloadURL: URL
+            enum CodingKeys: String, CodingKey {
+                case name
+                case downloadURL = "browser_download_url"
+            }
+        }
+
+        enum CodingKeys: String, CodingKey {
+            case tagName = "tag_name"
+            case assets
+            case htmlURL = "html_url"
+            case body
+        }
     }
 }
 
@@ -59,92 +81,10 @@ final class UpdateService: ObservableObject {
         case available(version: String)
     }
 
-    @Published private(set) var state = State.idle
-    @Published var errorMessage: String?
-    private let releaseClient: any UpdateReleaseChecking
-    private var checkTask: Task<Void, Never>?
-
-    init(releaseClient: any UpdateReleaseChecking = GitHubReleaseClient()) {
-        self.releaseClient = releaseClient
-    }
-
-    deinit {
-        checkTask?.cancel()
-    }
-
-    func check(silent: Bool = true) {
-        if silent, state != .idle {
-            AppLog.updates.debug("Redundant automatic update check skipped")
-            return
-        }
-        guard state != .checking else { return }
-        checkTask?.cancel()
-        state = .checking
-        let startedAt = Date()
-        let trigger = silent ? "automatic" : "manual"
-        AppLog.updates.info("Update check started trigger=\(trigger, privacy: .public)")
-        let releaseClient = releaseClient
-        checkTask = Task { [weak self, releaseClient, startedAt] in
-            do {
-                let release = try await releaseClient.latestRelease()
-                try Task<Never, Never>.checkCancellation()
-                guard !release.version.isEmpty else { throw UpdateError.invalidRelease }
-                guard release.assetNames.contains("LogicLyrics-macOS-source.zip"),
-                      release.assetNames.contains("LogicLyrics-macOS-source.zip.sha256") else {
-                    throw UpdateError.incompleteRelease
-                }
-                guard let self else { return }
-                state = Self.isNewer(release.version, than: Self.currentVersion)
-                    ? .available(version: release.version)
-                    : .current
-                let durationMilliseconds = Int(Date().timeIntervalSince(startedAt) * 1_000)
-                AppLog.updates.info("Update check succeeded duration_ms=\(durationMilliseconds, privacy: .public) remote_version=\(release.version, privacy: .public)")
-            } catch is CancellationError {
-                AppLog.updates.notice("Update check cancelled")
-                return
-            } catch {
-                guard let self else { return }
-                let errorType = String(describing: type(of: error))
-                AppLog.updates.error("Update check failed error_type=\(errorType, privacy: .public)")
-                state = .idle
-                if !silent { errorMessage = L10n.format("Unable to check for updates: %@", error.localizedDescription) }
-            }
-        }
-    }
-
-    func installAvailableUpdate() {
-        guard case .available = state,
-              let bundled = Bundle.main.url(forResource: "UPDATE", withExtension: "command") else {
-            errorMessage = L10n.text("The updater is missing from the application.")
-            return
-        }
-        do {
-            let directory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-                .appendingPathComponent("com.local.LogicLyrics/updater", isDirectory: true)
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            let executable = directory.appendingPathComponent("UPDATE.command")
-            let targetFile = directory.appendingPathComponent("target-path.txt")
-            let currentApplication = Bundle.main.bundleURL.standardizedFileURL
-            guard currentApplication.pathExtension.lowercased() == "app",
-                  FileManager.default.isWritableFile(atPath: currentApplication.deletingLastPathComponent().path) else {
-                throw UpdateError.unwritableInstallation
-            }
-            let data = try Data(contentsOf: bundled)
-            try data.write(to: executable, options: .atomic)
-            try Data(currentApplication.path.utf8).write(to: targetFile, options: .atomic)
-            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: executable.path)
-            guard NSWorkspace.shared.open(executable) else { throw UpdateError.cannotLaunch }
-            AppLog.updates.notice("Updater launched")
-        } catch {
-            let errorType = String(describing: type(of: error))
-            AppLog.updates.error("Updater launch failed error_type=\(errorType, privacy: .public)")
-            errorMessage = L10n.format("The updater could not be launched: %@", error.localizedDescription)
-        }
-    }
-
-    private enum UpdateError: LocalizedError {
+    enum UpdateError: LocalizedError {
         case invalidRelease
         case incompleteRelease
+        case missingUpdater
         case unwritableInstallation
         case cannotLaunch
 
@@ -154,12 +94,114 @@ final class UpdateService: ObservableObject {
                 L10n.text("The release version is missing or invalid.")
             case .incompleteRelease:
                 L10n.text("The release does not contain the two required update files.")
+            case .missingUpdater:
+                L10n.text("The updater is missing from the application.")
             case .unwritableInstallation:
                 L10n.text("The app is installed in a read-only folder. Move it to Downloads or Applications with the required permissions.")
             case .cannotLaunch:
                 L10n.text("macOS could not open the updater in Terminal.")
             }
         }
+    }
+
+    @Published private(set) var state = State.idle
+    @Published private(set) var availableRelease: UpdateRelease?
+    @Published var errorMessage: String?
+    private let releaseClient: any UpdateReleaseChecking
+    private let installer: any UpdateInstalling
+    private var checkTask: Task<Void, Never>?
+
+    init(
+        releaseClient: any UpdateReleaseChecking = GitHubReleaseClient(),
+        installer: any UpdateInstalling = TerminalUpdateInstaller()
+    ) {
+        self.releaseClient = releaseClient
+        self.installer = installer
+    }
+
+    deinit { checkTask?.cancel() }
+
+    func check(silent: Bool = true) {
+        if silent, state != .idle {
+            AppLog.updates.debug("Redundant automatic update check skipped")
+            return
+        }
+        guard state != .checking else { return }
+        checkTask?.cancel()
+        state = .checking
+        errorMessage = nil
+        let startedAt = Date()
+        let trigger = silent ? "automatic" : "manual"
+        AppLog.updates.info("Update check started trigger=\(trigger, privacy: .public)")
+        let releaseClient = releaseClient
+        checkTask = Task { [weak self, releaseClient, startedAt] in
+            do {
+                let release = try await releaseClient.latestRelease()
+                try Task<Never, Never>.checkCancellation()
+                try Self.validate(release)
+                guard let self else { return }
+                if Self.isNewer(release.version, than: Self.currentVersion) {
+                    availableRelease = release
+                    state = .available(version: release.version)
+                } else {
+                    availableRelease = nil
+                    state = .current
+                }
+                let duration = Int(Date().timeIntervalSince(startedAt) * 1_000)
+                AppLog.updates.info(
+                    "Update check succeeded duration_ms=\(duration, privacy: .public) remote_version=\(release.version, privacy: .public)"
+                )
+            } catch is CancellationError {
+                return
+            } catch {
+                guard let self else { return }
+                availableRelease = nil
+                state = .idle
+                if !silent {
+                    errorMessage = L10n.format(
+                        "Unable to check for updates: %@",
+                        error.localizedDescription
+                    )
+                }
+            }
+        }
+    }
+
+    func installAvailableUpdate() {
+        guard case .available(let version) = state,
+              let release = availableRelease,
+              release.version == version else {
+            errorMessage = L10n.text("The updater is missing from the application.")
+            return
+        }
+        do {
+            try Self.validate(release)
+            try installer.install(release)
+            AppLog.updates.notice("Updater launched pinned_version=\(version, privacy: .public)")
+        } catch {
+            let errorType = String(describing: type(of: error))
+            AppLog.updates.error("Updater launch failed error_type=\(errorType, privacy: .public)")
+            errorMessage = L10n.format(
+                "The updater could not be launched: %@",
+                error.localizedDescription
+            )
+        }
+    }
+
+    nonisolated static func validate(_ release: UpdateRelease) throws {
+        guard !release.version.isEmpty else { throw UpdateError.invalidRelease }
+        guard let archive = release.sourceArchiveURL,
+              let checksum = release.sourceChecksumURL,
+              isTrustedReleaseAsset(archive),
+              isTrustedReleaseAsset(checksum) else {
+            throw UpdateError.incompleteRelease
+        }
+    }
+
+    private nonisolated static func isTrustedReleaseAsset(_ url: URL) -> Bool {
+        url.scheme?.lowercased() == "https"
+            && url.host?.lowercased() == "github.com"
+            && url.path.hasPrefix("/syb-illin/LogicLyrics/releases/download/")
     }
 
     private static var currentVersion: String {

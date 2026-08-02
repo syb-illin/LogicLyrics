@@ -83,14 +83,17 @@ struct CapsuleStatus: View {
                 .foregroundStyle(color)
                 .accessibilityHidden(true)
             Text(text)
-                .foregroundStyle(AppTheme.secondaryText)
+                .foregroundStyle(Color.white)
         }
             .font(.callout.weight(.semibold))
             .padding(.horizontal, 9)
             .padding(.vertical, 6)
-            .background(Color.white.opacity(0.04))
+            // Keep the status surface opaque. A translucent capsule lets the
+            // effective contrast depend on whatever happens to be behind it,
+            // which is both visually fragile and unreliable for VoiceOver's
+            // contrast audit.
+            .background(Color(red: 0.105, green: 0.108, blue: 0.125))
             .clipShape(Capsule())
-            .overlay { Capsule().stroke(Color.white.opacity(0.055), lineWidth: 1) }
             .accessibilityElement(children: .combine)
     }
 }

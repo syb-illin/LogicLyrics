@@ -11,12 +11,16 @@ struct LyricsDocument: Equatable, Sendable {
     let updatedAt: Date?
     let isHistorySnapshot: Bool
     let sections: [LyricSection]
+    let diagnostics: ExtractionDiagnostics?
+    let isSourceModified: Bool
 
     static func project(
         name: String,
         note: ExtractedNote,
         bpm: Double?,
-        musicalKey: String?
+        musicalKey: String?,
+        diagnostics: ExtractionDiagnostics?,
+        isSourceModified: Bool
     ) -> LyricsDocument {
         LyricsDocument(
             projectName: name,
@@ -26,7 +30,9 @@ struct LyricsDocument: Equatable, Sendable {
             alternative: note.alternative,
             updatedAt: nil,
             isHistorySnapshot: false,
-            sections: LyricSectionParser.parse(note.text)
+            sections: LyricSectionParser.parse(note.text),
+            diagnostics: diagnostics,
+            isSourceModified: isSourceModified
         )
     }
 
@@ -39,14 +45,20 @@ struct LyricsDocument: Equatable, Sendable {
             alternative: entry.alternative,
             updatedAt: entry.updatedAt,
             isHistorySnapshot: true,
-            sections: LyricSectionParser.parse(entry.sourceLyrics)
+            sections: LyricSectionParser.parse(entry.sourceLyrics),
+            diagnostics: entry.diagnostics,
+            isSourceModified: false
         )
     }
 }
 
 struct LyricsReaderView: View {
     let document: LyricsDocument
-    var onOpenProject: (() -> Void)?
+    var availableAlternatives: [String] = []
+    var onSelectAlternative: ((String) -> Void)?
+    var onRefresh: (() -> Void)?
+    var onOpenInLogic: (() -> Void)?
+    var onRevealInFinder: (() -> Void)?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -54,6 +66,7 @@ struct LyricsReaderView: View {
             Divider().opacity(0.25)
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
+                    if document.isSourceModified { staleSourceBanner }
                     titleBlock
                     if document.lyrics.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         noLyricsState
@@ -84,11 +97,29 @@ struct LyricsReaderView: View {
                     .foregroundStyle(AppTheme.secondaryText)
             }
             Spacer()
-            if let onOpenProject {
-                Button(L10n.text("Open Logic Project"), systemImage: "folder", action: onOpenProject)
+            if let onRefresh {
+                Button(L10n.text("Refresh Lyrics"), systemImage: "arrow.clockwise", action: onRefresh)
                     .buttonStyle(.bordered)
                     .controlSize(.large)
-                    .accessibilityIdentifier("history-open-project")
+                    .accessibilityHint(L10n.text("Reads Project Notes from disk again."))
+                    .accessibilityIdentifier("lyrics-refresh")
+            }
+            if onOpenInLogic != nil || onRevealInFinder != nil {
+                Menu {
+                    if let onOpenInLogic {
+                        Button(L10n.text("Open in Logic Pro"), systemImage: "music.note", action: onOpenInLogic)
+                    }
+                    if let onRevealInFinder {
+                        Button(L10n.text("Reveal in Finder"), systemImage: "finder", action: onRevealInFinder)
+                    }
+                } label: {
+                    Label(L10n.text("Project Actions"), systemImage: "ellipsis.circle")
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .accessibilityLabel(L10n.text("Project Actions"))
+                .accessibilityHint(L10n.text("Offers actions for the Logic project file."))
+                .accessibilityIdentifier("project-actions-menu")
             }
             if !document.lyrics.isEmpty {
                 TransientCopyButton(
@@ -119,6 +150,23 @@ struct LyricsReaderView: View {
                         .foregroundStyle(AppTheme.secondaryText)
                 }
                 Spacer()
+            }
+            if availableAlternatives.count > 1,
+               let onSelectAlternative {
+                Picker(
+                    L10n.text("Logic Alternative"),
+                    selection: Binding(
+                        get: { document.alternative },
+                        set: onSelectAlternative
+                    )
+                ) {
+                    ForEach(availableAlternatives, id: \.self) { alternative in
+                        Text(L10n.format("Alternative %@", alternative)).tag(alternative)
+                    }
+                }
+                .pickerStyle(.menu)
+                .accessibilityHint(L10n.text("Reads Project Notes from the selected Logic alternative."))
+                .accessibilityIdentifier("alternative-picker")
             }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
@@ -201,9 +249,35 @@ struct LyricsReaderView: View {
                 .font(.callout)
                 .foregroundStyle(AppTheme.secondaryText)
                 .multilineTextAlignment(.center)
+            if let diagnostics = document.diagnostics {
+                Text(diagnostics.localizedSummary)
+                    .font(.caption)
+                    .foregroundStyle(AppTheme.tertiaryText)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 560)
+                    .accessibilityIdentifier("extraction-diagnostics")
+            }
         }
         .frame(maxWidth: .infinity, minHeight: 320)
         .appPanel(radius: 16, padding: 24)
+    }
+
+    private var staleSourceBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.arrow.triangle.2.circlepath")
+                .foregroundStyle(AppTheme.cyan)
+                .accessibilityHidden(true)
+            Text(L10n.text("This Logic project changed on disk. Refresh Lyrics to read the latest Project Notes."))
+                .font(.callout.weight(.medium))
+            Spacer()
+            if let onRefresh {
+                Button(L10n.text("Refresh Lyrics"), action: onRefresh)
+                    .buttonStyle(.borderedProminent)
+            }
+        }
+        .appPanel(radius: 12, padding: 14)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("source-changed-banner")
     }
 
     private var sectionSummary: String {

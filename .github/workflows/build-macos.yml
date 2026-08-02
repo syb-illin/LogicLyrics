@@ -36,6 +36,9 @@ jobs:
           LOGICLYRICS_DESTINATION: ${{ runner.temp }}/LogicLyrics.app
           LOGICLYRICS_CORE_COVERAGE: "1"
           LOGICLYRICS_CORE_COVERAGE_MINIMUM: "100"
+          LOGICLYRICS_SERVICE_COVERAGE_MINIMUM: "90"
+          LOGICLYRICS_VIEW_MODEL_COVERAGE_MINIMUM: "85"
+          LOGICLYRICS_HISTORY_COVERAGE_MINIMUM: "75"
         run: |
           chmod +x BUILD.command LogicLyrics/Resources/UPDATE.command
           ./BUILD.command
@@ -52,12 +55,15 @@ jobs:
       - name: Run macOS UI, accessibility and window-layout tests
         id: ui_tests
         continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.diagnostic_mode }}
+        env:
+          LOGICLYRICS_VISUAL_BASELINE_OUTPUT: ${{ runner.temp }}/LogicLyricsVisualBaselines
         run: |
           xcodebuild test \
             -project LogicLyrics.xcodeproj \
             -scheme LogicLyrics \
             -configuration Debug \
             -destination 'platform=macOS' \
+            'OTHER_SWIFT_FLAGS=$(inherited) -D RECORD_VISUAL_BASELINES' \
             -resultBundlePath "$RUNNER_TEMP/LogicLyricsUITests.xcresult" \
             -only-testing:LogicLyricsUITests
 
@@ -67,6 +73,24 @@ jobs:
         with:
           name: LogicLyrics-UI-test-results
           path: ${{ runner.temp }}/LogicLyricsUITests.xcresult
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Collect recorded visual baselines
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/LogicLyricsVisualBaselines"
+          find /var/folders -type f \
+            -path '*/LogicLyricsVisualBaselines/*.png' \
+            -exec cp {} "$RUNNER_TEMP/LogicLyricsVisualBaselines/" \; \
+            2>/dev/null || true
+
+      - name: Upload recorded visual baselines
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: LogicLyrics-visual-baselines
+          path: ${{ runner.temp }}/LogicLyricsVisualBaselines
           if-no-files-found: warn
           retention-days: 14
 

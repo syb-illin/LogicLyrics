@@ -3,7 +3,7 @@ import Foundation
 import OSLog
 
 enum AppLog {
-    private static let subsystem = "com.local.LogicLyrics"
+    private static let subsystem = "com.sybillin.LogicLyrics"
 
     static let lifecycle = Logger(subsystem: subsystem, category: "lifecycle")
     static let ui = Logger(subsystem: subsystem, category: "ui")
