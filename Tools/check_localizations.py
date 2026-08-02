@@ -23,7 +23,7 @@ LOCALIZED_CALL = re.compile(
     r'\bL10n\.(?:text|format)\(\s*"((?:\\.|[^"\\])*)"'
 )
 DIRECT_UI_LITERAL = re.compile(
-    r'(?:\b(?:Text|Button|Toggle|Label|Picker|Section|LabeledContent|CommandMenu|Window)'
+    r'(?:\b(?:Text|Button|Toggle|Label|Picker|Section|LabeledContent|CommandMenu|Window|WindowGroup)'
     r'|\.(?:help|accessibilityLabel|accessibilityHint|navigationTitle|alert|confirmationDialog))'
     r'\s*\(\s*"((?:\\.|[^"\\])*)"',
     re.MULTILINE,

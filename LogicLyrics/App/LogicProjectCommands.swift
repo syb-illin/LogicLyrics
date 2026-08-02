@@ -29,7 +29,7 @@ struct LogicProjectCommands: Commands {
     @FocusedValue(\.openLogicProjectAction) private var openLogicProjectAction
 
     var body: some Commands {
-        CommandGroup(after: .newItem) {
+        CommandGroup(replacing: .newItem) {
             Button(L10n.text("Open Logic Pro Project…")) {
                 openLogicProjectAction?()
             }

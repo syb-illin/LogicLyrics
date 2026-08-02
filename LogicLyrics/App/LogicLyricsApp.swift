@@ -14,7 +14,7 @@ struct LogicLyricsApp: App {
     }
 
     var body: some Scene {
-        Window(L10n.text("Logic Lyrics"), id: "main") {
+        WindowGroup(L10n.text("Logic Lyrics"), id: "main") {
             ContentView()
                 .environmentObject(updater)
                 .frame(minWidth: 820, minHeight: 620)
