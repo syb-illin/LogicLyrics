@@ -51,6 +51,7 @@
 "No matching songs" = "No matching songs";
 "Search recent songs" = "Search recent songs";
 "%d songs" = "%d songs";
+"1 song" = "1 song";
 "Edited lyrics" = "Edited lyrics";
 "Saved Suno prompt" = "Saved Suno prompt";
 "Shows the saved project lyrics and Suno prompt." = "Shows the saved project lyrics and Suno prompt.";
@@ -327,12 +328,14 @@
 "RECENT PROJECTS" = "RECENT PROJECTS";
 "No recent projects" = "No recent projects";
 "No matching projects" = "No matching projects";
+"No lyrics" = "No lyrics";
+"Shows only Logic projects whose Project Notes are empty." = "Shows only Logic projects whose Project Notes are empty.";
 "Shows the lyrics saved from this Logic project." = "Shows the lyrics saved from this Logic project.";
 "Project lyrics" = "Project lyrics";
 "Saved Lyrics" = "Saved Lyrics";
 "Snapshot from the last successful read" = "Snapshot from the last successful read";
 "Read directly from Logic Project Notes" = "Read directly from Logic Project Notes";
-"Reopen Project" = "Reopen Project";
+"Open Logic Project" = "Open Logic Project";
 "Copy Lyrics" = "Copy Lyrics";
 "Lyrics text" = "Lyrics text";
 "Sections" = "Sections";

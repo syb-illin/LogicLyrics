@@ -13,10 +13,11 @@ struct RecentProjectsView: View {
                     .tracking(0.8)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text("\(history.entries.count)")
+                Text("\(history.filteredEntries.count)")
                     .font(.caption2.monospacedDigit().weight(.bold))
                     .foregroundStyle(.secondary)
-                    .accessibilityLabel(L10n.format("%d songs", history.entries.count))
+                    .accessibilityLabel(resultCountAccessibilityLabel)
+                    .accessibilityIdentifier("recent-songs-count")
             }
             .padding(.horizontal, 8)
 
@@ -32,6 +33,14 @@ struct RecentProjectsView: View {
             .padding(10)
             .background(Color.primary.opacity(0.055))
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+            Toggle("No lyrics", isOn: $history.showsOnlyProjectsWithoutLyrics)
+                .toggleStyle(.checkbox)
+                .controlSize(.small)
+                .font(.caption)
+                .padding(.horizontal, 8)
+                .accessibilityHint(L10n.text("Shows only Logic projects whose Project Notes are empty."))
+                .accessibilityIdentifier("missing-lyrics-filter")
 
             if history.filteredEntries.isEmpty {
                 VStack(spacing: 9) {
@@ -92,6 +101,12 @@ struct RecentProjectsView: View {
         ]
         .compactMap { $0 }
         .joined(separator: " · ")
+    }
+
+    private var resultCountAccessibilityLabel: String {
+        history.filteredEntries.count == 1
+            ? L10n.text("1 song")
+            : L10n.format("%d songs", history.filteredEntries.count)
     }
 
     private static func formatBPM(_ value: Double) -> String {

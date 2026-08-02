@@ -39,8 +39,12 @@ final class LogicLyricsUITests: XCTestCase {
 
         let plaid = element("history-row-11111111-1111-1111-1111-111111111111", in: app)
         let humanGeology = element("history-row-22222222-2222-2222-2222-222222222222", in: app)
+        let atLast = element("history-row-33333333-3333-3333-3333-333333333333", in: app)
+        let noLyrics = element("history-row-44444444-4444-4444-4444-444444444444", in: app)
         XCTAssertTrue(plaid.waitForExistence(timeout: 5))
         XCTAssertTrue(humanGeology.exists)
+        XCTAssertTrue(atLast.exists)
+        XCTAssertTrue(noLyrics.exists)
 
         plaid.click()
         XCTAssertTrue(element("lyrics-reader", in: app).waitForExistence(timeout: 3))
@@ -59,6 +63,26 @@ final class LogicLyricsUITests: XCTestCase {
         humanGeology.click()
         XCTAssertTrue(app.staticTexts["Human Geology"].waitForExistence(timeout: 3))
 
+        search.typeKey("a", modifierFlags: .command)
+        search.typeKey(.delete, modifierFlags: [])
+        search.typeText("last")
+        XCTAssertTrue(atLast.waitForExistence(timeout: 3))
+        XCTAssertFalse(plaid.exists, "A lyrics-only match must not remain in title search results.")
+        XCTAssertFalse(humanGeology.exists)
+        XCTAssertFalse(noLyrics.exists)
+        XCTAssertEqual(element("recent-songs-count", in: app).label, "1 song")
+
+        search.typeKey("a", modifierFlags: .command)
+        search.typeKey(.delete, modifierFlags: [])
+        let missingLyricsFilter = element("missing-lyrics-filter", in: app)
+        XCTAssertTrue(missingLyricsFilter.waitForExistence(timeout: 3))
+        missingLyricsFilter.click()
+        XCTAssertTrue(noLyrics.waitForExistence(timeout: 3))
+        XCTAssertFalse(plaid.exists)
+        XCTAssertFalse(humanGeology.exists)
+        XCTAssertFalse(atLast.exists)
+        XCTAssertEqual(element("recent-songs-count", in: app).label, "1 song")
+
         attachScreenshot(of: app, named: "Recent-Project-Lyrics")
     }
 
@@ -73,7 +97,7 @@ final class LogicLyricsUITests: XCTestCase {
         let openProject = element("history-open-project", in: app)
         let copyLyrics = element("lyrics-copy-all", in: app)
         XCTAssertTrue(openProject.waitForExistence(timeout: 3))
-        XCTAssertFalse(openProject.label.isEmpty)
+        XCTAssertEqual(openProject.label, "Open Logic Project")
         XCTAssertFalse(copyLyrics.label.isEmpty)
         XCTAssertEqual(copyLyrics.frame.midY, openProject.frame.midY, accuracy: 1)
         XCTAssertEqual(copyLyrics.frame.height, openProject.frame.height, accuracy: 1)

@@ -2,6 +2,13 @@
 
 All notable user-facing changes are documented here. Releases use semantic versions and every shipped build receives a new build number.
 
+## 2.5.1 — build 35
+
+- Fixed recent-project search so it matches project names only instead of silently matching text buried in current or recovered lyrics.
+- Added a native **No lyrics** checkbox that filters projects whose current Logic Project Notes are empty and composes with title search.
+- Updated the result count live while filtering and renamed the history action to the clearer **Open Logic Project**.
+- Added pure policy and macOS UI regressions for title-only matching, lyrics-only false positives, empty Project Notes, combined filters, result counts, and the action label.
+
 ## 2.5.0 — build 34
 
 - Refocused Logic Lyrics on one job: reading `.logicx` Project Notes, tempo, key and section markers, then copying the lyrics.

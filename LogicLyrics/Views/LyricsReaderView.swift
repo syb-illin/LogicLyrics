@@ -85,7 +85,7 @@ struct LyricsReaderView: View {
             }
             Spacer()
             if let onOpenProject {
-                Button("Reopen Project", systemImage: "folder", action: onOpenProject)
+                Button("Open Logic Project", systemImage: "folder", action: onOpenProject)
                     .buttonStyle(.bordered)
                     .controlSize(.large)
                     .accessibilityIdentifier("history-open-project")

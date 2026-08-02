@@ -51,6 +51,7 @@
 "No matching songs" = "Aucun morceau correspondant";
 "Search recent songs" = "Rechercher dans les morceaux récents";
 "%d songs" = "%d morceaux";
+"1 song" = "1 morceau";
 "Edited lyrics" = "Paroles modifiées";
 "Saved Suno prompt" = "Prompt Suno enregistré";
 "Shows the saved project lyrics and Suno prompt." = "Affiche les paroles du projet et le prompt Suno enregistrés.";
@@ -327,12 +328,14 @@
 "RECENT PROJECTS" = "PROJETS RÉCENTS";
 "No recent projects" = "Aucun projet récent";
 "No matching projects" = "Aucun projet correspondant";
+"No lyrics" = "Sans paroles";
+"Shows only Logic projects whose Project Notes are empty." = "Affiche uniquement les projets Logic dont les notes de projet sont vides.";
 "Shows the lyrics saved from this Logic project." = "Affiche les paroles enregistrées depuis ce projet Logic.";
 "Project lyrics" = "Paroles du projet";
 "Saved Lyrics" = "Paroles enregistrées";
 "Snapshot from the last successful read" = "Copie issue de la dernière lecture réussie";
 "Read directly from Logic Project Notes" = "Lues directement depuis les notes du projet Logic";
-"Reopen Project" = "Rouvrir le projet";
+"Open Logic Project" = "Ouvrir le projet Logic";
 "Copy Lyrics" = "Copier les paroles";
 "Lyrics text" = "Texte des paroles";
 "Sections" = "Sections";

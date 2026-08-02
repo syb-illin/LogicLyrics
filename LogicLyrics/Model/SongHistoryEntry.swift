@@ -25,11 +25,6 @@ struct SongHistoryEntry: Codable, Identifiable, Hashable, Sendable {
     var lyrics: String { editedLyrics ?? sourceLyrics }
     var hasLocalEdits: Bool { editedLyrics != nil }
 
-    var searchableLyrics: String {
-        ([sourceLyrics, editedLyrics].compactMap { $0 } + recoveredLyrics)
-            .joined(separator: "\n")
-    }
-
     private enum CodingKeys: String, CodingKey {
         case id, projectName, projectPath, projectFileID, projectBookmark, noteKey, alternative
         case lyrics // Schema 1–2 compatibility and downgrade safety.

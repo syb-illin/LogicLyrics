@@ -83,6 +83,7 @@ SOURCES=(
     "$SCRIPT_DIR/LogicLyrics/App/LogicLyricsApp.swift"
     "$SCRIPT_DIR/LogicLyrics/App/LogicProjectCommands.swift"
     "$SCRIPT_DIR/LogicLyrics/Model/ExtractedNote.swift"
+    "$SCRIPT_DIR/LogicLyrics/Model/HistorySearch.swift"
     "$SCRIPT_DIR/LogicLyrics/Model/Localization.swift"
     "$SCRIPT_DIR/LogicLyrics/Model/LyricSection.swift"
     "$SCRIPT_DIR/LogicLyrics/Model/Observability.swift"
@@ -142,6 +143,7 @@ fi
     "${CORE_TEST_FLAGS[@]}" \
     -o "$CORE_TEST" \
     "$SCRIPT_DIR/LogicLyrics/Model/ExtractedNote.swift" \
+    "$SCRIPT_DIR/LogicLyrics/Model/HistorySearch.swift" \
     "$SCRIPT_DIR/LogicLyrics/Model/Localization.swift" \
     "$SCRIPT_DIR/LogicLyrics/Model/LyricSection.swift" \
     "$SCRIPT_DIR/LogicLyrics/Model/Observability.swift" \
@@ -171,9 +173,10 @@ if [[ "${LOGICLYRICS_CORE_COVERAGE:-0}" == "1" ]]; then
     /usr/bin/python3 "$SCRIPT_DIR/Tools/check_swift_coverage.py" \
         "$COVERAGE_REPORT" \
         --minimum "${LOGICLYRICS_CORE_COVERAGE_MINIMUM:-100}" \
+        LogicLyrics/Model/HistorySearch.swift \
         LogicLyrics/Model/LyricSection.swift \
         LogicLyrics/Services/LogicProjectReader.swift \
-        || fail "Critical reader coverage is below the required threshold."
+        || fail "Critical core coverage is below the required threshold."
 else
     "$CORE_TEST" || fail "A critical regression test failed."
 fi
