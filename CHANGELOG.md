@@ -18,7 +18,7 @@ All notable user-facing changes are documented here. Releases use semantic versi
 - Increased small status, result-count, and empty-state typography contrast, and gave every recent-song control an explicit localized VoiceOver label.
 - Added an independent pixel-level WCAG AA contrast measurement so macOS XCTest false positives are accepted only when the rendered UI proves a ratio of at least 4.5:1.
 - Forced the matching dark AppKit appearance for native title bars and replaced each visual history row with one explicit, localized VoiceOver button representation.
-- Replaced the automatic navigation title with a high-contrast accessible toolbar title, and verifies that every SwiftUI history-row wrapper maps exactly to a labelled button.
+- Removed the redundant low-contrast native navigation title and verifies that every SwiftUI history-row wrapper maps exactly to a labelled button.
 
 ## 2.5.0 — build 34
 

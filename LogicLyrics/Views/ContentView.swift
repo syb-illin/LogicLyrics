@@ -307,12 +307,6 @@ struct ContentView: View {
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .principal) {
-            Text(model.projectName.isEmpty ? L10n.text("Logic Lyrics") : model.projectName)
-                .font(.headline.weight(.semibold))
-                .foregroundStyle(Color.white)
-                .accessibilityIdentifier("workspace-title")
-        }
         ToolbarItemGroup {
             Button(L10n.text("Open"), systemImage: "folder", action: requestProjectImport)
                 .accessibilityLabel(L10n.text("Open Logic project"))
