@@ -106,9 +106,9 @@ struct ContentView: View {
         }
         .background {
             if reduceTransparency {
-                Color(red: 0.055, green: 0.057, blue: 0.067)
+                AppTheme.surface
             } else {
-                Color.black.opacity(0.16)
+                AppTheme.surface
             }
         }
         .overlay(alignment: .trailing) { Divider().opacity(0.25) }
@@ -263,7 +263,7 @@ struct ContentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black.opacity(0.10))
+        .background(AppTheme.surface)
         .overlay { dropTargetOverlay }
     }
 

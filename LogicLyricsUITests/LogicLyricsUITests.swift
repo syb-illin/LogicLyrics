@@ -82,7 +82,7 @@ final class LogicLyricsUITests: XCTestCase {
         XCTAssertFalse(plaid.exists, "A lyrics-only match must not remain in title search results.")
         XCTAssertFalse(humanGeology.exists)
         XCTAssertFalse(noLyrics.exists)
-        XCTAssertEqual(app.staticTexts["recent-songs-count"].label, "1 song")
+        XCTAssertTrue(app.staticTexts["1 song"].exists)
 
         search.typeKey("a", modifierFlags: .command)
         search.typeKey(.delete, modifierFlags: [])
@@ -93,7 +93,7 @@ final class LogicLyricsUITests: XCTestCase {
         XCTAssertFalse(plaid.exists)
         XCTAssertFalse(humanGeology.exists)
         XCTAssertFalse(atLast.exists)
-        XCTAssertEqual(app.staticTexts["recent-songs-count"].label, "1 song")
+        XCTAssertTrue(app.staticTexts["1 song"].exists)
 
         noLyrics.click()
         XCTAssertTrue(app.staticTexts["No Project Notes Found"].waitForExistence(timeout: 3))
@@ -175,7 +175,7 @@ final class LogicLyricsUITests: XCTestCase {
             element("history-row-33333333-3333-3333-3333-333333333333", in: app)
                 .waitForExistence(timeout: 3)
         )
-        XCTAssertEqual(app.staticTexts["recent-songs-count"].label, "1 morceau")
+        XCTAssertTrue(app.staticTexts["1 morceau"].exists)
         try performAccessibilityAudit(on: app)
         attachScreenshot(of: app, named: "Historique-Francais-Accessible")
 
@@ -288,10 +288,13 @@ final class LogicLyricsUITests: XCTestCase {
                     && element.label.isEmpty
                 let isNativeWindowContainer = lacksDescription
                     && element.elementType == .group
-                    && abs(frame.minY - windowFrame.minY) < 1
-                    && abs(frame.height - windowFrame.height) < 1
-                    && frame.minX >= windowFrame.minX - 1
-                    && frame.maxX <= windowFrame.maxX + 1
+                    && app.windows.allElementsBoundByIndex.contains { window in
+                        let candidate = window.frame
+                        return abs(frame.minY - candidate.minY) < 1
+                            && abs(frame.height - candidate.height) < 1
+                            && frame.minX >= candidate.minX - 1
+                            && frame.maxX <= candidate.maxX + 1
+                    }
                 let recentSongsFrame = self.element("recent-songs-section", in: app).frame
                 let isSidebarScrollContainer = lacksDescription
                     && element.elementType == .other

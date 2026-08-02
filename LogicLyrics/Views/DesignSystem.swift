@@ -5,6 +5,8 @@ enum AppTheme {
     static let cyan = Color(red: 0.32, green: 0.62, blue: 0.70)
     static let coral = Color(red: 0.76, green: 0.43, blue: 0.48)
     static let green = Color(red: 0.34, green: 0.64, blue: 0.49)
+    static let surface = Color(red: 0.055, green: 0.057, blue: 0.067)
+    static let raisedSurface = Color(red: 0.078, green: 0.080, blue: 0.094)
     // Semantic hierarchy with WCAG-safe contrast in both macOS appearances.
     // SwiftUI's default secondary/tertiary opacity can fail for caption text
     // over material and custom gradient surfaces.
@@ -31,9 +33,9 @@ struct AppPanel: ViewModifier {
             .padding(padding)
             .background {
                 if reduceTransparency {
-                    Color(red: 0.085, green: 0.087, blue: 0.10)
+                    AppTheme.raisedSurface
                 } else {
-                    Color.white.opacity(0.035)
+                    AppTheme.raisedSurface
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))

@@ -103,7 +103,7 @@ struct LyricsReaderView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 14)
-        .background(Color.white.opacity(0.025))
+        .background(AppTheme.raisedSurface)
     }
 
     private var titleBlock: some View {
