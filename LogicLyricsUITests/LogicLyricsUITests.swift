@@ -152,8 +152,7 @@ final class LogicLyricsUITests: XCTestCase {
     @MainActor
     func testFrenchLocalizationAndAccessibility() throws {
         let app = launchApp(additionalArguments: [
-            "-AppleLanguages", "(fr)",
-            "-AppleLocale", "fr_FR"
+            "--ui-test-language=fr"
         ])
         defer { app.terminate() }
 

@@ -13,11 +13,9 @@ struct RecentProjectsView: View {
                     .tracking(0.8)
                     .foregroundStyle(AppTheme.secondaryText)
                 Spacer()
-                Text("\(history.filteredEntries.count)")
+                Text(resultCountAccessibilityLabel)
                     .font(.caption2.monospacedDigit().weight(.bold))
                     .foregroundStyle(AppTheme.secondaryText)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(resultCountAccessibilityLabel)
                     .accessibilityIdentifier("recent-songs-count")
             }
             .padding(.horizontal, 8)

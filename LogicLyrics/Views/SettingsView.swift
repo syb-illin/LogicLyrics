@@ -11,8 +11,8 @@ struct AppSettingsView: View {
             Section(L10n.text("Updates")) {
                 Toggle(L10n.text("Automatically check for updates"), isOn: $automaticallyChecksForUpdates)
                 Text(L10n.text("Checks silently when Logic Lyrics opens. Updates are never installed without your confirmation."))
-                    .font(.caption)
-                    .foregroundStyle(AppTheme.secondaryText)
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(.primary)
                 HStack(spacing: 10) {
                     Button(L10n.text("Check Now")) { updater.check(silent: false) }
                         .disabled(updater.state == .checking)
@@ -35,8 +35,8 @@ struct AppSettingsView: View {
                 )
                 Button(L10n.text("Copy System Diagnostics")) { AppDiagnostics.copyToPasteboard() }
                 Text(L10n.text("Diagnostics contain app and system information plus privacy-safe Logic Lyrics events. Lyrics and file paths are never logged."))
-                    .font(.caption)
-                    .foregroundStyle(AppTheme.secondaryText)
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(.primary)
             }
         }
         .formStyle(.grouped)
