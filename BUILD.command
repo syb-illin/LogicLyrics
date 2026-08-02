@@ -3,6 +3,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/Tools/InstallTransaction.zsh"
 BUILD_ROOT="$SCRIPT_DIR/.build/light"
 PRODUCT="$BUILD_ROOT/LogicLyrics.app"
 DESTINATION="${LOGICLYRICS_DESTINATION:-$HOME/Downloads/LogicLyrics.app}"
@@ -10,8 +11,12 @@ ENTITLEMENTS="$SCRIPT_DIR/LogicLyrics/Resources/LogicLyrics.entitlements"
 INFO_PLIST="$SCRIPT_DIR/LogicLyrics/Resources/Info.plist"
 APP_ICON_SOURCE="$SCRIPT_DIR/LogicLyrics/Resources/AppIcon.png"
 APP_ICON="$BUILD_ROOT/AppIcon.icns"
+rollback_install() {
+    rollback_install_transaction "$DESTINATION"
+}
 
 fail() {
+    rollback_install
     print "\nERROR: $1"
     if [[ "${LOGICLYRICS_NONINTERACTIVE:-0}" != "1" ]]; then
         /usr/bin/osascript -e "display alert \"Build Failed\" message \"$1\" as critical buttons {\"OK\"}" >/dev/null 2>&1 || true
@@ -51,6 +56,9 @@ esac
 TARGET="$ARCHITECTURE-apple-macosx14.0"
 
 print "\nBuilding Logic Lyrics with Apple Command Line Tools…\n"
+
+/bin/zsh "$SCRIPT_DIR/Tools/TestInstallTransaction.zsh" \
+    || fail "The transactional installer regression test failed."
 
 [[ "$PRODUCT" == "$SCRIPT_DIR/.build/light/LogicLyrics.app" ]] || fail "Invalid build path."
 /bin/rm -rf "$PRODUCT"
@@ -193,6 +201,10 @@ if [[ "${LOGICLYRICS_CORE_COVERAGE:-0}" == "1" ]]; then
         LogicLyrics/Model/HistorySearch.swift \
         LogicLyrics/Model/LyricSection.swift \
         LogicLyrics/Services/LogicProjectReader.swift \
+        LogicLyrics/Services/HistoryStore.swift \
+        LogicLyrics/Services/ProjectLocator.swift \
+        LogicLyrics/Services/UpdateService.swift \
+        LogicLyrics/ViewModel/ProjectViewModel.swift \
         || fail "Critical core coverage is below the required threshold."
 else
     "$CORE_TEST" || fail "A critical regression test failed."
@@ -213,13 +225,9 @@ fi
 
 [[ -x "$PRODUCT/Contents/MacOS/LogicLyrics" ]] || fail "The build completed without producing an executable."
 
-if [[ -e "$DESTINATION" ]]; then
-    TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
-    /bin/mv "$DESTINATION" "$HOME/Downloads/LogicLyrics.previous-$TIMESTAMP.app" \
-        || fail "The previous application could not be backed up."
-fi
-
-/usr/bin/ditto "$PRODUCT" "$DESTINATION" \
+TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+TRANSACTION_BACKUP="$HOME/Downloads/LogicLyrics.previous-$TIMESTAMP.app"
+transactional_install "$PRODUCT" "$DESTINATION" "$TRANSACTION_BACKUP" \
     || fail "The application could not be copied to the destination."
 
 # This app has just been built locally from reviewed sources. Remove every
@@ -266,6 +274,40 @@ for LANGUAGE in en fr; do
     /usr/bin/plutil -lint "$DESTINATION/Contents/Resources/$LANGUAGE.lproj/Localizable.strings" >/dev/null \
         || fail "The $LANGUAGE localization is invalid."
 done
+
+commit_install_transaction
+
+# Bootstrap the production sandbox container before importing data from the old
+# bundle identifier. History is staged for schema-5 merge by HistoryRepository;
+# the original container is retained as a rollback source.
+OLD_LIBRARY="$HOME/Library/Containers/com.local.LogicLyrics/Data/Library"
+NEW_LIBRARY="$HOME/Library/Containers/com.sybillin.LogicLyrics/Data/Library"
+NEW_CONTAINER="$HOME/Library/Containers/com.sybillin.LogicLyrics"
+MIGRATION_MARKER="$NEW_LIBRARY/Application Support/LogicLyrics/.bundle-id-migration-complete"
+OLD_HISTORY="$OLD_LIBRARY/Application Support/LogicLyrics/history.json"
+if [[ -f "$OLD_HISTORY" && ! -f "$MIGRATION_MARKER" && "${LOGICLYRICS_NONINTERACTIVE:-0}" != "1" ]]; then
+    if [[ ! -f "$NEW_CONTAINER/.com.apple.containermanagerd.metadata.plist" ]]; then
+        /usr/bin/open -gj "$DESTINATION" 2>/dev/null || true
+        for _ in {1..20}; do
+            [[ -f "$NEW_CONTAINER/.com.apple.containermanagerd.metadata.plist" ]] && break
+            /bin/sleep 0.2
+        done
+        /usr/bin/osascript -e 'tell application id "com.sybillin.LogicLyrics" to quit' >/dev/null 2>&1 || true
+    fi
+    if [[ -f "$NEW_CONTAINER/.com.apple.containermanagerd.metadata.plist" ]]; then
+        /bin/mkdir -p "$NEW_LIBRARY/Application Support/LogicLyrics" "$NEW_LIBRARY/Preferences"
+        /usr/bin/ditto "$OLD_HISTORY" "$NEW_LIBRARY/Application Support/LogicLyrics/history-legacy-bundle-import.json" \
+            || fail "The previous history could not be staged for migration."
+        OLD_PREFS="$OLD_LIBRARY/Preferences/com.local.LogicLyrics.plist"
+        if [[ -f "$OLD_PREFS" ]]; then
+            /usr/bin/ditto "$OLD_PREFS" "$NEW_LIBRARY/Preferences/com.sybillin.LogicLyrics.plist" \
+                || fail "The previous preferences could not be migrated."
+        fi
+        /usr/bin/touch "$MIGRATION_MARKER"
+    else
+        print "Warning: the previous history remains safe but its new sandbox container could not be initialized."
+    fi
+fi
 
 if [[ "${LOGICLYRICS_NONINTERACTIVE:-0}" != "1" ]]; then
     /usr/bin/open "$DESTINATION"

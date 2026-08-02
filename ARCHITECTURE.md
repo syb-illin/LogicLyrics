@@ -1,8 +1,8 @@
-# Logic Lyrics 2.5.0 — architecture and invariants
+# Logic Lyrics 2.6.0 — architecture and invariants
 
 ## Product boundary
 
-Logic Lyrics has one responsibility: read the active alternative of a local `.logicx` project and present its Project Notes, BPM, key and section markers for clipboard use. It does not modify Logic projects, process audio, call generative AI or send application telemetry.
+Logic Lyrics has one responsibility: read a selected alternative of a local `.logicx` project and present its Project Notes, BPM, key and section markers for clipboard use. It does not modify Logic projects, process audio, call generative AI or send application telemetry.
 
 ## Layers
 
@@ -17,18 +17,20 @@ This is intentionally small MVVM with ports at external boundaries. Value types 
 ## Applied patterns
 
 - **MVVM** separates parsing/orchestration from SwiftUI rendering.
-- **Repository actor** serializes atomic history reads and writes.
+- **Repository actor** serializes atomic schema-5 history reads, migrations and writes.
 - **Dependency inversion** exposes only `LogicProjectReading` to the presentation model.
 - **State machine + operation identity** makes progress, cancellation and stale-result rejection explicit.
 - **Adapter** confines GitHub HTTP/JSON behavior to `GitHubReleaseClient`.
 - **Project locator** encapsulates filesystem identity and security-scoped bookmark recovery.
 - **Focused command injection** routes `Command-O` to the active scene.
+- **Source-state token** detects external changes from file metadata without polling or rescanning ProjectData.
+- **Transactional install** stages replacement, preserves the prior app and rolls back on any post-backup failure.
 - **Design system** centralizes restrained surfaces, icon treatment, status chips and accessibility accommodations.
 
 ## Safety and performance invariants
 
 1. Source `.logicx` packages are never written or replaced.
-2. Only the active Logic alternative is selected; unrelated single-line technical RTF is rejected as lyrics.
+2. The active Logic alternative is selected by default; explicit alternative changes re-read only that alternative and unrelated single-line technical RTF is rejected.
 3. Mapped `Data` avoids an unnecessary full byte-array copy while scanning `ProjectData`.
 4. Parser loops check cooperative cancellation at bounded intervals.
 5. An operation UUID prevents an older read from overwriting a newer project selection.
@@ -39,6 +41,9 @@ This is intentionally small MVVM with ports at external boundaries. Value types 
 10. Logs never contain lyrics, names, filenames, paths, URLs, bookmarks or other user content.
 11. Diagnostic log export is limited to this process, the last 30 minutes and at most 200 entries.
 12. User-impacting failures surface through accessible alerts; normal picker cancellation remains silent.
+13. Schema 5 contains no prompt, editor or recovered-revision domains; the untouched schema-4 file is backed up before migration.
+14. The app sandbox grants user-selected read-only access, while bookmarks retain explicit access to previously chosen projects.
+15. Update approval is bound to exact release asset URLs and an expected semantic version, then checksum- and manifest-verified.
 
 No static review can mathematically prove the absence of every runtime leak. Release validation therefore combines complete strict-concurrency compilation, cancellation tests, repeated UI workflows and recommended Instruments runs with Leaks, Allocations and Time Profiler.
 
@@ -49,7 +54,7 @@ No static review can mathematically prove the absence of every runtime leak. Rel
 - requires only Apple Command Line Tools;
 - rejects any Swift application file omitted from its explicit source manifest;
 - compiles with complete strict-concurrency checking and warnings;
-- runs core reader/history/update regression tests before building the app;
+- runs reader/history/locator/view-model/update and transactional-install regression tests before building the app;
 - validates localizations and `Info.plist`;
 - signs and verifies the final bundle;
 - optionally notarizes and staples Developer ID builds.

@@ -318,6 +318,36 @@
 "Locate Logic Project" = "Localiser le projet Logic";
 "Choose the moved or renamed .logicx project to reconnect it with this history entry." = "Choisissez le projet .logicx déplacé ou renommé pour le reconnecter à cet historique.";
 "Reconnect" = "Reconnecter";
+
+/* Flux de lecture 2.6 */
+"Selected Project Notes from %d decoded rich-text candidates." = "Notes du projet sélectionnées parmi %d candidats de texte enrichi décodés.";
+"No embedded rich-text document was found in this alternative." = "Aucun document de texte enrichi intégré n’a été trouvé dans cette alternative.";
+"%d embedded rich-text documents were found, but none could be decoded." = "%d documents de texte enrichi intégrés ont été trouvés, mais aucun n’a pu être décodé.";
+"%d rich-text candidates were decoded, but none looked like multi-line Project Notes." = "%d candidats de texte enrichi ont été décodés, mais aucun ne ressemblait à des Notes de projet multilignes.";
+"Refresh Lyrics" = "Actualiser les paroles";
+"Reads Project Notes from disk again." = "Relit les Notes du projet sur le disque.";
+"Open in Logic Pro" = "Ouvrir dans Logic Pro";
+"Reveal in Finder" = "Afficher dans le Finder";
+"Project Actions" = "Actions du projet";
+"Logic Alternative" = "Alternative Logic";
+"Reads Project Notes from the selected Logic alternative." = "Lit les Notes du projet depuis l’alternative Logic sélectionnée.";
+"This Logic project changed on disk. Refresh Lyrics to read the latest Project Notes." = "Ce projet Logic a changé sur le disque. Actualisez les paroles pour lire les dernières Notes du projet.";
+"Pin" = "Épingler";
+"Unpin" = "Désépingler";
+"Remove from History" = "Retirer de l’historique";
+"Actions for %@" = "Actions pour %@";
+"Remove Missing Projects" = "Retirer les projets introuvables";
+"Clear History" = "Effacer l’historique";
+"History Actions" = "Actions de l’historique";
+"Remove this project from history?" = "Retirer ce projet de l’historique ?";
+"The Logic project remains untouched." = "Le projet Logic reste intact.";
+"Clear all project history?" = "Effacer tout l’historique des projets ?";
+"Saved snapshots will be removed. Logic projects remain untouched." = "Les instantanés enregistrés seront supprimés. Les projets Logic resteront intacts.";
+"macOS could not open this project in Logic Pro." = "macOS n’a pas pu ouvrir ce projet dans Logic Pro.";
+"No missing projects were found." = "Aucun projet introuvable n’a été détecté.";
+"%d missing projects were removed from history." = "%d projets introuvables ont été retirés de l’historique.";
+"Release Notes" = "Notes de version";
+"View Release on GitHub" = "Voir la version sur GitHub";
 "Export Song History" = "Exporter l’historique des morceaux";
 "Import Song History" = "Importer l’historique des morceaux";
 "Imported songs are merged safely; current local versions are never overwritten." = "Les morceaux importés sont fusionnés en toute sécurité ; les versions locales actuelles ne sont jamais remplacées.";

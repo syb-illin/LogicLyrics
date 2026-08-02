@@ -104,7 +104,8 @@ final class LogicLyricsUITests: XCTestCase {
 
         noLyrics.click()
         XCTAssertTrue(app.staticTexts["No Project Notes Found"].waitForExistence(timeout: 3))
-        XCTAssertTrue(element("history-open-project", in: app).exists)
+        XCTAssertTrue(element("lyrics-refresh", in: app).exists)
+        XCTAssertTrue(element("extraction-diagnostics", in: app).exists)
 
         attachScreenshot(of: app, named: "Recent-Project-Lyrics")
     }
@@ -119,13 +120,14 @@ final class LogicLyricsUITests: XCTestCase {
         XCTAssertEqual(plaid.elementType, .button)
         XCTAssertFalse(plaid.label.isEmpty)
         plaid.click()
-        let openProject = element("history-open-project", in: app)
+        let refreshLyrics = element("lyrics-refresh", in: app)
         let copyLyrics = element("lyrics-copy-all", in: app)
-        XCTAssertTrue(openProject.waitForExistence(timeout: 3))
-        XCTAssertEqual(openProject.label, "Open Logic Project")
+        XCTAssertTrue(refreshLyrics.waitForExistence(timeout: 3))
+        XCTAssertEqual(refreshLyrics.label, "Refresh Lyrics")
         XCTAssertFalse(copyLyrics.label.isEmpty)
-        XCTAssertEqual(copyLyrics.frame.midY, openProject.frame.midY, accuracy: 1)
-        XCTAssertEqual(copyLyrics.frame.height, openProject.frame.height, accuracy: 1)
+        XCTAssertEqual(copyLyrics.frame.midY, refreshLyrics.frame.midY, accuracy: 1)
+        XCTAssertEqual(copyLyrics.frame.height, refreshLyrics.frame.height, accuracy: 1)
+        XCTAssertTrue(element("project-actions-menu", in: app).exists)
         XCTAssertFalse(
             app.buttons.matching(identifier: "toolbar-open").firstMatch.label.isEmpty
         )
@@ -134,6 +136,38 @@ final class LogicLyricsUITests: XCTestCase {
         XCTAssertEqual(element("lyric-sections-grid", in: app).label, "Lyric sections")
         XCTAssertEqual(element("section-copy-0", in: app).label, "Copy Verse 1 section")
         try performAccessibilityAudit(on: app)
+    }
+
+    @MainActor
+    func testHistoryManagementActionsAndConfirmations() {
+        let app = launchApp()
+        defer { app.terminate() }
+
+        let humanID = "22222222-2222-2222-2222-222222222222"
+        let human = element("history-row-\(humanID)", in: app)
+        let actions = element("history-actions-\(humanID)", in: app)
+        XCTAssertTrue(human.waitForExistence(timeout: 5))
+        XCTAssertTrue(actions.exists)
+        actions.click()
+        let pin = app.menuItems["Pin"]
+        XCTAssertTrue(pin.waitForExistence(timeout: 3))
+        pin.click()
+
+        XCTAssertTrue(human.waitForExistence(timeout: 3))
+        element("history-actions-\(humanID)", in: app).click()
+        XCTAssertTrue(app.menuItems["Unpin"].waitForExistence(timeout: 3))
+        app.menuItems["Remove from History"].click()
+        XCTAssertTrue(app.staticTexts["Remove this project from history?"].waitForExistence(timeout: 3))
+        app.buttons["Cancel"].click()
+        XCTAssertTrue(human.exists, "Cancelling removal must preserve the history row.")
+
+        let management = element("history-management-menu", in: app)
+        XCTAssertTrue(management.exists)
+        management.click()
+        app.menuItems["Clear History"].click()
+        XCTAssertTrue(app.staticTexts["Clear all project history?"].waitForExistence(timeout: 3))
+        app.buttons["Cancel"].click()
+        XCTAssertTrue(human.exists, "Cancelling history clearing must preserve rows.")
     }
 
     @MainActor
@@ -174,9 +208,9 @@ final class LogicLyricsUITests: XCTestCase {
 
         let plaid = element("history-row-11111111-1111-1111-1111-111111111111", in: app)
         plaid.click()
-        let openProject = element("history-open-project", in: app)
-        XCTAssertTrue(openProject.waitForExistence(timeout: 3))
-        XCTAssertEqual(openProject.label, "Ouvrir le projet Logic")
+        let refreshLyrics = element("lyrics-refresh", in: app)
+        XCTAssertTrue(refreshLyrics.waitForExistence(timeout: 3))
+        XCTAssertEqual(refreshLyrics.label, "Actualiser les paroles")
 
         let search = element("history-search-field", in: app)
         search.click()
@@ -226,6 +260,18 @@ final class LogicLyricsUITests: XCTestCase {
         XCTAssertGreaterThan(largeWindow.frame.width, compactWidth)
         XCTAssertTrue(element("recent-songs-section", in: largeApp).exists)
         attachScreenshot(of: largeApp, named: "History-Large-Window")
+    }
+
+    @MainActor
+    func testVisualSnapshotBaselines() throws {
+        let app = launchApp(additionalArguments: ["--ui-test-compact-window"])
+        defer { app.terminate() }
+        XCTAssertTrue(element("empty-open-project", in: app).waitForExistence(timeout: 5))
+        try assertVisualSnapshot(app.screenshot(), named: "Workspace-Compact")
+
+        element("history-row-11111111-1111-1111-1111-111111111111", in: app).click()
+        XCTAssertTrue(element("lyrics-reader", in: app).waitForExistence(timeout: 3))
+        try assertVisualSnapshot(app.screenshot(), named: "History-Lyrics-Compact")
     }
 
     @MainActor
@@ -385,6 +431,63 @@ final class LogicLyricsUITests: XCTestCase {
         let low = luminances[lowIndex]
         let high = luminances[highIndex]
         return wcagContrastRatio(low: low, high: high)
+    }
+
+    private func assertVisualSnapshot(_ screenshot: XCUIScreenshot, named name: String) throws {
+        let environment = ProcessInfo.processInfo.environment
+        if let output = environment["LOGICLYRICS_VISUAL_BASELINE_OUTPUT"],
+           !output.isEmpty {
+            let directory = URL(fileURLWithPath: output, isDirectory: true)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try screenshot.pngRepresentation.write(
+                to: directory.appendingPathComponent("\(name).png"),
+                options: .atomic
+            )
+            return
+        }
+
+        guard let baselineURL = Bundle(for: Self.self).url(
+            forResource: name,
+            withExtension: "png",
+            subdirectory: "ReferenceImages"
+        ) else {
+            XCTFail("Missing committed visual baseline: \(name).png")
+            return
+        }
+        let baselineData = try Data(contentsOf: baselineURL)
+        guard let actual = NSBitmapImageRep(data: screenshot.pngRepresentation),
+              let baseline = NSBitmapImageRep(data: baselineData) else {
+            throw XCTSkip("A visual snapshot image could not be decoded.")
+        }
+        XCTAssertEqual(actual.pixelsWide, baseline.pixelsWide, "Visual snapshot width changed: \(name)")
+        XCTAssertEqual(actual.pixelsHigh, baseline.pixelsHigh, "Visual snapshot height changed: \(name)")
+        guard actual.pixelsWide == baseline.pixelsWide,
+              actual.pixelsHigh == baseline.pixelsHigh else { return }
+
+        var materiallyDifferentPixels = 0
+        let pixelCount = actual.pixelsWide * actual.pixelsHigh
+        for y in 0..<actual.pixelsHigh {
+            for x in 0..<actual.pixelsWide {
+                guard let lhs = actual.colorAt(x: x, y: y)?.usingColorSpace(.sRGB),
+                      let rhs = baseline.colorAt(x: x, y: y)?.usingColorSpace(.sRGB) else {
+                    materiallyDifferentPixels += 1
+                    continue
+                }
+                let delta = [
+                    abs(lhs.redComponent - rhs.redComponent),
+                    abs(lhs.greenComponent - rhs.greenComponent),
+                    abs(lhs.blueComponent - rhs.blueComponent),
+                    abs(lhs.alphaComponent - rhs.alphaComponent)
+                ].max() ?? 0
+                if delta > 0.08 { materiallyDifferentPixels += 1 }
+            }
+        }
+        let difference = Double(materiallyDifferentPixels) / Double(max(1, pixelCount))
+        XCTAssertLessThanOrEqual(
+            difference,
+            0.01,
+            "Visual snapshot \(name) changed by \(String(format: "%.2f", difference * 100))%."
+        )
     }
 
     private func wcagContrastRatio(low: Double, high: Double) -> Double {

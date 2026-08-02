@@ -52,6 +52,8 @@ jobs:
       - name: Run macOS UI, accessibility and window-layout tests
         id: ui_tests
         continue-on-error: ${{ github.event_name == 'workflow_dispatch' && inputs.diagnostic_mode }}
+        env:
+          LOGICLYRICS_VISUAL_BASELINE_OUTPUT: ${{ runner.temp }}/LogicLyricsVisualBaselines
         run: |
           xcodebuild test \
             -project LogicLyrics.xcodeproj \
@@ -67,6 +69,15 @@ jobs:
         with:
           name: LogicLyrics-UI-test-results
           path: ${{ runner.temp }}/LogicLyricsUITests.xcresult
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload recorded visual baselines
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: LogicLyrics-visual-baselines
+          path: ${{ runner.temp }}/LogicLyricsVisualBaselines
           if-no-files-found: warn
           retention-days: 14
 

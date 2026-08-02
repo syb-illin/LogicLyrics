@@ -21,6 +21,19 @@ struct AppSettingsView: View {
                 if case .available = updater.state {
                     Button(L10n.text("Install Update")) { confirmsUpdateInstallation = true }
                         .buttonStyle(.borderedProminent)
+                    if let release = updater.availableRelease {
+                        if !release.releaseNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            Text(release.releaseNotes)
+                                .font(.caption)
+                                .foregroundStyle(AppTheme.secondaryText)
+                                .lineLimit(6)
+                                .textSelection(.enabled)
+                                .accessibilityLabel(L10n.text("Release Notes"))
+                        }
+                        if let page = release.releasePageURL {
+                            Link(L10n.text("View Release on GitHub"), destination: page)
+                        }
+                    }
                 }
             }
 

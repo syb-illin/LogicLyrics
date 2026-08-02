@@ -4,6 +4,12 @@ struct RecentProjectsView: View {
     @ObservedObject var history: HistoryStore
     let selectedID: UUID?
     let onSelect: (UUID) -> Void
+    let onTogglePin: (UUID) -> Void
+    let onOpenInLogic: (UUID) -> Void
+    let onRevealInFinder: (UUID) -> Void
+    let onRemove: (UUID) -> Void
+    let onRemoveMissing: () -> Void
+    let onClear: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -17,6 +23,22 @@ struct RecentProjectsView: View {
                     .font(.caption.monospacedDigit().weight(.bold))
                     .foregroundStyle(AppTheme.secondaryText)
                     .accessibilityIdentifier("recent-songs-count")
+                Menu {
+                    Button(L10n.text("Remove Missing Projects"), systemImage: "folder.badge.minus") {
+                        onRemoveMissing()
+                    }
+                    .disabled(history.entries.isEmpty)
+                    Button(L10n.text("Clear History"), systemImage: "trash", role: .destructive) {
+                        onClear()
+                    }
+                    .disabled(history.entries.isEmpty)
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .accessibilityLabel(L10n.text("History Actions"))
+                .accessibilityIdentifier("history-management-menu")
             }
             .padding(.horizontal, 8)
 
@@ -58,7 +80,8 @@ struct RecentProjectsView: View {
             } else {
                 LazyVStack(spacing: 6) {
                     ForEach(history.filteredEntries) { entry in
-                        Button { onSelect(entry.id) } label: {
+                        HStack(spacing: 2) {
+                            Button { onSelect(entry.id) } label: {
                             HStack(spacing: 10) {
                                 AccentIcon(systemName: "music.note", color: AppTheme.cyan, size: 30)
                                 VStack(alignment: .leading, spacing: 3) {
@@ -71,6 +94,12 @@ struct RecentProjectsView: View {
                                         .lineLimit(1)
                                 }
                                 Spacer(minLength: 4)
+                                if entry.isPinned {
+                                    Image(systemName: "pin.fill")
+                                        .font(.caption2)
+                                        .foregroundStyle(AppTheme.cyan)
+                                        .accessibilityHidden(true)
+                                }
                             }
                             .padding(9)
                             .background(
@@ -79,14 +108,22 @@ struct RecentProjectsView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
                             .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityRepresentation {
-                            Button(entry.projectName) { onSelect(entry.id) }
-                                .accessibilityLabel(
-                                    L10n.format("%@: %@", entry.projectName, metadata(for: entry))
-                                )
-                                .accessibilityHint(L10n.text("Shows the lyrics saved from this Logic project."))
-                                .accessibilityIdentifier("history-row-\(entry.id.uuidString.lowercased())")
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(
+                                L10n.format("%@: %@", entry.projectName, metadata(for: entry))
+                            )
+                            .accessibilityHint(L10n.text("Shows the lyrics saved from this Logic project."))
+                            .accessibilityIdentifier("history-row-\(entry.id.uuidString.lowercased())")
+                            .contextMenu { entryActions(entry) }
+
+                            Menu { entryActions(entry) } label: {
+                                Image(systemName: "ellipsis")
+                                    .frame(width: 24, height: 30)
+                            }
+                            .menuStyle(.borderlessButton)
+                            .fixedSize()
+                            .accessibilityLabel(L10n.format("Actions for %@", entry.projectName))
+                            .accessibilityIdentifier("history-actions-\(entry.id.uuidString.lowercased())")
                         }
                     }
                 }
@@ -95,6 +132,25 @@ struct RecentProjectsView: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel(L10n.text("Recent songs"))
         .accessibilityIdentifier("recent-songs-section")
+    }
+
+    @ViewBuilder
+    private func entryActions(_ entry: SongHistoryEntry) -> some View {
+        Button(
+            entry.isPinned ? L10n.text("Unpin") : L10n.text("Pin"),
+            systemImage: entry.isPinned ? "pin.slash" : "pin"
+        ) { onTogglePin(entry.id) }
+        Divider()
+        Button(L10n.text("Open in Logic Pro"), systemImage: "music.note") {
+            onOpenInLogic(entry.id)
+        }
+        Button(L10n.text("Reveal in Finder"), systemImage: "finder") {
+            onRevealInFinder(entry.id)
+        }
+        Divider()
+        Button(L10n.text("Remove from History"), systemImage: "trash", role: .destructive) {
+            onRemove(entry.id)
+        }
     }
 
     private func metadata(for entry: SongHistoryEntry) -> String {

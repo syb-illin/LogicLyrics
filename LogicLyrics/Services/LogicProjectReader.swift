@@ -17,6 +17,43 @@ enum LogicProjectError: LocalizedError, Equatable {
     }
 }
 
+struct ExtractionDiagnostics: Codable, Equatable, Hashable, Sendable {
+    enum Outcome: String, Codable, Sendable {
+        case selected
+        case noEmbeddedRichText
+        case richTextCouldNotBeDecoded
+        case noLikelyProjectNotes
+    }
+
+    let outcome: Outcome
+    let embeddedRichTextCount: Int
+    let decodedCandidateCount: Int
+    let likelyProjectNotesCount: Int
+    let selectedCandidateIndex: Int?
+
+    var localizedSummary: String {
+        switch outcome {
+        case .selected:
+            L10n.format(
+                "Selected Project Notes from %d decoded rich-text candidates.",
+                decodedCandidateCount
+            )
+        case .noEmbeddedRichText:
+            L10n.text("No embedded rich-text document was found in this alternative.")
+        case .richTextCouldNotBeDecoded:
+            L10n.format(
+                "%d embedded rich-text documents were found, but none could be decoded.",
+                embeddedRichTextCount
+            )
+        case .noLikelyProjectNotes:
+            L10n.format(
+                "%d rich-text candidates were decoded, but none looked like multi-line Project Notes.",
+                decodedCandidateCount
+            )
+        }
+    }
+}
+
 struct LogicProjectReader: Sendable {
     private static let signature = Data("{\\rtf1".utf8)
     private let decodeRTFDocument: @Sendable (Data) -> String?
@@ -33,36 +70,110 @@ struct LogicProjectReader: Sendable {
         let index: Int
         let text: String
 
-        var nonEmptyLineCount: Int {
-            text.split(whereSeparator: \.isNewline).count
-        }
-
-        var sectionMarkerCount: Int {
-            text.components(separatedBy: "[").dropFirst().reduce(into: 0) { count, component in
-                let label = component.prefix { $0 != "]" }.lowercased()
-                if ["verse", "chorus", "pre-chorus", "bridge", "intro", "outro", "hook", "refrain"]
-                    .contains(where: { label.hasPrefix($0) }) {
-                    count += 1
-                }
-            }
-        }
-
-        var isLikelyProjectNote: Bool {
-            nonEmptyLineCount > 1 || sectionMarkerCount > 0
-        }
+        var nonEmptyLineCount: Int { text.split(whereSeparator: \.isNewline).count }
+        var sectionMarkerCount: Int { LyricSectionParser.parse(text).count }
+        var isLikelyProjectNote: Bool { nonEmptyLineCount > 1 || sectionMarkerCount > 0 }
     }
 
     struct Result: Sendable {
         let notes: [ExtractedNote]
         let bpm: Double?
         let musicalKey: String?
+        let availableAlternatives: [String]
+        let selectedAlternative: String
+        let diagnostics: ExtractionDiagnostics
+        let sourceStateToken: String
+
+        init(
+            notes: [ExtractedNote],
+            bpm: Double?,
+            musicalKey: String?,
+            availableAlternatives: [String]? = nil,
+            selectedAlternative: String? = nil,
+            diagnostics: ExtractionDiagnostics? = nil,
+            sourceStateToken: String = "test-state"
+        ) {
+            self.notes = notes
+            self.bpm = bpm
+            self.musicalKey = musicalKey
+            let inferredAlternative = selectedAlternative ?? notes.first?.alternative ?? ""
+            self.availableAlternatives = availableAlternatives ?? [inferredAlternative].filter { !$0.isEmpty }
+            self.selectedAlternative = inferredAlternative
+            self.diagnostics = diagnostics ?? ExtractionDiagnostics(
+                outcome: notes.first?.text.isEmpty == false ? .selected : .noLikelyProjectNotes,
+                embeddedRichTextCount: notes.first?.text.isEmpty == false ? 1 : 0,
+                decodedCandidateCount: notes.first?.text.isEmpty == false ? 1 : 0,
+                likelyProjectNotesCount: notes.first?.text.isEmpty == false ? 1 : 0,
+                selectedCandidateIndex: notes.first?.index
+            )
+            self.sourceStateToken = sourceStateToken
+        }
     }
 
     func readProject(at projectURL: URL) throws -> Result {
+        try readProject(at: projectURL, preferredAlternative: nil)
+    }
+
+    func readProject(at projectURL: URL, preferredAlternative: String?) throws -> Result {
+        try withProjectAccess(projectURL) {
+            let projectDataURLs = try discoverProjectData(in: projectURL)
+            let selectedURL = preferredProjectDataURL(
+                among: projectDataURLs,
+                projectURL: projectURL,
+                preferredAlternative: preferredAlternative
+            )
+            let alternative = selectedURL.deletingLastPathComponent().lastPathComponent
+            let data = try Data(contentsOf: selectedURL, options: [.mappedIfSafe])
+            let documents = try extractRTFDocuments(from: data)
+            let candidates = noteCandidates(in: documents)
+            let plausible = candidates.filter(\.isLikelyProjectNote)
+            let selected = plausible.max(by: { isLowerQuality($0, than: $1) })
+            let diagnostics = ExtractionDiagnostics(
+                outcome: diagnosticOutcome(documents: documents, candidates: candidates, selected: selected),
+                embeddedRichTextCount: documents.count,
+                decodedCandidateCount: candidates.count,
+                likelyProjectNotesCount: plausible.count,
+                selectedCandidateIndex: selected?.index
+            )
+            let note = selected.map {
+                ExtractedNote(alternative: alternative, index: $0.index, text: $0.text)
+            } ?? ExtractedNote(alternative: alternative, index: 0, text: "", isDraft: true)
+            let metadata = readMetadata(beside: selectedURL)
+            return Result(
+                notes: [note],
+                bpm: metadata.bpm,
+                musicalKey: metadata.musicalKey,
+                availableAlternatives: projectDataURLs.map {
+                    $0.deletingLastPathComponent().lastPathComponent
+                },
+                selectedAlternative: alternative,
+                diagnostics: diagnostics,
+                sourceStateToken: try stateToken(
+                    projectURL: projectURL,
+                    selectedProjectDataURL: selectedURL
+                )
+            )
+        }
+    }
+
+    /// Cheap state check used when the app becomes active. It reads only file
+    /// metadata and never scans the binary ProjectData contents.
+    func projectStateToken(at projectURL: URL, preferredAlternative: String?) throws -> String {
+        try withProjectAccess(projectURL) {
+            let projectDataURLs = try discoverProjectData(in: projectURL)
+            let selectedURL = preferredProjectDataURL(
+                among: projectDataURLs,
+                projectURL: projectURL,
+                preferredAlternative: preferredAlternative
+            )
+            return try stateToken(projectURL: projectURL, selectedProjectDataURL: selectedURL)
+        }
+    }
+
+    private func withProjectAccess<T>(_ projectURL: URL, operation: () throws -> T) throws -> T {
         guard projectURL.pathExtension.lowercased() == "logicx" else {
             throw LogicProjectError.notLogicProject
         }
-
         let didAccess = projectURL.startAccessingSecurityScopedResource()
         defer { if didAccess { projectURL.stopAccessingSecurityScopedResource() } }
 
@@ -71,7 +182,10 @@ struct LogicProjectReader: Sendable {
               isDirectory.boolValue else {
             throw LogicProjectError.unreadableProject
         }
+        return try operation()
+    }
 
+    private func discoverProjectData(in projectURL: URL) throws -> [URL] {
         let alternativesURL = projectURL.appendingPathComponent("Alternatives", isDirectory: true)
         guard let alternatives = try? FileManager.default.contentsOfDirectory(
             at: alternativesURL,
@@ -80,45 +194,29 @@ struct LogicProjectReader: Sendable {
         ) else {
             throw LogicProjectError.alternativesMissing
         }
-
-        let projectDataURLs = alternatives
+        let urls = alternatives
             .filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }
             .map { $0.appendingPathComponent("ProjectData") }
             .filter { FileManager.default.fileExists(atPath: $0.path) }
-            .sorted { $0.deletingLastPathComponent().lastPathComponent < $1.deletingLastPathComponent().lastPathComponent }
-
-        guard !projectDataURLs.isEmpty else { throw LogicProjectError.noProjectData }
-
-        // Logic stores many unrelated rich-text values in ProjectData (loop names,
-        // region annotations, and Project Notes). Reading every RTF made a loop name
-        // appear as the selected lyrics. The active alternative is the project state
-        // visible in Logic, and its richest multi-line RTF is the Project Notes value.
-        let activeProjectDataURL = preferredProjectDataURL(
-            among: projectDataURLs,
-            projectURL: projectURL
-        )
-        let alternative = activeProjectDataURL.deletingLastPathComponent().lastPathComponent
-        let data = try Data(contentsOf: activeProjectDataURL, options: [.mappedIfSafe])
-        let candidates = try noteCandidates(in: data)
-
-        let notes: [ExtractedNote]
-        if let candidate = candidates
-            .filter(\.isLikelyProjectNote)
-            .max(by: { isLowerQuality($0, than: $1) }) {
-            notes = [ExtractedNote(
-                alternative: alternative,
-                index: candidate.index,
-                text: candidate.text
-            )]
-        } else {
-            notes = [ExtractedNote(alternative: alternative, index: 0, text: "", isDraft: true)]
-        }
-
-        let metadata = readMetadata(beside: activeProjectDataURL)
-        return Result(notes: notes, bpm: metadata.bpm, musicalKey: metadata.musicalKey)
+            .sorted {
+                $0.deletingLastPathComponent().lastPathComponent
+                    < $1.deletingLastPathComponent().lastPathComponent
+            }
+        guard !urls.isEmpty else { throw LogicProjectError.noProjectData }
+        return urls
     }
 
-    private func preferredProjectDataURL(among urls: [URL], projectURL: URL) -> URL {
+    private func preferredProjectDataURL(
+        among urls: [URL],
+        projectURL: URL,
+        preferredAlternative: String?
+    ) -> URL {
+        if let preferredAlternative,
+           let preferred = urls.first(where: {
+               $0.deletingLastPathComponent().lastPathComponent == preferredAlternative
+           }) {
+            return preferred
+        }
         if let activeAlternative = activeAlternativeName(in: projectURL),
            let activeURL = urls.first(where: {
                $0.deletingLastPathComponent().lastPathComponent == activeAlternative
@@ -147,19 +245,29 @@ struct LogicProjectReader: Sendable {
         return nil
     }
 
-    private func noteCandidates(in data: Data) throws -> [NoteCandidate] {
+    private func noteCandidates(in documents: [Data]) -> [NoteCandidate] {
         var candidates: [NoteCandidate] = []
         var seenTexts = Set<String>()
         var nonEmptyIndex = 0
-        for rtf in try extractRTFDocuments(from: data) {
+        for rtf in documents {
             guard let text = decodeRTFDocument(rtf) else { continue }
             let cleaned = clean(text)
-            guard !cleaned.isEmpty else { continue }
-            guard seenTexts.insert(cleaned).inserted else { continue }
+            guard !cleaned.isEmpty, seenTexts.insert(cleaned).inserted else { continue }
             candidates.append(NoteCandidate(index: nonEmptyIndex, text: cleaned))
             nonEmptyIndex += 1
         }
         return candidates
+    }
+
+    private func diagnosticOutcome(
+        documents: [Data],
+        candidates: [NoteCandidate],
+        selected: NoteCandidate?
+    ) -> ExtractionDiagnostics.Outcome {
+        if selected != nil { return .selected }
+        if documents.isEmpty { return .noEmbeddedRichText }
+        if candidates.isEmpty { return .richTextCouldNotBeDecoded }
+        return .noLikelyProjectNotes
     }
 
     private func isLowerQuality(_ candidate: NoteCandidate, than other: NoteCandidate) -> Bool {
@@ -189,13 +297,26 @@ struct LogicProjectReader: Sendable {
         return (bpm, keyParts.isEmpty ? nil : keyParts.joined(separator: " "))
     }
 
+    private func stateToken(projectURL: URL, selectedProjectDataURL: URL) throws -> String {
+        let metadataURL = selectedProjectDataURL.deletingLastPathComponent()
+            .appendingPathComponent("MetaData.plist")
+        let informationURL = projectURL.appendingPathComponent("Resources/ProjectInformation.plist")
+        return try [selectedProjectDataURL, metadataURL, informationURL].map { url in
+            guard FileManager.default.fileExists(atPath: url.path) else {
+                return "\(url.lastPathComponent):missing"
+            }
+            let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+            let size = (attributes[.size] as? NSNumber)?.uint64Value ?? 0
+            let modified = (attributes[.modificationDate] as? Date)?.timeIntervalSinceReferenceDate ?? 0
+            return "\(url.lastPathComponent):\(size):\(modified)"
+        }.joined(separator: "|")
+    }
+
     /// Extracts complete RTF groups embedded in Logic's binary ProjectData.
-    /// Handles escaped braces and RTF `\\binN` payloads so binary bytes cannot
-    /// prematurely terminate the group.
+    /// Handles escaped braces and RTF `\\binN` payloads.
     private func extractRTFDocuments(from data: Data) throws -> [Data] {
         let marker = [UInt8](Self.signature)
         guard data.count >= marker.count else { return [] }
-
         var results: [Data] = []
         var cursor = 0
 
@@ -205,17 +326,15 @@ struct LogicProjectReader: Sendable {
                 cursor += 1
                 continue
             }
-
             let start = cursor
             var index = cursor
             var depth = 0
-
             while index < data.count {
                 switch data[index] {
-                case 0x7B: // {
+                case 0x7B:
                     depth += 1
                     index += 1
-                case 0x7D: // }
+                case 0x7D:
                     depth -= 1
                     index += 1
                     if depth == 0 {
@@ -223,15 +342,13 @@ struct LogicProjectReader: Sendable {
                         cursor = index
                         break
                     }
-                case 0x5C: // backslash
+                case 0x5C:
                     index = Self.advancePastControlSequence(in: data, from: index)
                 default:
                     index += 1
                 }
-
                 if depth == 0 { break }
             }
-
             if depth != 0 { cursor = start + marker.count }
         }
         return results
@@ -245,21 +362,16 @@ struct LogicProjectReader: Sendable {
     static func advancePastControlSequence(in bytes: Data, from slash: Int) -> Int {
         var index = slash + 1
         guard index < bytes.count else { return index }
-
-        // Escaped character: \\{, \\}, \\\\, \\~ etc.
         guard asciiLetter(bytes[index]) else { return min(index + 1, bytes.count) }
-
         let wordStart = index
         while index < bytes.count, asciiLetter(bytes[index]) { index += 1 }
         let word = String(decoding: bytes[wordStart..<index], as: UTF8.self)
-
         var sign = 1
         if index < bytes.count, bytes[index] == 0x2D { sign = -1; index += 1 }
         let numberStart = index
         while index < bytes.count, asciiDigit(bytes[index]) { index += 1 }
         let number = Int(String(decoding: bytes[numberStart..<index], as: UTF8.self)).map { $0 * sign }
         if index < bytes.count, bytes[index] == 0x20 { index += 1 }
-
         if word == "bin", let count = number, count > 0 {
             return min(index + count, bytes.count)
         }
