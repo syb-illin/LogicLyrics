@@ -11,6 +11,7 @@ enum CoreRegressionTests {
         try testReaderAlternativeAndMetadataEdges()
         try testReaderQualityTieBreakers()
         try testReaderDecodeFailureFallsBackToDraft()
+        try testReaderDefensiveRTFBranches()
         try testLegacyHistoryMigration()
         try testHistoryDeduplicatesLegacyProjectRows()
         try testHistorySeparatesSourceEditsAndRecoveredText()
@@ -160,6 +161,43 @@ enum CoreRegressionTests {
         try require(
             result.notes.count == 1 && result.notes[0].isDraft && result.notes[0].text.isEmpty,
             "An undecodable rich-text document degrades to an empty draft"
+        )
+    }
+
+    private static func testReaderDefensiveRTFBranches() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let cleaned = root.appendingPathComponent("Cleaned.logicx", isDirectory: true)
+        try writeProjectData(["", "Repeated\nLyrics", "Repeated\nLyrics"], alternative: "000", project: cleaned)
+        let cleanedResult = try LogicProjectReader().readProject(at: cleaned)
+        try require(cleanedResult.notes[0].text == "Repeated\nLyrics", "Empty and duplicate RTF values are ignored")
+
+        let short = root.appendingPathComponent("Short.logicx", isDirectory: true)
+        try writeRawProjectData(Data([0x01, 0x02]), alternative: "000", project: short)
+        let shortResult = try LogicProjectReader().readProject(at: short)
+        try require(shortResult.notes[0].isDraft, "A ProjectData buffer shorter than the RTF marker is safe")
+
+        let incomplete = root.appendingPathComponent("Incomplete.logicx", isDirectory: true)
+        try writeRawProjectData(Data("{\\rtf1 incomplete".utf8), alternative: "000", project: incomplete)
+        let incompleteResult = try LogicProjectReader().readProject(at: incomplete)
+        try require(incompleteResult.notes[0].isDraft, "An unterminated RTF group is ignored")
+
+        try require(
+            !LogicProjectReader.matches([0x01, 0x02], in: Data([0x01]), at: 0),
+            "RTF marker matching checks its upper bound"
+        )
+        try require(
+            LogicProjectReader.advancePastControlSequence(in: Data("\\".utf8), from: 0) == 1,
+            "A terminal RTF escape is safe"
+        )
+        try require(
+            LogicProjectReader.advancePastControlSequence(in: Data("\\bin-1 ".utf8), from: 0) == 7,
+            "A negative RTF binary count does not skip bytes"
+        )
+        try require(
+            LogicProjectReader.advancePastControlSequence(in: Data("\\bin2 ab".utf8), from: 0) == 8,
+            "A positive RTF binary count skips its payload"
         )
     }
 
@@ -408,6 +446,12 @@ enum CoreRegressionTests {
             )
             data.append(rtf)
         }
+        try data.write(to: url)
+    }
+
+    private static func writeRawProjectData(_ data: Data, alternative: String, project: URL) throws {
+        let url = project.appendingPathComponent("Alternatives/\(alternative)/ProjectData")
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try data.write(to: url)
     }
 

@@ -38,15 +38,20 @@ def main() -> int:
             failures.append(f"{source}: expected one coverage record, found {len(matches)}")
             continue
 
-        lines = matches[0].get("summary", {}).get("lines", {})
-        count = int(lines.get("count", 0))
-        covered = int(lines.get("covered", 0))
-        percent = 100.0 if count == 0 else covered * 100.0 / count
-        print(f"  {source}: {covered}/{count} lines ({percent:.2f}%)")
-        if percent + 1e-9 < arguments.minimum:
-            failures.append(
-                f"{source}: {percent:.2f}% is below the required {arguments.minimum:.2f}%"
-            )
+        summary = matches[0].get("summary", {})
+        metrics: list[str] = []
+        for metric in ("lines", "regions"):
+            values = summary.get(metric, {})
+            count = int(values.get("count", 0))
+            covered = int(values.get("covered", 0))
+            percent = 100.0 if count == 0 else covered * 100.0 / count
+            metrics.append(f"{covered}/{count} {metric} ({percent:.2f}%)")
+            if percent + 1e-9 < arguments.minimum:
+                failures.append(
+                    f"{source} {metric}: {percent:.2f}% is below the required "
+                    f"{arguments.minimum:.2f}%"
+                )
+        print(f"  {source}: " + "; ".join(metrics))
 
     if failures:
         print("Coverage gate failed:", file=sys.stderr)
