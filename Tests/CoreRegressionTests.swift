@@ -95,9 +95,12 @@ enum CoreRegressionTests {
         try require(named.selectedAlternative == "custom", "Explicit alternative wins")
         try require(named.notes[0].text == "Named\nLyrics", "Explicit alternative notes")
         try require(named.bpm == nil && named.musicalKey == nil, "Missing metadata")
+        let namedStateToken = try reader.projectStateToken(
+            at: project,
+            preferredAlternative: "custom"
+        )
         try require(
-            try reader.projectStateToken(at: project, preferredAlternative: "custom")
-                == named.sourceStateToken,
+            namedStateToken == named.sourceStateToken,
             "Cheap source token matches read result"
         )
 
@@ -166,7 +169,8 @@ enum CoreRegressionTests {
 
         let incomplete = root.appendingPathComponent("Incomplete.logicx", isDirectory: true)
         try writeRawProjectData(Data("{\\rtf1 incomplete".utf8), alternative: "000", project: incomplete)
-        try require(try LogicProjectReader().readProject(at: incomplete).notes[0].isDraft, "Incomplete RTF")
+        let incompleteResult = try LogicProjectReader().readProject(at: incomplete)
+        try require(incompleteResult.notes[0].isDraft, "Incomplete RTF")
         try require(LogicProjectReader.decodeRTF(Data("not rtf".utf8)) == nil, "Malformed RTF")
         try require(!LogicProjectReader.matches([1, 2], in: Data([1]), at: 0), "Marker bound")
         try require(LogicProjectReader.advancePastControlSequence(in: Data("\\".utf8), from: 0) == 1, "Terminal escape")
@@ -332,8 +336,10 @@ enum CoreRegressionTests {
         let recordedID = store.recordProject(name: "Existing", url: existing, result: result)
         try require(recordedID == new.id, "Stable project updated rather than duplicated")
         try require(store.entry(id: new.id)?.sourceLyrics == "Updated\nLyrics", "History source refreshed")
-        try require(try store.resolveProjectURL(entryID: new.id) == existing, "History resolves project")
-        try require(try store.relocateProject(entryID: new.id, to: existing) == existing, "History relocates project")
+        let resolvedURL = try store.resolveProjectURL(entryID: new.id)
+        try require(resolvedURL == existing, "History resolves project")
+        let relocatedURL = try store.relocateProject(entryID: new.id, to: existing)
+        try require(relocatedURL == existing, "History relocates project")
         store.searchText = "existing"
         try require(store.filteredEntries.count == 1, "Store search projection")
         store.remove(entryID: new.id)
