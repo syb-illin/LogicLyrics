@@ -276,7 +276,7 @@ final class LogicLyricsUITests: XCTestCase {
         )
         appMenu.click()
 
-        let aboutItem = app.menuItems[menuTitle]
+        let aboutItem = appMenu.descendants(matching: .menuItem)[menuTitle]
         XCTAssertTrue(
             aboutItem.waitForExistence(timeout: 3),
             "The localized About menu item was not exposed."
