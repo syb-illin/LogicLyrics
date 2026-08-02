@@ -108,7 +108,8 @@ private struct AboutView: View {
                 .frame(maxWidth: 340)
         }
         .padding(32)
-        .frame(width: 440, minHeight: 330)
+        .frame(width: 440)
+        .frame(minHeight: 330)
         .background(Color(red: 0.055, green: 0.055, blue: 0.09))
         .accessibilityElement(children: .contain)
         .accessibilityLabel(L10n.text("About Logic Lyrics"))
