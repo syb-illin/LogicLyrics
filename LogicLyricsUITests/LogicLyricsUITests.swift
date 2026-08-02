@@ -325,8 +325,9 @@ final class LogicLyricsUITests: XCTestCase {
         for type in interactiveTypes {
             for element in app.descendants(matching: type).allElementsBoundByIndex {
                 guard element.exists else { continue }
-                let label = element.label.trimmingCharacters(in: .whitespacesAndNewlines)
                 let frame = element.frame
+                guard !frame.isEmpty else { continue }
+                let label = element.label.trimmingCharacters(in: .whitespacesAndNewlines)
                 let isNativeWindowControl = element.identifier.hasPrefix("_XCUI:")
                     || (element.identifier.isEmpty && label.isEmpty)
                 XCTAssertFalse(

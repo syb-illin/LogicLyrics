@@ -21,6 +21,7 @@ All notable user-facing changes are documented here. Releases use semantic versi
 - Removed the redundant low-contrast native navigation title and verifies that every history row maps to a labelled button.
 - Requires readable labels for every product-owned interactive element while recognizing macOS traffic-light controls by their stable native accessibility identifiers.
 - Gives the sidebar’s icon-only command an explicit tested identity and keeps every app-identified control subject to the accessible-name gate while leaving anonymous AppKit implementation controls to the native element-detection audit.
+- Excludes only zero-area hidden AppKit menu proxies from the visible-control name check; opened File and About menu actions remain covered by dedicated UI scenarios.
 
 ## 2.5.0 — build 34
 
