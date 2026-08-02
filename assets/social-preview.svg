@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
-  <title id="title">Logic Lyrics — Project Notes Studio for macOS</title>
+  <title id="title">Logic Lyrics — Logic Project Reader for macOS</title>
   <desc id="desc">A restrained dark banner with the Logic Lyrics waveform mark and product description.</desc>
   <defs>
     <radialGradient id="glow" cx="72%" cy="18%" r="70%">
@@ -22,8 +22,8 @@
   <g transform="translate(112 125)">
     <text x="0" y="30" fill="#aaa8ae" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="700" letter-spacing="3.4">NATIVE macOS · LOCAL-FIRST</text>
     <text x="0" y="118" fill="#f4f3f1" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="74" font-weight="750" letter-spacing="-4">Logic Lyrics</text>
-    <text x="0" y="180" fill="#f4f3f1" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="39" font-weight="540" letter-spacing="-1.5">Project Notes Studio</text>
-    <text x="0" y="252" fill="#aaa8ae" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="24">Logic Pro lyrics · Suno prompts · audio metadata</text>
+    <text x="0" y="180" fill="#f4f3f1" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="39" font-weight="540" letter-spacing="-1.5">Logic Project Reader</text>
+    <text x="0" y="252" fill="#aaa8ae" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="24">Project Notes · tempo · key · clipboard</text>
     <g transform="translate(0 326)">
       <rect width="205" height="50" rx="13" fill="#f4f3f1"/>
       <text x="102.5" y="32" text-anchor="middle" fill="#0b0b0d" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="750">Download for macOS</text>
