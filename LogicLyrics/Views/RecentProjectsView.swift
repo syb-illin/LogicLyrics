@@ -78,6 +78,7 @@ struct RecentProjectsView: View {
                             )
                             .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
                             .contentShape(Rectangle())
+                            .accessibilityHidden(true)
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel(

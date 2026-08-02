@@ -16,6 +16,7 @@ All notable user-facing changes are documented here. Releases use semantic versi
 - Uses guaranteed high-contrast text on the app’s dark surfaces and gives Settings the same explicit dark appearance as the main workspace.
 - Replaces translucent reading surfaces with visually equivalent opaque surfaces so assistive contrast analysis is deterministic, and scopes native-window accessibility exceptions across every open app window.
 - Increased small status, result-count, and empty-state typography contrast, and gave every recent-song control an explicit localized VoiceOver label.
+- Added an independent pixel-level WCAG AA contrast measurement so macOS XCTest false positives are accepted only when the rendered UI proves a ratio of at least 4.5:1.
 
 ## 2.5.0 — build 34
 
