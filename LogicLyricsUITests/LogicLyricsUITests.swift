@@ -158,7 +158,7 @@ final class LogicLyricsUITests: XCTestCase {
         XCTAssertTrue(app.menuItems["Unpin"].waitForExistence(timeout: 3))
         app.menuItems["Remove from History"].click()
         XCTAssertTrue(app.staticTexts["Remove this project from history?"].waitForExistence(timeout: 3))
-        app.buttons["Cancel"].click()
+        app.buttons["Cancel"].firstMatch.click()
         XCTAssertTrue(human.exists, "Cancelling removal must preserve the history row.")
 
         let management = element("history-management-menu", in: app)
@@ -166,7 +166,7 @@ final class LogicLyricsUITests: XCTestCase {
         management.click()
         app.menuItems["Clear History"].click()
         XCTAssertTrue(app.staticTexts["Clear all project history?"].waitForExistence(timeout: 3))
-        app.buttons["Cancel"].click()
+        app.buttons["Cancel"].firstMatch.click()
         XCTAssertTrue(human.exists, "Cancelling history clearing must preserve rows.")
     }
 
@@ -434,6 +434,21 @@ final class LogicLyricsUITests: XCTestCase {
     }
 
     private func assertVisualSnapshot(_ screenshot: XCUIScreenshot, named name: String) throws {
+        #if RECORD_VISUAL_BASELINES
+        let recordingDirectory = URL(
+            fileURLWithPath: "/tmp/LogicLyricsVisualBaselines",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: recordingDirectory,
+            withIntermediateDirectories: true
+        )
+        try screenshot.pngRepresentation.write(
+            to: recordingDirectory.appendingPathComponent("\(name).png"),
+            options: .atomic
+        )
+        return
+        #else
         let environment = ProcessInfo.processInfo.environment
         if let output = environment["LOGICLYRICS_VISUAL_BASELINE_OUTPUT"],
            !output.isEmpty {
@@ -488,6 +503,7 @@ final class LogicLyricsUITests: XCTestCase {
             0.01,
             "Visual snapshot \(name) changed by \(String(format: "%.2f", difference * 100))%."
         )
+        #endif
     }
 
     private func wcagContrastRatio(low: Double, high: Double) -> Double {

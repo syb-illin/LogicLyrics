@@ -329,6 +329,7 @@
 "Open in Logic Pro" = "Open in Logic Pro";
 "Reveal in Finder" = "Reveal in Finder";
 "Project Actions" = "Project Actions";
+"Offers actions for the Logic project file." = "Offers actions for the Logic project file.";
 "Logic Alternative" = "Logic Alternative";
 "Reads Project Notes from the selected Logic alternative." = "Reads Project Notes from the selected Logic alternative.";
 "This Logic project changed on disk. Refresh Lyrics to read the latest Project Notes." = "This Logic project changed on disk. Refresh Lyrics to read the latest Project Notes.";

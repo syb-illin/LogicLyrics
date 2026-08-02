@@ -117,6 +117,8 @@ struct LyricsReaderView: View {
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
+                .accessibilityLabel(L10n.text("Project Actions"))
+                .accessibilityHint(L10n.text("Offers actions for the Logic project file."))
                 .accessibilityIdentifier("project-actions-menu")
             }
             if !document.lyrics.isEmpty {
