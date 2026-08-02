@@ -69,18 +69,13 @@ final class HistoryStore: ObservableObject {
     @Published private(set) var entries: [SongHistoryEntry] = []
     @Published var searchText = ""
     @Published private(set) var persistenceError: UserAlert?
-    @Published private(set) var operationState = OperationState.idle
 
     private let repository: HistoryRepository?
     private let locator: any ProjectLocating
-    private let archiveService: HistoryArchiveService
+    private var loadTask: Task<Void, Never>?
     private var saveTask: Task<Void, Never>?
-    private var transferTask: Task<Void, Never>?
-    private var transferOperationID = UUID()
     private var hasFinishedInitialLoad = false
     private var saveRequestedDuringInitialLoad = false
-    private var dirtyLyrics = Set<UUID>()
-    private var dirtyPrompts = Set<UUID>()
 
     var filteredEntries: [SongHistoryEntry] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -88,16 +83,11 @@ final class HistoryStore: ObservableObject {
         return entries.filter {
             $0.projectName.localizedCaseInsensitiveContains(query)
             || $0.searchableLyrics.localizedCaseInsensitiveContains(query)
-            || $0.referenceArtist.localizedCaseInsensitiveContains(query)
         }
     }
 
-    init(
-        locator: any ProjectLocating = ProjectLocator(),
-        archiveService: HistoryArchiveService = HistoryArchiveService()
-    ) {
+    init(locator: any ProjectLocating = ProjectLocator()) {
         self.locator = locator
-        self.archiveService = archiveService
         do { repository = try HistoryRepository() }
         catch {
             repository = nil
@@ -110,14 +100,17 @@ final class HistoryStore: ObservableObject {
 
     private init(
         inMemoryEntries: [SongHistoryEntry],
-        locator: any ProjectLocating = ProjectLocator(),
-        archiveService: HistoryArchiveService = HistoryArchiveService()
+        locator: any ProjectLocating = ProjectLocator()
     ) {
         repository = nil
         self.locator = locator
-        self.archiveService = archiveService
         entries = inMemoryEntries
         hasFinishedInitialLoad = true
+    }
+
+    deinit {
+        loadTask?.cancel()
+        saveTask?.cancel()
     }
 
     static func configuredForCurrentProcess() -> HistoryStore {
@@ -186,41 +179,6 @@ final class HistoryStore: ObservableObject {
         return entry.id
     }
 
-    func updateLyrics(entryID: UUID, lyrics: String) {
-        guard let index = entries.firstIndex(where: { $0.id == entryID }) else { return }
-        entries[index].applyLocalEdit(lyrics)
-        entries[index].updatedAt = Date()
-        dirtyLyrics.insert(entryID)
-        sortAndScheduleSave()
-    }
-
-    func savePrompt(entryID: UUID, prompt: String, referenceArtist: String, allowsFemaleBackingVocals: Bool) {
-        guard let index = entries.firstIndex(where: { $0.id == entryID }) else { return }
-        entries[index].prompt = prompt
-        entries[index].referenceArtist = referenceArtist
-        entries[index].allowsFemaleBackingVocals = allowsFemaleBackingVocals
-        entries[index].updatedAt = Date()
-        dirtyPrompts.insert(entryID)
-        sortAndScheduleSave()
-    }
-
-    func restoreRevision(entryID: UUID, lyrics: String) {
-        guard let index = entries.firstIndex(where: { $0.id == entryID }) else { return }
-        entries[index].restoreRevision(lyrics)
-        entries[index].updatedAt = Date()
-        dirtyLyrics.insert(entryID)
-        sortAndScheduleSave()
-    }
-
-    func revertToProjectLyrics(entryID: UUID) {
-        guard let index = entries.firstIndex(where: { $0.id == entryID }),
-              entries[index].hasLocalEdits else { return }
-        entries[index].revertToSource()
-        entries[index].updatedAt = Date()
-        dirtyLyrics.insert(entryID)
-        sortAndScheduleSave()
-    }
-
     func resolveProjectURL(entryID: UUID) throws -> URL {
         guard let index = entries.firstIndex(where: { $0.id == entryID }) else {
             throw ProjectLocatorError.unavailable
@@ -242,34 +200,9 @@ final class HistoryStore: ObservableObject {
         return location.url
     }
 
-    func exportHistory(to destination: URL) {
-        beginTransfer(message: L10n.text("Exporting song history…")) { [archiveService, entries] in
-            try archiveService.write(entries, to: destination)
-            return .exported(entries.count)
-        }
-    }
-
-    func importHistory(from source: URL) {
-        beginTransfer(message: L10n.text("Importing song history…")) { [archiveService] in
-            .imported(try archiveService.read(from: source))
-        }
-    }
-
-    func cancelTransfer() {
-        guard operationState.isRunning else { return }
-        transferTask?.cancel()
-    }
-
     func entry(id: UUID?) -> SongHistoryEntry? {
         guard let id else { return nil }
         return entries.first { $0.id == id }
-    }
-
-    func delete(id: UUID) {
-        entries.removeAll { $0.id == id }
-        dirtyLyrics.remove(id)
-        dirtyPrompts.remove(id)
-        scheduleSave()
     }
 
     func flush() {
@@ -278,79 +211,16 @@ final class HistoryStore: ObservableObject {
 
     func dismissPersistenceError() { persistenceError = nil }
 
-    private enum TransferResult: Sendable {
-        case exported(Int)
-        case imported([SongHistoryEntry])
-    }
-
-    private func beginTransfer(
-        message: String,
-        operation: @escaping @Sendable () throws -> TransferResult
-    ) {
-        transferTask?.cancel()
-        let operationID = UUID()
-        transferOperationID = operationID
-        operationState = .running(message: message, startedAt: Date())
-        transferTask = Task.detached(priority: .userInitiated) { [weak self] in
-            do {
-                try Task<Never, Never>.checkCancellation()
-                let result = try operation()
-                try Task<Never, Never>.checkCancellation()
-                await self?.completeTransfer(result, operationID: operationID)
-            } catch is CancellationError {
-                await self?.finishTransfer(operationID: operationID)
-            } catch {
-                await self?.failTransfer(error, operationID: operationID)
-            }
-        }
-    }
-
-    private func completeTransfer(_ result: TransferResult, operationID: UUID) {
-        guard transferOperationID == operationID else { return }
-        switch result {
-        case .exported(let count):
-            persistenceError = UserAlert(
-                kind: .success,
-                title: L10n.text("History Exported"),
-                message: L10n.format("%d songs were exported successfully.", count)
-            )
-        case .imported(let imported):
-            let currentIDs = Set(entries.map(\.id))
-            entries = Self.consolidated(
-                entries + imported,
-                preferredIDs: currentIDs,
-                protectedLyricsIDs: currentIDs,
-                protectedPromptIDs: currentIDs
-            )
-            scheduleSave(delayNanoseconds: 0)
-            persistenceError = UserAlert(
-                kind: .success,
-                title: L10n.text("History Imported"),
-                message: L10n.format("%d songs were imported and merged safely.", imported.count)
-            )
-        }
-        finishTransfer(operationID: operationID)
-    }
-
-    private func failTransfer(_ error: Error, operationID: UUID) {
-        guard transferOperationID == operationID else { return }
-        persistenceError = .error(error, context: L10n.text("History Transfer Failed"))
-        finishTransfer(operationID: operationID)
-    }
-
-    private func finishTransfer(operationID: UUID) {
-        guard transferOperationID == operationID else { return }
-        operationState = .idle
-        transferTask = nil
-    }
-
     private func load() {
         guard let repository else { return }
-        Task { [weak self] in
+        loadTask?.cancel()
+        loadTask = Task { [weak self] in
+            defer { self?.loadTask = nil }
             let startedAt = Date()
             AppLog.history.info("History load started")
             do {
                 let decoded = try await repository.load()
+                try Task<Never, Never>.checkCancellation()
                 let loaded = Self.consolidated(decoded)
                 let durationMilliseconds = Int(Date().timeIntervalSince(startedAt) * 1_000)
                 AppLog.history.info("History load succeeded duration_ms=\(durationMilliseconds, privacy: .public) entries=\(loaded.count, privacy: .public)")
@@ -362,14 +232,17 @@ final class HistoryStore: ObservableObject {
                     self.entries = Self.consolidated(
                         self.entries + loaded,
                         preferredIDs: currentIDs,
-                        protectedLyricsIDs: self.dirtyLyrics,
-                        protectedPromptIDs: self.dirtyPrompts
+                        protectedLyricsIDs: currentIDs,
+                        protectedPromptIDs: currentIDs
                     )
                 }
                 self.hasFinishedInitialLoad = true
                 // Persist schema migration and duplicate consolidation even when
                 // the user does not edit anything during this launch.
                 self.scheduleSave(delayNanoseconds: 0)
+            } catch is CancellationError {
+                AppLog.history.debug("History load cancelled")
+                return
             } catch {
                 let errorType = String(describing: type(of: error))
                 AppLog.history.error("History load failed error_type=\(errorType, privacy: .public)")

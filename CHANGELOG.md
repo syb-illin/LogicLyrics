@@ -2,6 +2,22 @@
 
 All notable user-facing changes are documented here. Releases use semantic versions and every shipped build receives a new build number.
 
+## 2.5.0 — build 34
+
+- Refocused Logic Lyrics on one job: reading `.logicx` Project Notes, tempo, key and section markers, then copying the lyrics.
+- Replaced the multi-tool workspace with a restrained read-only lyrics interface and a simpler recent-project sidebar.
+- Removed Suno prompt generation, audio metadata/tagging, MP3 conversion, LAME, and experimental Logic-project writing from the product and build.
+- Split recent-project and lyrics rendering into focused SwiftUI components and narrowed the injected service boundary to Logic reading.
+- Added lifecycle cancellation for owned tasks, stable section identities, source-manifest validation, and bounded privacy-safe Unified Log diagnostics.
+- Updated File-menu, clipboard, VoiceOver, control-alignment and compact/large-window UI coverage for the focused reader.
+
+## 2.4.1 — build 33
+
+- Added the native **File → Open Logic Pro Project…** command with the standard ⌘O shortcut and the existing sandboxed `.logicx` picker.
+- Reworked the visual system around restrained macOS surfaces, native typography, consistent spacing, muted colors, and aligned action controls.
+- Added UI regression coverage that invokes the File menu, verifies the project picker, and checks history-action alignment.
+- Added privacy-safe UI diagnostics and treated file-picker cancellation as a normal, silent user action.
+
 ## 2.4.0 — build 32
 
 - Added stable filesystem identity and security-scoped bookmarks so history follows Logic projects after moves and renames.

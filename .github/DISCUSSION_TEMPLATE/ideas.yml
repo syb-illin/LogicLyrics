@@ -3,12 +3,12 @@ labels: ["ideas"]
 body:
   - type: markdown
     attributes:
-      value: Share a workflow idea without posting private lyrics, audio, project names or paths.
+      value: Share a focused reader idea without posting private lyrics, project names or paths.
   - type: textarea
     id: workflow
     attributes:
       label: Music workflow
-      description: Where does this idea fit between Logic Pro, lyrics, prompting and audio export?
+      description: How would this improve reading or copying Project Notes from Logic Pro?
     validations:
       required: true
   - type: textarea

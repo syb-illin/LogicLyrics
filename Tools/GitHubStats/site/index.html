@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b0b0d">
-  <meta name="description" content="Logic Lyrics is a private, native macOS studio for recovering and structuring Logic Pro project notes, preparing Suno prompts, and tagging audio exports.">
+  <meta name="description" content="Logic Lyrics is a focused native macOS reader for lyrics, tempo and key stored in Logic Pro Project Notes.">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Logic Lyrics — Project Notes Studio for macOS">
-  <meta property="og:description" content="Recover lyrics from Logic Pro projects, prepare voice-faithful Suno prompts, and finish MP3/WAV metadata locally.">
+  <meta property="og:title" content="Logic Lyrics — Logic Pro Project Notes reader for macOS">
+  <meta property="og:description" content="Read and copy lyrics, tempo, key and sections directly from a local Logic Pro project.">
   <meta property="og:url" content="https://syb-illin.github.io/LogicLyrics/">
   <meta property="og:image" content="https://syb-illin.github.io/LogicLyrics/assets/social-preview.png">
   <meta name="twitter:card" content="summary_large_image">
-  <title>Logic Lyrics — Project Notes Studio for macOS</title>
+  <title>Logic Lyrics — Logic Pro Project Notes reader for macOS</title>
   <link rel="icon" href="assets/app-icon.png">
   <link rel="stylesheet" href="product.css">
   <script type="application/ld+json">
@@ -21,10 +21,10 @@
     "name": "Logic Lyrics",
     "applicationCategory": "MultimediaApplication",
     "operatingSystem": "macOS 14 or later",
-    "softwareVersion": "2.4.0",
+    "softwareVersion": "2.5.0",
     "downloadUrl": "https://github.com/syb-illin/LogicLyrics/releases/latest/download/LogicLyrics.app.zip",
     "codeRepository": "https://github.com/syb-illin/LogicLyrics",
-    "description": "A native macOS studio for Logic Pro project notes, lyrics, Suno prompts, and audio metadata."
+    "description": "A focused native macOS reader for Logic Pro Project Notes, lyrics, tempo and key."
   }
   </script>
 </head>
@@ -34,7 +34,7 @@
   <header class="site-header">
     <a class="brand" href="#top" aria-label="Logic Lyrics home">
       <img src="assets/app-icon.png" alt="" width="42" height="42">
-      <span><strong>Logic Lyrics</strong><small>Project Notes Studio</small></span>
+      <span><strong>Logic Lyrics</strong><small>Logic Project Reader</small></span>
     </a>
     <nav aria-label="Primary navigation">
       <a href="#workflow">Workflow</a>
@@ -50,12 +50,12 @@
       <div class="hero-copy">
         <p class="eyebrow">Native macOS app · local-first</p>
         <h1 id="hero-title">From Logic project notes to finished lyrics.</h1>
-        <p class="lede">Recover and structure lyrics from <strong>Logic Pro</strong>, prepare voice-faithful prompts for <strong>Suno</strong>, and finish MP3/WAV metadata without sending your projects anywhere.</p>
+        <p class="lede">Read lyrics, tempo, key and song sections directly from <strong>Logic Pro Project Notes</strong>, then copy exactly what you need.</p>
         <div class="hero-actions">
           <a class="button" href="https://github.com/syb-illin/LogicLyrics/releases/latest/download/LogicLyrics.app.zip">Download for macOS</a>
           <a class="text-link" href="https://github.com/syb-illin/LogicLyrics/releases/latest">View latest release <span aria-hidden="true">↗</span></a>
         </div>
-        <p class="requirements">Version 2.4.0 · macOS 14+ · Apple Command Line Tools supported</p>
+        <p class="requirements">Version 2.5.0 · macOS 14+ · Apple Command Line Tools supported</p>
       </div>
 
       <div class="studio-preview" aria-label="Logic Lyrics workflow preview">
@@ -98,19 +98,19 @@
       <p class="eyebrow">One focused workflow</p>
       <h2 id="workflow-title">Less file archaeology. More music.</h2>
       <div class="feature-grid">
-        <article><span class="index">01</span><h3>Recover</h3><p>Open a <code>.logicx</code> project and extract Project Notes, BPM, key and section markers.</p></article>
-        <article><span class="index">02</span><h3>Shape</h3><p>Edit lyrics, repair structure, copy individual sections and keep a local song history.</p></article>
-        <article><span class="index">03</span><h3>Prompt</h3><p>Generate separate Styles, Styles to Exclude and Lyrics blocks for ChatGPT, Gemini and Suno.</p></article>
-        <article><span class="index">04</span><h3>Finish</h3><p>Inspect and write MP3/WAV metadata, preview artwork and convert WAV exports with LAME.</p></article>
+        <article><span class="index">01</span><h3>Read</h3><p>Open a <code>.logicx</code> project and extract the active Project Notes, BPM and key.</p></article>
+        <article><span class="index">02</span><h3>Structure</h3><p>Detect markers such as Verse, Chorus and Outro without rewriting your text.</p></article>
+        <article><span class="index">03</span><h3>Copy</h3><p>Copy the complete lyrics or an individual section to the macOS clipboard.</p></article>
+        <article><span class="index">04</span><h3>Return</h3><p>Find recent projects locally, even after a project is moved or renamed.</p></article>
       </div>
     </section>
 
     <section class="voice-section" aria-labelledby="voice-title">
       <div>
-        <p class="eyebrow">Voice identity first</p>
-        <h2 id="voice-title">Prompts that protect the singer.</h2>
+        <p class="eyebrow">Read-only by design</p>
+        <h2 id="voice-title">Your Logic project remains untouched.</h2>
       </div>
-      <p>Logic Lyrics makes the vocal constraints explicit: preserve natural grain, chest voice and formants; avoid falsetto, screaming, singer replacement, unrealistic high notes and vocal acrobatics. Backing vocals remain optional, including female backing vocals.</p>
+      <p>The parser reads only the active project alternative. There is no project writer, audio processor, cloud upload or background telemetry.</p>
     </section>
 
     <section id="privacy" class="section privacy" aria-labelledby="privacy-title">
@@ -119,9 +119,9 @@
         <h2 id="privacy-title">Your songs stay on your Mac.</h2>
       </div>
       <div class="privacy-list">
-        <p><strong>No app telemetry.</strong> Logic Lyrics never sends lyrics, prompts, audio, project names or paths.</p>
-        <p><strong>No API key required.</strong> Copy the generated prompt into ChatGPT or Gemini yourself.</p>
-        <p><strong>Originals preserved.</strong> Metadata and experimental Logic Notes writing always target a copy.</p>
+        <p><strong>No app telemetry.</strong> Logic Lyrics never sends lyrics, project names or paths.</p>
+        <p><strong>No cloud dependency.</strong> Project reading and section detection happen entirely on this Mac.</p>
+        <p><strong>Original preserved.</strong> Logic Lyrics contains no code path that writes into a Logic project.</p>
       </div>
     </section>
 

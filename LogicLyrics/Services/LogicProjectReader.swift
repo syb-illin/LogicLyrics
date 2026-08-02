@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 
-enum LogicProjectError: LocalizedError {
+enum LogicProjectError: LocalizedError, Equatable {
     case notLogicProject
     case alternativesMissing
     case noProjectData
@@ -19,6 +19,15 @@ enum LogicProjectError: LocalizedError {
 
 struct LogicProjectReader: Sendable {
     private static let signature = Data("{\\rtf1".utf8)
+    private let decodeRTFDocument: @Sendable (Data) -> String?
+
+    init(
+        decodeRTFDocument: @escaping @Sendable (Data) -> String? = {
+            LogicProjectReader.decodeRTF($0)
+        }
+    ) {
+        self.decodeRTFDocument = decodeRTFDocument
+    }
 
     private struct NoteCandidate {
         let index: Int
@@ -143,7 +152,7 @@ struct LogicProjectReader: Sendable {
         var seenTexts = Set<String>()
         var nonEmptyIndex = 0
         for rtf in try extractRTFDocuments(from: data) {
-            guard let text = decodeRTF(rtf) else { continue }
+            guard let text = decodeRTFDocument(rtf) else { continue }
             let cleaned = clean(text)
             guard !cleaned.isEmpty else { continue }
             guard seenTexts.insert(cleaned).inserted else { continue }
@@ -192,7 +201,7 @@ struct LogicProjectReader: Sendable {
 
         while cursor <= data.count - marker.count {
             if cursor % 65_536 == 0 { try Task<Never, Never>.checkCancellation() }
-            guard matches(marker, in: data, at: cursor) else {
+            guard Self.matches(marker, in: data, at: cursor) else {
                 cursor += 1
                 continue
             }
@@ -215,7 +224,7 @@ struct LogicProjectReader: Sendable {
                         break
                     }
                 case 0x5C: // backslash
-                    index = advancePastControlSequence(in: data, from: index)
+                    index = Self.advancePastControlSequence(in: data, from: index)
                 default:
                     index += 1
                 }
@@ -228,12 +237,12 @@ struct LogicProjectReader: Sendable {
         return results
     }
 
-    private func matches(_ marker: [UInt8], in data: Data, at index: Int) -> Bool {
+    static func matches(_ marker: [UInt8], in data: Data, at index: Int) -> Bool {
         guard index + marker.count <= data.count else { return false }
         return data[index..<(index + marker.count)].elementsEqual(marker)
     }
 
-    private func advancePastControlSequence(in bytes: Data, from slash: Int) -> Int {
+    static func advancePastControlSequence(in bytes: Data, from slash: Int) -> Int {
         var index = slash + 1
         guard index < bytes.count else { return index }
 
@@ -257,13 +266,13 @@ struct LogicProjectReader: Sendable {
         return index
     }
 
-    private func asciiLetter(_ byte: UInt8) -> Bool {
+    private static func asciiLetter(_ byte: UInt8) -> Bool {
         (65...90).contains(byte) || (97...122).contains(byte)
     }
 
-    private func asciiDigit(_ byte: UInt8) -> Bool { (48...57).contains(byte) }
+    private static func asciiDigit(_ byte: UInt8) -> Bool { (48...57).contains(byte) }
 
-    private func decodeRTF(_ data: Data) -> String? {
+    static func decodeRTF(_ data: Data) -> String? {
         guard let value = try? NSAttributedString(
             data: data,
             options: [.documentType: NSAttributedString.DocumentType.rtf],

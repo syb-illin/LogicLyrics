@@ -1,44 +1,29 @@
 # Observability
 
-Logic Lyrics uses Apple Unified Logging through `OSLog`. There is no third-party analytics or crash-reporting SDK and no application telemetry leaves the Mac.
+Logic Lyrics uses Apple Unified Logging through `OSLog`. There is no third-party analytics or crash SDK and no application telemetry leaves the Mac.
 
-The GitHub repository separately archives GitHub's own repository metrics—release downloads, repository views, clones, referrers, stars, forks, watchers, and issue/PR counts—through a scheduled GitHub Action. This is distribution analytics generated entirely within GitHub. The app does not send events to that dashboard.
-
-## Remote telemetry
-
-Remote telemetry is intentionally not implemented. Adding it responsibly requires a declared HTTPS endpoint, an explicit opt-in that defaults to off, a documented event schema, retention and deletion rules, and a published privacy policy. Lyrics, prompts, filenames, paths, project names, artist metadata, artwork, and stable user identifiers remain prohibited even if an opt-in backend is added later.
-
-The repository dashboard does not change this policy: it cannot report launches, active installations, feature usage, processing results, crashes, or device identifiers.
+GitHub separately provides repository and release statistics. Those distribution metrics are generated within GitHub and cannot report app launches, active installations, feature usage, project contents or device identifiers.
 
 ## Log model
 
 Subsystem: `com.local.LogicLyrics`
 
-Categories:
+- `lifecycle`: launch and diagnostic-copy events
+- `ui`: picker lifecycle and clipboard actions
+- `projects`: Logic analysis start, cancellation, duration, note count and failure class
+- `history`: repository initialization, load/save duration, entry counts and failure class
+- `updates`: check trigger, duration, remote version, cancellation and updater launch
+- `diagnostics`: bounded diagnostic-log collection failures
 
-- `lifecycle`: launch and privacy-safe diagnostic export
-- `projects`: Logic analysis, export, transactional copy, cancellation, duration, and failure class
-- `audio`: inspection, metadata writes, WAV-to-MP3 conversion, cancellation, duration, and failure class
-- `history`: repository initialization, load/save counts, duration, and persistence failures
-- `updates`: update checks, remote version, updater launch, cancellation, and failure class
-
-Durations are emitted as integer milliseconds. Counts and public format identifiers may be emitted where useful. Error logs include only the Swift error type, not the user-facing error message, because descriptions can contain filenames or paths.
+Dynamic values use explicit OSLog privacy annotations. Error events include only the Swift error type because descriptions may expose paths.
 
 ## Privacy boundary
 
-Logs must never contain:
+Logs must never contain lyrics, project names, filenames, paths, URLs, bookmarks, prompts or stable per-user identifiers.
 
-- lyrics or generated prompts;
-- project, track, album, artist, or filename values;
-- filesystem paths or URLs;
-- artwork or metadata payloads;
-- history content or stable per-user identifiers.
-
-The in-app **Diagnostics > Copy System Diagnostics** command follows the same boundary. It copies the app version/build, macOS version, architecture, selected app localization, current locale, and processor count.
+**Diagnostics → Copy System Diagnostics** includes app/system configuration and up to 200 privacy-safe Logic Lyrics events from the last 30 minutes. It does not query another process and does not transmit the result.
 
 ## Inspecting logs
-
-Use Console.app and filter by subsystem `com.local.LogicLyrics`, or stream from Terminal:
 
 ```sh
 log stream --predicate 'subsystem == "com.local.LogicLyrics"' --level info
@@ -50,4 +35,4 @@ For a bounded support capture:
 log show --last 15m --predicate 'subsystem == "com.local.LogicLyrics"' --info
 ```
 
-Use Instruments Time Profiler, Allocations, and Leaks for performance investigations. Logs provide operational context; Instruments remains the source of truth for CPU and memory behavior.
+Use Instruments Time Profiler, Allocations and Leaks for CPU and memory investigations. Logs provide operational context; Instruments remains the runtime source of truth.

@@ -1,23 +1,24 @@
 # Roadmap
 
-The roadmap describes direction, not a delivery promise. Priorities are ordered by musician safety and workflow impact.
+Logic Lyrics deliberately stays focused on reading Logic Pro Project Notes.
 
 ## Now
 
-- Broaden compatibility testing across Logic Pro project versions and alternatives.
+- Broaden compatibility fixtures across Logic Pro versions and project alternatives.
 - Improve first-launch trust with Apple Developer ID signing and notarization.
-- Continue accessibility, localization and defensive parsing audits.
+- Continue parser fuzzing, accessibility, localization and Instruments audits.
 
 ## Next
 
-- Add a fully local audio transcription and lyric-structure assistant for projects whose notes no longer match the recorded arrangement.
-- Expand metadata presets and export validation without modifying source audio.
-- Improve update recovery and rollback reporting.
+- Improve diagnostics for projects whose Notes structure is not recognized.
+- Add more read-only musical project information when it can be extracted defensively.
+- Improve update rollback reporting.
 
-## Later
+## Not planned
 
-- Evaluate a Homebrew Cask after notarized distribution is stable.
-- Add more localizations based on contributor availability.
-- Publish anonymized compatibility fixtures that contain no production content.
+- Audio conversion or metadata editing
+- Generative-AI prompt workflows
+- Writing into `.logicx` packages
+- Application telemetry
 
-Propose scoped additions through the [feature request form](https://github.com/syb-illin/LogicLyrics/issues/new/choose).
+Propose tightly scoped reader improvements through the [feature request form](https://github.com/syb-illin/LogicLyrics/issues/new/choose).
