@@ -139,6 +139,7 @@ fi
 
 SOURCES=(
     "$SCRIPT_DIR/LogicLyrics/App/LogicLyricsApp.swift"
+    "$SCRIPT_DIR/LogicLyrics/App/LogicProjectCommands.swift"
     "$SCRIPT_DIR/LogicLyrics/Model/ExtractedNote.swift"
     "$SCRIPT_DIR/LogicLyrics/Model/Localization.swift"
     "$SCRIPT_DIR/LogicLyrics/Model/LyricSection.swift"
@@ -165,6 +166,20 @@ SOURCES=(
     "$SCRIPT_DIR/LogicLyrics/Views/SettingsView.swift"
     "$SCRIPT_DIR/LogicLyrics/Views/SunoGeneratorView.swift"
 )
+
+# Keep the lightweight Command Line Tools build aligned with the application
+# target. A missing Swift file must fail here with an actionable diff instead
+# of surfacing later as an unrelated compiler error.
+DECLARED_SOURCES="$BUILD_ROOT/declared-swift-sources.txt"
+DISCOVERED_SOURCES="$BUILD_ROOT/discovered-swift-sources.txt"
+printf '%s\n' "${SOURCES[@]}" | /usr/bin/sort > "$DECLARED_SOURCES"
+/usr/bin/find "$SCRIPT_DIR/LogicLyrics" -type f -name '*.swift' -print \
+    | /usr/bin/sort > "$DISCOVERED_SOURCES"
+if ! /usr/bin/cmp -s "$DECLARED_SOURCES" "$DISCOVERED_SOURCES"; then
+    print "\nBUILD.command Swift source manifest is out of date:"
+    /usr/bin/diff -u "$DECLARED_SOURCES" "$DISCOVERED_SOURCES" || true
+    fail "BUILD.command must declare every Swift source in LogicLyrics before compiling."
+fi
 
 CORE_TEST="$BUILD_ROOT/CoreRegressionTests"
 "$SWIFTC" \
