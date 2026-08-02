@@ -197,6 +197,8 @@ struct LyricsReaderView: View {
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
                             .stroke(Color.primary.opacity(0.055), lineWidth: 1)
                     }
+                    .accessibilityElement(children: .contain)
+                    .accessibilityLabel(section.label)
                 }
             }
         }
