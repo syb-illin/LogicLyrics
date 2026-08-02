@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 
-enum LogicProjectError: LocalizedError {
+enum LogicProjectError: LocalizedError, Equatable {
     case notLogicProject
     case alternativesMissing
     case noProjectData

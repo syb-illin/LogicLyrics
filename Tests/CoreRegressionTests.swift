@@ -6,6 +6,10 @@ enum CoreRegressionTests {
     @MainActor
     static func main() async throws {
         try testAdjacentSections()
+        try testLyricSectionParserEdges()
+        try testReaderErrors()
+        try testReaderAlternativeAndMetadataEdges()
+        try testReaderQualityTieBreakers()
         try testLegacyHistoryMigration()
         try testHistoryDeduplicatesLegacyProjectRows()
         try testHistorySeparatesSourceEditsAndRecoveredText()
@@ -23,6 +27,121 @@ enum CoreRegressionTests {
     private static func testAdjacentSections() throws {
         let sections = LyricSectionParser.parse("[Verse 1]\nLine\n[Chorus][Outro]")
         try require(sections.map(\.label) == ["Verse 1", "Chorus", "Outro"], "Adjacent section markers")
+        try require(sections[0].fullText == "[Verse 1]\nLine", "A section reconstructs copyable text")
+    }
+
+    private static func testLyricSectionParserEdges() throws {
+        try require(LyricSectionParser.parse("No markers here").isEmpty, "Unstructured lyrics have no sections")
+        let sections = LyricSectionParser.parse("  [Custom Part]  \n  Body line  \n[Empty]")
+        try require(sections.count == 2, "Custom and empty sections are retained")
+        try require(sections[0].label == "Custom Part" && sections[0].content == "Body line", "Section text is trimmed")
+        try require(sections[1].content.isEmpty, "An empty final section is valid")
+    }
+
+    private static func testReaderErrors() throws {
+        let reader = LogicProjectReader()
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        try requireLogicError(.notLogicProject) {
+            _ = try reader.readProject(at: root.appendingPathComponent("Song.txt"))
+        }
+        try requireLogicError(.unreadableProject) {
+            _ = try reader.readProject(at: root.appendingPathComponent("Missing.logicx"))
+        }
+
+        let noAlternatives = root.appendingPathComponent("No-Alternatives.logicx", isDirectory: true)
+        try FileManager.default.createDirectory(at: noAlternatives, withIntermediateDirectories: true)
+        try requireLogicError(.alternativesMissing) {
+            _ = try reader.readProject(at: noAlternatives)
+        }
+
+        let noProjectData = root.appendingPathComponent("No-ProjectData.logicx", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: noProjectData.appendingPathComponent("Alternatives/000", isDirectory: true),
+            withIntermediateDirectories: true
+        )
+        try requireLogicError(.noProjectData) {
+            _ = try reader.readProject(at: noProjectData)
+        }
+
+        for error in [
+            LogicProjectError.notLogicProject,
+            .alternativesMissing,
+            .noProjectData,
+            .unreadableProject
+        ] {
+            try require(error.errorDescription?.isEmpty == false, "Reader errors are localized for the user")
+        }
+    }
+
+    private static func testReaderAlternativeAndMetadataEdges() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let numeric = root.appendingPathComponent("Numeric.logicx", isDirectory: true)
+        try writeProjectData(["Wrong\nAlternative"], alternative: "009", project: numeric)
+        try writeProjectData(["Numeric\nSelection"], alternative: "007", project: numeric)
+        try writePlist(["ActiveVariant": " 7 "], to: numeric.appendingPathComponent("Resources/ProjectInformation.plist"))
+        let numericResult = try LogicProjectReader().readProject(at: numeric)
+        try require(numericResult.notes[0].alternative == "007", "Numeric string alternative is normalized")
+
+        let named = root.appendingPathComponent("Named.logicx", isDirectory: true)
+        try writeProjectData(["Wrong\nAlternative"], alternative: "zzz", project: named)
+        try writeProjectData(["Named\nSelection"], alternative: "custom", project: named)
+        try writePlist(["ActiveVariant": " custom "], to: named.appendingPathComponent("Resources/ProjectInformation.plist"))
+        let namedResult = try LogicProjectReader().readProject(at: named)
+        try require(namedResult.notes[0].alternative == "custom", "Named alternative is selected")
+
+        let fallback = root.appendingPathComponent("Fallback.logicx", isDirectory: true)
+        try writeProjectData(["First\nAlternative"], alternative: "001", project: fallback)
+        try writeProjectData(["Latest\nAlternative"], alternative: "009", project: fallback)
+        try writePlist(["ActiveVariant": "   "], to: fallback.appendingPathComponent("Resources/ProjectInformation.plist"))
+        try writePlist(
+            ["BeatsPerMinute": 999, "SongKey": " ", "SongGenderKey": ""],
+            to: fallback.appendingPathComponent("Alternatives/009/MetaData.plist")
+        )
+        let fallbackResult = try LogicProjectReader().readProject(at: fallback)
+        try require(fallbackResult.notes[0].alternative == "009", "Blank alternative falls back to the latest project data")
+        try require(fallbackResult.bpm == nil && fallbackResult.musicalKey == nil, "Invalid metadata is omitted")
+
+        let unsupported = root.appendingPathComponent("Unsupported.logicx", isDirectory: true)
+        try writeProjectData(["Latest\nAlternative"], alternative: "003", project: unsupported)
+        try writePlist(["ActiveVariant": Date()], to: unsupported.appendingPathComponent("Resources/ProjectInformation.plist"))
+        let unsupportedResult = try LogicProjectReader().readProject(at: unsupported)
+        try require(unsupportedResult.notes[0].alternative == "003", "Unsupported alternative metadata falls back safely")
+    }
+
+    private static func testReaderQualityTieBreakers() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let markers = root.appendingPathComponent("Markers.logicx", isDirectory: true)
+        try writeProjectData(
+            ["[Verse 1]\nLine", "[Verse 1]\nLine\n[Chorus]\nHook"],
+            alternative: "000",
+            project: markers
+        )
+        let markerResult = try LogicProjectReader().readProject(at: markers)
+        try require(markerResult.notes[0].text.contains("[Chorus]"), "More section markers win")
+
+        let lines = root.appendingPathComponent("Lines.logicx", isDirectory: true)
+        try writeProjectData(
+            ["One\nTwo", "One\nTwo\nThree"],
+            alternative: "000",
+            project: lines
+        )
+        let lineResult = try LogicProjectReader().readProject(at: lines)
+        try require(lineResult.notes[0].text == "One\nTwo\nThree", "More lyric lines win")
+
+        let length = root.appendingPathComponent("Length.logicx", isDirectory: true)
+        try writeProjectData(
+            ["A\nB", "A much longer first lyric line\nB"],
+            alternative: "000",
+            project: length
+        )
+        let lengthResult = try LogicProjectReader().readProject(at: length)
+        try require(lengthResult.notes[0].text.hasPrefix("A much longer"), "Longer text wins the final tie")
     }
 
     private static func testLegacyHistoryMigration() throws {
@@ -305,6 +424,19 @@ enum CoreRegressionTests {
     private static func requireValue<T>(_ value: T?, _ message: String) throws -> T {
         guard let value else { throw TestFailure(message) }
         return value
+    }
+
+    private static func requireLogicError(
+        _ expected: LogicProjectError,
+        operation: () throws -> Void
+    ) throws {
+        do {
+            try operation()
+        } catch let error as LogicProjectError {
+            try require(error == expected, "Expected \(expected), received \(error)")
+            return
+        }
+        throw TestFailure("Expected \(expected) to be thrown")
     }
 
     private static func require(_ condition: @autoclosure () -> Bool, _ message: String) throws {
