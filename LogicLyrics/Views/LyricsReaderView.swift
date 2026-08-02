@@ -173,32 +173,13 @@ struct LyricsReaderView: View {
             }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 180), spacing: 10)], spacing: 10) {
                 ForEach(Array(document.sections.enumerated()), id: \.element.id) { index, section in
-                    HStack(spacing: 9) {
-                        Text(String(format: "%02d", index + 1))
-                            .font(.caption2.monospacedDigit().weight(.bold))
-                            .foregroundStyle(AppTheme.cyan)
-                        Text(section.label)
-                            .font(.subheadline.weight(.medium))
-                            .lineLimit(1)
-                        Spacer(minLength: 4)
-                        TransientCopyButton(
-                            title: "",
-                            copiedTitle: "",
-                            accessibilityIdentifier: "section-copy-\(index)"
-                        ) {
-                            copy(section.fullText)
-                        }
+                    SectionCopyButton(
+                        index: index,
+                        label: section.label,
+                        accessibilityIdentifier: "section-copy-\(index)"
+                    ) {
+                        copy(section.fullText)
                     }
-                    .padding(.horizontal, 11)
-                    .frame(minHeight: 42)
-                    .background(Color.primary.opacity(0.035))
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .stroke(Color.primary.opacity(0.055), lineWidth: 1)
-                    }
-                    .accessibilityElement(children: .contain)
-                    .accessibilityLabel(section.label)
                 }
             }
         }
@@ -235,6 +216,55 @@ struct LyricsReaderView: View {
 
     private static func formatBPM(_ value: Double) -> String {
         value.rounded() == value ? String(Int(value)) : String(format: "%.2f", value)
+    }
+}
+
+private struct SectionCopyButton: View {
+    let index: Int
+    let label: String
+    let accessibilityIdentifier: String
+    let action: () -> Void
+    @State private var isCopied = false
+
+    var body: some View {
+        Button {
+            action()
+            isCopied = true
+        } label: {
+            HStack(spacing: 9) {
+                Text(String(format: "%02d", index + 1))
+                    .font(.caption2.monospacedDigit().weight(.bold))
+                    .foregroundStyle(AppTheme.cyan)
+                Text(label)
+                    .font(.subheadline.weight(.medium))
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+                Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
+                    .frame(width: 20, height: 20)
+                    .foregroundStyle(isCopied ? AppTheme.cyan : Color.secondary)
+            }
+            .padding(.horizontal, 11)
+            .frame(maxWidth: .infinity, minHeight: 42)
+            .contentShape(Rectangle())
+            .background(Color.primary.opacity(0.035))
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(Color.primary.opacity(0.055), lineWidth: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .help(L10n.text("Copy this section"))
+        .accessibilityLabel(
+            isCopied ? L10n.text("Copied") : L10n.format("Copy %@ section", label)
+        )
+        .accessibilityIdentifier(accessibilityIdentifier)
+        .task(id: isCopied) {
+            guard isCopied else { return }
+            try? await Task<Never, Never>.sleep(nanoseconds: 1_500_000_000)
+            guard !Task.isCancelled else { return }
+            isCopied = false
+        }
     }
 }
 
