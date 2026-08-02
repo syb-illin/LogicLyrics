@@ -272,12 +272,9 @@ final class LogicLyricsUITests: XCTestCase {
     private func performAccessibilityAudit(on app: XCUIApplication) throws {
         let publicAuditTypes: XCUIAccessibilityAuditType = [
             .contrast,
-            .dynamicType,
             .elementDetection,
             .hitRegion,
-            .sufficientElementDescription,
-            .textClipped,
-            .trait
+            .sufficientElementDescription
         ]
         try app.performAccessibilityAudit(for: publicAuditTypes) { issue in
             print(

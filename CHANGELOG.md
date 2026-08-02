@@ -11,7 +11,7 @@ All notable user-facing changes are documented here. Releases use semantic versi
 - Added automated English/French localization-key parity and a French VoiceOver/UI regression for the new controls.
 - Enforced localization across every SwiftUI surface and audited the empty workspace, lyrics history, no-lyrics state, Settings, About, VoiceOver semantics, and window sizes in English and French.
 - Replaced low-contrast secondary caption styling with an adaptive accessible text palette and made multilingual UI-test startup detection resilient.
-- Made the main scene reliably reopen in every language while preserving a single-window workflow, and audits every public macOS accessibility rule explicitly.
+- Made the main scene reliably reopen in every language while preserving a single-window workflow, and explicitly audits every accessibility rule exposed by XCTest on macOS.
 
 ## 2.5.0 — build 34
 
