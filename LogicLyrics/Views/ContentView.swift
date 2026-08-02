@@ -140,6 +140,7 @@ struct ContentView: View {
             .help(L10n.text("Open a Logic Pro project"))
             .accessibilityLabel(L10n.text("Open Logic project"))
             .accessibilityHint(L10n.text("Opens a file picker. Drag and drop remains available as an alternative."))
+            .accessibilityIdentifier("sidebar-open")
         }
         .padding(16)
     }

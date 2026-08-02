@@ -20,7 +20,7 @@ All notable user-facing changes are documented here. Releases use semantic versi
 - Forced the matching dark AppKit appearance for native title bars and replaced each visual history row with one explicit, localized VoiceOver button representation.
 - Removed the redundant low-contrast native navigation title and verifies that every history row maps to a labelled button.
 - Requires readable labels for every product-owned interactive element while recognizing macOS traffic-light controls by their stable native accessibility identifiers.
-- Restricts unlabeled native-control recognition to compact system controls in the leading title-bar region, keeping every app-owned command subject to the accessible-name gate.
+- Gives the sidebar’s icon-only command an explicit tested identity and keeps every app-identified control subject to the accessible-name gate while leaving anonymous AppKit implementation controls to the native element-detection audit.
 
 ## 2.5.0 — build 34
 
