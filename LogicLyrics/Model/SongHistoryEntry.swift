@@ -82,6 +82,24 @@ struct SongHistoryEntry: Codable, Identifiable, Hashable, Sendable {
         updatedAt = try values.decodeIfPresent(Date.self, forKey: .updatedAt) ?? createdAt
     }
 
+    func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(id, forKey: .id)
+        try values.encode(projectName, forKey: .projectName)
+        try values.encode(projectPath, forKey: .projectPath)
+        try values.encodeIfPresent(projectFileID, forKey: .projectFileID)
+        try values.encodeIfPresent(projectBookmark, forKey: .projectBookmark)
+        try values.encode(alternative, forKey: .alternative)
+        try values.encode(sourceLyrics, forKey: .sourceLyrics)
+        try values.encodeIfPresent(bpm, forKey: .bpm)
+        try values.encodeIfPresent(musicalKey, forKey: .musicalKey)
+        try values.encodeIfPresent(diagnostics, forKey: .diagnostics)
+        try values.encodeIfPresent(sourceStateToken, forKey: .sourceStateToken)
+        try values.encode(isPinned, forKey: .isPinned)
+        try values.encode(createdAt, forKey: .createdAt)
+        try values.encode(updatedAt, forKey: .updatedAt)
+    }
+
     mutating func updateSource(
         lyrics: String,
         alternative: String,
