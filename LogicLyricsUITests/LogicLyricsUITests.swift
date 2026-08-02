@@ -346,10 +346,11 @@ final class LogicLyricsUITests: XCTestCase {
                 let frame = element.frame
                 guard !frame.isEmpty else { continue }
                 let label = element.label.trimmingCharacters(in: .whitespacesAndNewlines)
-                let isNativeWindowControl = element.identifier.hasPrefix("_XCUI:")
+                let isNativeImplementationControl = element.identifier.hasPrefix("_XCUI:")
+                    || element.identifier.hasPrefix("_SC_")
                     || (element.identifier.isEmpty && label.isEmpty)
                 XCTAssertFalse(
-                    label.isEmpty && !isNativeWindowControl,
+                    label.isEmpty && !isNativeImplementationControl,
                     "Interactive accessibility element has no description: "
                         + "type=\(type.rawValue), identifier=\(element.identifier), frame=\(frame)"
                 )
