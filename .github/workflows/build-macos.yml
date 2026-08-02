@@ -76,12 +76,21 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Collect recorded visual baselines
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/LogicLyricsVisualBaselines"
+          find /var/folders -type f \
+            -path '*/LogicLyricsVisualBaselines/*.png' \
+            -exec cp {} "$RUNNER_TEMP/LogicLyricsVisualBaselines/" \; \
+            2>/dev/null || true
+
       - name: Upload recorded visual baselines
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: LogicLyrics-visual-baselines
-          path: /tmp/LogicLyricsVisualBaselines
+          path: ${{ runner.temp }}/LogicLyricsVisualBaselines
           if-no-files-found: warn
           retention-days: 14
 
