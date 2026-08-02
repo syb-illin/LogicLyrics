@@ -363,7 +363,7 @@ final class LogicLyricsUITests: XCTestCase {
             samplesPerPixel: 4,
             hasAlpha: true,
             isPlanar: false,
-            colorSpaceName: .sRGB,
+            colorSpaceName: .deviceRGB,
             bytesPerRow: 0,
             bitsPerPixel: 0
         ) else {
@@ -374,7 +374,10 @@ final class LogicLyricsUITests: XCTestCase {
                 bitmap.setColor(x < bitmap.pixelsWide / 2 ? background : foreground, atX: x, y: y)
             }
         }
-        guard let data = bitmap.representation(using: .png, properties: [:]) else {
+        guard let data = bitmap.representation(
+            using: NSBitmapImageRep.FileType.png,
+            properties: [:]
+        ) else {
             throw XCTSkip("Could not encode the contrast-test bitmap.")
         }
         return data
