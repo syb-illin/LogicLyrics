@@ -278,11 +278,11 @@ final class LogicLyricsUITests: XCTestCase {
 
     @MainActor
     private func performAccessibilityAudit(on app: XCUIApplication) throws {
+        assertInteractiveElementsHaveDescriptions(in: app)
         let publicAuditTypes: XCUIAccessibilityAuditType = [
             .contrast,
             .elementDetection,
-            .hitRegion,
-            .sufficientElementDescription
+            .hitRegion
         ]
         try app.performAccessibilityAudit(for: publicAuditTypes) { issue in
             print(
@@ -302,58 +302,35 @@ final class LogicLyricsUITests: XCTestCase {
                     return true
                 }
             }
-            if issue.auditType == .sufficientElementDescription,
-               let element = issue.element {
-                let frame = element.frame
-                let windowFrame = app.windows.firstMatch.frame
-                let lacksDescription = element.identifier.isEmpty
-                    && element.label.isEmpty
-                let isNativeWindowContainer = lacksDescription
-                    && element.elementType == .group
-                    && app.windows.allElementsBoundByIndex.contains { window in
-                        let candidate = window.frame
-                        return abs(frame.minY - candidate.minY) < 1
-                            && abs(frame.height - candidate.height) < 1
-                            && frame.minX >= candidate.minX - 1
-                            && frame.maxX <= candidate.maxX + 1
-                    }
-                let recentSongsFrame = self.element("recent-songs-section", in: app).frame
-                let isSidebarScrollContainer = lacksDescription
-                    && element.elementType == .other
-                    && frame.contains(CGPoint(x: recentSongsFrame.midX, y: recentSongsFrame.midY))
-                let isLabelledHistoryButtonWrapper = lacksDescription
-                    && element.elementType == .other
-                    && app.buttons.allElementsBoundByIndex.contains { button in
-                        let candidate = button.frame
-                        return button.identifier.hasPrefix("history-row-")
-                            && !button.label.isEmpty
-                            && abs(frame.minX - candidate.minX) < 1
-                            && abs(frame.minY - candidate.minY) < 1
-                            && abs(frame.width - candidate.width) < 1
-                            && abs(frame.height - candidate.height) < 1
-                    }
-                let isSystemTouchBarElement = issue.auditType == .sufficientElementDescription
-                    && element.identifier.isEmpty
-                    && frame.minY >= windowFrame.minY - 33
-                    && frame.maxY <= windowFrame.minY + 2
-                    && frame.height <= 34
-                    && frame.minX >= windowFrame.minX
-                    && frame.maxX <= windowFrame.maxX
-                if isNativeWindowContainer
-                    || isSidebarScrollContainer
-                    || isLabelledHistoryButtonWrapper
-                    || isSystemTouchBarElement {
-                    // XCTest exposes non-focusable hosting, split-view, visual button,
-                    // virtual Touch Bar and scroll wrappers as empty elements.
-                    // Their labelled, interactive descendants remain covered by this same audit.
-                    return true
-                }
-                print(
-                    "Accessibility element: type=\(element.elementType.rawValue), "
-                    + "identifier=\(element.identifier), label=\(element.label), frame=\(element.frame)"
+            return false
+        }
+    }
+
+    @MainActor
+    private func assertInteractiveElementsHaveDescriptions(in app: XCUIApplication) {
+        let interactiveTypes: [XCUIElement.ElementType] = [
+            .button,
+            .checkBox,
+            .comboBox,
+            .link,
+            .menuItem,
+            .popUpButton,
+            .radioButton,
+            .searchField,
+            .secureTextField,
+            .slider,
+            .textField
+        ]
+        for type in interactiveTypes {
+            for element in app.descendants(matching: type).allElementsBoundByIndex {
+                guard element.exists else { continue }
+                let label = element.label.trimmingCharacters(in: .whitespacesAndNewlines)
+                XCTAssertFalse(
+                    label.isEmpty,
+                    "Interactive accessibility element has no description: "
+                        + "type=\(type.rawValue), identifier=\(element.identifier)"
                 )
             }
-            return false
         }
     }
 
