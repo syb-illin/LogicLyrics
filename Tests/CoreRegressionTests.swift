@@ -243,6 +243,15 @@ enum CoreRegressionTests {
     }
 
     private static func testHistoryRepositoryMigrationAndFailures() async throws {
+        try require(
+            HistoryRepositoryError.corrupt(backupName: "backup.json").errorDescription?.isEmpty == false,
+            "Corrupt history error is localized"
+        )
+        try require(
+            HistoryRepositoryError.unsupportedVersion(9).errorDescription?.contains("9") == true,
+            "Unsupported history error is localized"
+        )
+        _ = try HistoryRepository()
         let root = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: root) }
         let directory = root.appendingPathComponent("LogicLyrics", isDirectory: true)
@@ -308,6 +317,8 @@ enum CoreRegressionTests {
 
     @MainActor
     private static func testHistoryStorePersistenceLifecycle() async throws {
+        let configured = HistoryStore.configuredForCurrentProcess()
+        configured.flush()
         try require(HistoryStore.uiTestingFixtures().count == 4, "Deterministic UI history fixtures")
         let date = Date(timeIntervalSinceReferenceDate: 700_000_000)
         let persisted = historyEntry(name: "Persisted", lyrics: "Saved\nLyrics", date: date)
@@ -380,6 +391,9 @@ enum CoreRegressionTests {
         try require(consolidated[0].id == new.id && consolidated[0].isPinned, "Preferred identity and pin preserved")
         try require(consolidated[0].sourceLyrics.contains("Better"), "Preferred live source")
 
+        let qualityWinner = HistoryStore.consolidated([old, new])
+        try require(qualityWinner[0].sourceLyrics.contains("Better"), "Best source selected without preference")
+
         let missingEntry = SongHistoryEntry(
             id: UUID(), projectName: "Missing", projectPath: missing.path,
             alternative: "000", sourceLyrics: "", bpm: nil, musicalKey: nil,
@@ -401,6 +415,15 @@ enum CoreRegressionTests {
         let recordedID = store.recordProject(name: "Existing", url: existing, result: result)
         try require(recordedID == new.id, "Stable project updated rather than duplicated")
         try require(store.entry(id: new.id)?.sourceLyrics == "Updated\nLyrics", "History source refreshed")
+
+        let pathOnly = SongHistoryEntry(
+            id: UUID(), projectName: "Path only", projectPath: existing.path,
+            alternative: "000", sourceLyrics: "Old\nPath", bpm: nil, musicalKey: nil,
+            createdAt: Date(), updatedAt: Date()
+        )
+        let pathStore = HistoryStore(inMemoryEntries: [pathOnly], locator: locator)
+        let pathRecordID = pathStore.recordProject(name: "Path only", url: existing, result: result)
+        try require(pathRecordID == pathOnly.id, "Legacy path identity upgrades to filesystem identity")
         let resolvedURL = try store.resolveProjectURL(entryID: new.id)
         try require(resolvedURL == existing, "History resolves project")
         let relocatedURL = try store.relocateProject(entryID: new.id, to: existing)

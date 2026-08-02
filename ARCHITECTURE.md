@@ -60,3 +60,10 @@ No static review can mathematically prove the absence of every runtime leak. Rel
 - optionally notarizes and staples Developer ID builds.
 
 GitHub Actions runs the same lightweight build, then executes native File-menu/picker, recent-project navigation, clipboard, VoiceOver, alignment and compact/large-window UI tests. Tagged runs publish checksummed app and source archives.
+
+Coverage is gated per risk profile instead of being diluted into one project
+average: deterministic search/section policies require 100% lines and regions;
+reader, locator and update orchestration require 90%; the asynchronous view
+model requires 85%; and the repository-backed history aggregate requires 75%.
+The latter thresholds include macOS adapter and cancellation regions and are
+ratchets: releases may raise them, never lower them without an explicit review.

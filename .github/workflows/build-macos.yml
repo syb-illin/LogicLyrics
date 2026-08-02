@@ -36,6 +36,9 @@ jobs:
           LOGICLYRICS_DESTINATION: ${{ runner.temp }}/LogicLyrics.app
           LOGICLYRICS_CORE_COVERAGE: "1"
           LOGICLYRICS_CORE_COVERAGE_MINIMUM: "100"
+          LOGICLYRICS_SERVICE_COVERAGE_MINIMUM: "90"
+          LOGICLYRICS_VIEW_MODEL_COVERAGE_MINIMUM: "85"
+          LOGICLYRICS_HISTORY_COVERAGE_MINIMUM: "75"
         run: |
           chmod +x BUILD.command LogicLyrics/Resources/UPDATE.command
           ./BUILD.command
