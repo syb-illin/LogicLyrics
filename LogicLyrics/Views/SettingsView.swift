@@ -12,7 +12,7 @@ struct AppSettingsView: View {
                 Toggle(L10n.text("Automatically check for updates"), isOn: $automaticallyChecksForUpdates)
                 Text(L10n.text("Checks silently when Logic Lyrics opens. Updates are never installed without your confirmation."))
                     .font(.callout.weight(.medium))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(.white)
                 HStack(spacing: 10) {
                     Button(L10n.text("Check Now")) { updater.check(silent: false) }
                         .disabled(updater.state == .checking)
@@ -29,19 +29,22 @@ struct AppSettingsView: View {
                     L10n.text("Project processing"),
                     value: L10n.text("Entirely on this Mac")
                 )
+                .foregroundStyle(.white)
                 LabeledContent(
                     L10n.text("Project modification"),
                     value: L10n.text("Never")
                 )
+                .foregroundStyle(.white)
                 Button(L10n.text("Copy System Diagnostics")) { AppDiagnostics.copyToPasteboard() }
                 Text(L10n.text("Diagnostics contain app and system information plus privacy-safe Logic Lyrics events. Lyrics and file paths are never logged."))
                     .font(.callout.weight(.medium))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(.white)
             }
         }
         .formStyle(.grouped)
         .padding(20)
         .frame(width: 520, height: 420)
+        .preferredColorScheme(.dark)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(L10n.text("Logic Lyrics settings"))
         .accessibilityIdentifier("settings-view")

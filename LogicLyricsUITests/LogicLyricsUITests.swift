@@ -82,7 +82,7 @@ final class LogicLyricsUITests: XCTestCase {
         XCTAssertFalse(plaid.exists, "A lyrics-only match must not remain in title search results.")
         XCTAssertFalse(humanGeology.exists)
         XCTAssertFalse(noLyrics.exists)
-        XCTAssertEqual(element("recent-songs-count", in: app).label, "1 song")
+        XCTAssertEqual(app.staticTexts["recent-songs-count"].label, "1 song")
 
         search.typeKey("a", modifierFlags: .command)
         search.typeKey(.delete, modifierFlags: [])
@@ -93,7 +93,7 @@ final class LogicLyricsUITests: XCTestCase {
         XCTAssertFalse(plaid.exists)
         XCTAssertFalse(humanGeology.exists)
         XCTAssertFalse(atLast.exists)
-        XCTAssertEqual(element("recent-songs-count", in: app).label, "1 song")
+        XCTAssertEqual(app.staticTexts["recent-songs-count"].label, "1 song")
 
         noLyrics.click()
         XCTAssertTrue(app.staticTexts["No Project Notes Found"].waitForExistence(timeout: 3))
@@ -175,7 +175,7 @@ final class LogicLyricsUITests: XCTestCase {
             element("history-row-33333333-3333-3333-3333-333333333333", in: app)
                 .waitForExistence(timeout: 3)
         )
-        XCTAssertEqual(element("recent-songs-count", in: app).label, "1 morceau")
+        XCTAssertEqual(app.staticTexts["recent-songs-count"].label, "1 morceau")
         try performAccessibilityAudit(on: app)
         attachScreenshot(of: app, named: "Historique-Francais-Accessible")
 

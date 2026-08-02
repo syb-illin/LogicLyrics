@@ -8,8 +8,8 @@ enum AppTheme {
     // Semantic hierarchy with WCAG-safe contrast in both macOS appearances.
     // SwiftUI's default secondary/tertiary opacity can fail for caption text
     // over material and custom gradient surfaces.
-    static let secondaryText = Color.primary
-    static let tertiaryText = Color.primary.opacity(0.85)
+    static let secondaryText = Color.white
+    static let tertiaryText = Color.white
 
     static let background = LinearGradient(
         colors: [

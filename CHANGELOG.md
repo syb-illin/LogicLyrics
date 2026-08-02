@@ -13,6 +13,7 @@ All notable user-facing changes are documented here. Releases use semantic versi
 - Replaced low-contrast secondary caption styling with an adaptive accessible text palette and made multilingual UI-test startup detection resilient.
 - Made the main scene reliably reopen in every language while preserving a single-window workflow, and explicitly audits every accessibility rule exposed by XCTest on macOS.
 - Gives the result count a native static-text role, increases Settings caption legibility, and renders the bundled French catalog deterministically in macOS UI tests without changing production locale behavior.
+- Uses guaranteed high-contrast text on the app’s dark surfaces and gives Settings the same explicit dark appearance as the main workspace.
 
 ## 2.5.0 — build 34
 
