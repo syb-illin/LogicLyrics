@@ -42,7 +42,7 @@ struct ContentView: View {
         .accessibilityLabel(L10n.text("Logic Lyrics workspace"))
         .accessibilityIdentifier("logic-lyrics-workspace")
         .tint(AppTheme.accent)
-        .navigationTitle(model.projectName.isEmpty ? L10n.text("Logic Lyrics") : model.projectName)
+        .navigationTitle(String())
         .toolbar { toolbar }
         .focusedSceneValue(
             \.openLogicProjectAction,
@@ -307,6 +307,12 @@ struct ContentView: View {
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            Text(model.projectName.isEmpty ? L10n.text("Logic Lyrics") : model.projectName)
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(Color.white)
+                .accessibilityIdentifier("workspace-title")
+        }
         ToolbarItemGroup {
             Button(L10n.text("Open"), systemImage: "folder", action: requestProjectImport)
                 .accessibilityLabel(L10n.text("Open Logic project"))

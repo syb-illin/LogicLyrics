@@ -116,6 +116,7 @@ final class LogicLyricsUITests: XCTestCase {
 
         let plaid = element("history-row-11111111-1111-1111-1111-111111111111", in: app)
         XCTAssertTrue(plaid.waitForExistence(timeout: 5))
+        XCTAssertEqual(plaid.elementType, .button)
         XCTAssertFalse(plaid.label.isEmpty)
         plaid.click()
         let openProject = element("history-open-project", in: app)
@@ -320,6 +321,17 @@ final class LogicLyricsUITests: XCTestCase {
                 let isSidebarScrollContainer = lacksDescription
                     && element.elementType == .other
                     && frame.contains(CGPoint(x: recentSongsFrame.midX, y: recentSongsFrame.midY))
+                let isLabelledHistoryButtonWrapper = lacksDescription
+                    && element.elementType == .other
+                    && app.buttons.allElementsBoundByIndex.contains { button in
+                        let candidate = button.frame
+                        return button.identifier.hasPrefix("history-row-")
+                            && !button.label.isEmpty
+                            && abs(frame.minX - candidate.minX) < 1
+                            && abs(frame.minY - candidate.minY) < 1
+                            && abs(frame.width - candidate.width) < 1
+                            && abs(frame.height - candidate.height) < 1
+                    }
                 let isSystemTouchBarElement = issue.auditType == .sufficientElementDescription
                     && element.identifier.isEmpty
                     && frame.minY >= windowFrame.minY - 33
@@ -329,8 +341,10 @@ final class LogicLyricsUITests: XCTestCase {
                     && frame.maxX <= windowFrame.maxX
                 if isNativeWindowContainer
                     || isSidebarScrollContainer
+                    || isLabelledHistoryButtonWrapper
                     || isSystemTouchBarElement {
-                    // XCTest exposes non-focusable hosting, split-view, virtual Touch Bar and scroll wrappers as empty elements.
+                    // XCTest exposes non-focusable hosting, split-view, visual button,
+                    // virtual Touch Bar and scroll wrappers as empty elements.
                     // Their labelled, interactive descendants remain covered by this same audit.
                     return true
                 }
