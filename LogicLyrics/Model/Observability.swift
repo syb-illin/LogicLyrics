@@ -6,6 +6,7 @@ enum AppLog {
     private static let subsystem = "com.local.LogicLyrics"
 
     static let lifecycle = Logger(subsystem: subsystem, category: "lifecycle")
+    static let ui = Logger(subsystem: subsystem, category: "ui")
     static let projects = Logger(subsystem: subsystem, category: "projects")
     static let audio = Logger(subsystem: subsystem, category: "audio")
     static let history = Logger(subsystem: subsystem, category: "history")

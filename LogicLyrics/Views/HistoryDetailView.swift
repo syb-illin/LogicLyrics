@@ -59,7 +59,7 @@ struct HistoryDetailView: View {
                 AccentIcon(systemName: "clock.arrow.circlepath", color: AppTheme.cyan, size: 48)
                 VStack(alignment: .leading, spacing: 5) {
                     Text(entry.projectName)
-                        .font(.system(size: 30, weight: .bold, design: .rounded))
+                        .font(.title.weight(.bold))
                     Text(entry.projectPath)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -68,28 +68,21 @@ struct HistoryDetailView: View {
                 Spacer()
             }
 
-            HStack(spacing: 9) {
-                Button("Open Project", systemImage: "folder") { onOpenProject() }
-                    .buttonStyle(.borderedProminent)
-                    .accessibilityIdentifier("history-open-project")
-                Button("Locate Project…", systemImage: "scope") { onLocateProject() }
-                    .buttonStyle(.bordered)
-                    .accessibilityIdentifier("history-locate-project")
-                if entry.hasLocalEdits {
-                    Button("Revert to Project Lyrics", systemImage: "arrow.uturn.backward") {
-                        onRevertToSource()
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) {
+                    primaryActions
+                    Spacer(minLength: 12)
+                    deleteButton
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) { primaryActions }
+                    HStack {
+                        Spacer()
+                        deleteButton
                     }
-                    .buttonStyle(.bordered)
-                    .help(L10n.text("Keep the edit as a recoverable revision and show the latest lyrics extracted from Logic."))
-                    .accessibilityIdentifier("history-revert-edit")
                 }
-                Spacer()
-                Button(role: .destructive) { confirmsDeletion = true } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-                .buttonStyle(.bordered)
-                .accessibilityIdentifier("history-delete")
             }
+            .controlSize(.regular)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
@@ -141,7 +134,7 @@ struct HistoryDetailView: View {
                             .accessibilityIdentifier("history-restore-revision-\(index)")
                         }
                         Text(value)
-                            .font(.system(size: 13, design: .rounded))
+                            .font(.system(size: 13))
                             .textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -176,7 +169,7 @@ struct HistoryDetailView: View {
                 .buttonStyle(.bordered)
             }
             Text(value)
-                .font(.system(size: 14, design: .rounded))
+                .font(.system(size: 14))
                 .lineSpacing(5)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -201,6 +194,32 @@ struct HistoryDetailView: View {
             guard !Task.isCancelled else { return }
             if copied == field { copied = "" }
         }
+    }
+
+    @ViewBuilder
+    private var primaryActions: some View {
+        Button("Open Project", systemImage: "folder") { onOpenProject() }
+            .buttonStyle(.borderedProminent)
+            .accessibilityIdentifier("history-open-project")
+        Button("Locate Project…", systemImage: "scope") { onLocateProject() }
+            .buttonStyle(.bordered)
+            .accessibilityIdentifier("history-locate-project")
+        if entry.hasLocalEdits {
+            Button("Revert to Project Lyrics", systemImage: "arrow.uturn.backward") {
+                onRevertToSource()
+            }
+            .buttonStyle(.bordered)
+            .help(L10n.text("Keep the edit as a recoverable revision and show the latest lyrics extracted from Logic."))
+            .accessibilityIdentifier("history-revert-edit")
+        }
+    }
+
+    private var deleteButton: some View {
+        Button(role: .destructive) { confirmsDeletion = true } label: {
+            Label("Delete", systemImage: "trash")
+        }
+        .buttonStyle(.bordered)
+        .accessibilityIdentifier("history-delete")
     }
 
     private static func formatBPM(_ value: Double) -> String {

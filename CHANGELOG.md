@@ -2,6 +2,13 @@
 
 All notable user-facing changes are documented here. Releases use semantic versions and every shipped build receives a new build number.
 
+## 2.4.1 — build 33
+
+- Added the native **File → Open Logic Pro Project…** command with the standard ⌘O shortcut and the existing sandboxed `.logicx` picker.
+- Reworked the visual system around restrained macOS surfaces, native typography, consistent spacing, muted colors, and aligned action controls.
+- Added UI regression coverage that invokes the File menu, verifies the project picker, and checks history-action alignment.
+- Added privacy-safe UI diagnostics and treated file-picker cancellation as a normal, silent user action.
+
 ## 2.4.0 — build 32
 
 - Added stable filesystem identity and security-scoped bookmarks so history follows Logic projects after moves and renames.

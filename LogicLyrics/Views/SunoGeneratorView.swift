@@ -67,7 +67,7 @@ struct SunoGeneratorView: View {
             AccentIcon(systemName: "sparkles", color: AppTheme.accent, size: 48)
             VStack(alignment: .leading, spacing: 5) {
                 Text("Prepare for Suno AI")
-                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .font(.title.weight(.bold))
                 Text("A complete prompt for ChatGPT or Gemini, with no API key required.")
                     .foregroundStyle(.secondary)
             }
@@ -244,7 +244,7 @@ struct SunoGeneratorView: View {
             Text(L10n.text(label)).font(.caption2.weight(.bold)).tracking(0.7).foregroundStyle(.secondary)
             TextField(L10n.text(placeholder), text: text)
                 .textFieldStyle(.plain)
-                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .font(.system(size: 15, weight: .semibold))
                 .padding(12)
                 .background(Color.primary.opacity(0.055))
                 .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))

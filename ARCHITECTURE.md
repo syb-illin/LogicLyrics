@@ -1,4 +1,4 @@
-# Logic Lyrics 2.4.0 — architecture and invariants
+# Logic Lyrics 2.4.1 — architecture and invariants
 
 ## Layers
 
@@ -21,6 +21,8 @@ This is a pragmatic MVVM/service architecture. Protocol-based dependency inversi
 - **Adapter** confines GitHub’s JSON response and HTTP behavior to `GitHubReleaseClient`.
 - **Project locator** encapsulates filesystem identity and security-scoped bookmark capture/resolution.
 - **Transfer object + service** keeps portable history archives versioned, validated, and independent from local persistence.
+- **Focused command injection** routes macOS menu actions to the active scene without global notifications, singleton UI state, or view-model coupling.
+- **Design system** centralizes palette, surfaces, icon treatment, status chips, control sizing, and reduced-transparency behavior.
 
 Swift value types, protocol-oriented design, and actors are preferred over class-only “pure OOP.” Classes are reserved for identity-bearing observable state and injected services where reference semantics are useful.
 
@@ -64,6 +66,6 @@ No source review can prove the absence of every runtime leak. Release validation
 
 GitHub Actions runs the same lightweight pipeline on macOS and publishes checksummed app and source archives for tagged releases.
 
-The Xcode UI-test target runs history navigation, migration-state screenshots, semantic accessibility audits, and compact/large window checks on every build workflow.
+The Xcode UI-test target runs native File-menu/picker invocation, history navigation, control-alignment assertions, migration-state screenshots, semantic accessibility audits, and compact/large window checks on every build workflow.
 
 The separate GitHub statistics workflow treats the GitHub REST API as an external adapter, stores a versioned history on the dedicated `github-stats` branch, and deploys a static Pages artifact. Public release metrics remain available when privileged Traffic metrics cannot be read; the dashboard exposes that degraded state instead of fabricating zero values.

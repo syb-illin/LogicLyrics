@@ -25,6 +25,7 @@ struct LogicLyricsApp: App {
         .defaultSize(width: Self.initialWindowSize.width, height: Self.initialWindowSize.height)
         .defaultPosition(.center)
         .commands {
+            LogicProjectCommands()
             CommandGroup(replacing: .appInfo) {
                 Button(L10n.text("About Logic Lyrics")) {
                     let credits = NSAttributedString(

@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import OSLog
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -7,6 +8,25 @@ private enum WorkspaceMode: Int {
     case lyrics
     case suno
     case metadata
+}
+
+private enum ImportKind {
+    case logicProject
+    case audio
+
+    var logName: String {
+        switch self {
+        case .logicProject: "logic_project"
+        case .audio: "audio"
+        }
+    }
+
+    var failureFormat: String {
+        switch self {
+        case .logicProject: String(localized: "Unable to open the project: %@")
+        case .audio: String(localized: "Unable to open the audio file: %@")
+        }
+    }
 }
 
 struct ContentView: View {
@@ -58,6 +78,10 @@ struct ContentView: View {
         .tint(AppTheme.accent)
         .navigationTitle(model.projectName.isEmpty ? "Logic Lyrics" : model.projectName)
         .toolbar { toolbar }
+        .focusedSceneValue(
+            \.openLogicProjectAction,
+            OpenLogicProjectAction(perform: requestLogicProjectImport)
+        )
         .onDrop(of: [UTType.fileURL], isTargeted: $isTargeted, perform: receiveDrop)
         .fileImporter(
             isPresented: $showImporter,
@@ -68,7 +92,7 @@ struct ContentView: View {
             case .success(let urls):
                 if let url = urls.first { openLogicProject(url) }
             case .failure(let error):
-                model.errorMessage = String(format: String(localized: "Unable to open the project: %@"), error.localizedDescription)
+                handleImporterFailure(error, kind: .logicProject)
             }
         }
         .fileImporter(
@@ -80,7 +104,7 @@ struct ContentView: View {
             case .success(let urls):
                 if let url = urls.first { openAudio(url) }
             case .failure(let error):
-                model.errorMessage = String(format: String(localized: "Unable to open the audio file: %@"), error.localizedDescription)
+                handleImporterFailure(error, kind: .audio)
             }
         }
         .alert(currentAlertTitle, isPresented: errorBinding) {
@@ -160,9 +184,9 @@ struct ContentView: View {
         }
         .background {
             if reduceTransparency {
-                Color(red: 0.06, green: 0.06, blue: 0.10)
+                Color(red: 0.055, green: 0.057, blue: 0.067)
             } else {
-                Rectangle().fill(.regularMaterial)
+                Color.black.opacity(0.16)
             }
         }
         .overlay(alignment: .trailing) { Divider().opacity(0.25) }
@@ -179,18 +203,18 @@ struct ContentView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Text("v\(Self.appVersion) · build \(Self.buildNumber)")
-                    .font(.system(size: 9, weight: .medium, design: .rounded))
+                    .font(.system(size: 9, weight: .medium))
                     .foregroundStyle(.tertiary)
             }
             Spacer()
             Button {
-                if selectedMode == .metadata { showAudioImporter = true } else { showImporter = true }
+                if selectedMode == .metadata { showAudioImporter = true } else { requestLogicProjectImport() }
             } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 13, weight: .bold))
-                    .frame(width: 28, height: 28)
-                    .background(Color.primary.opacity(0.08))
-                    .clipShape(Circle())
+                    .frame(width: 30, height: 30)
+                    .background(Color.primary.opacity(0.055))
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
             }
             .buttonStyle(.plain)
             .help(selectedMode == .metadata ? L10n.text("Open an MP3 or WAV file") : L10n.text("Open a Logic Pro project"))
@@ -207,9 +231,9 @@ struct ContentView: View {
             } label: {
                 Image(systemName: showsHistory ? "clock.fill" : "clock")
                     .font(.system(size: 13, weight: .semibold))
-                    .frame(width: 28, height: 28)
-                    .background(showsHistory ? AppTheme.cyan.opacity(0.18) : Color.primary.opacity(0.08))
-                    .clipShape(Circle())
+                    .frame(width: 30, height: 30)
+                    .background(showsHistory ? AppTheme.accent.opacity(0.15) : Color.primary.opacity(0.055))
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
             }
             .buttonStyle(.plain)
             .help(L10n.text("Song history"))
@@ -237,7 +261,7 @@ struct ContentView: View {
                     .foregroundStyle(.secondary)
             }
             Button(selectedMode == .metadata ? L10n.text("Choose MP3/WAV") : L10n.text("Choose a Project")) {
-                if selectedMode == .metadata { showAudioImporter = true } else { showImporter = true }
+                if selectedMode == .metadata { showAudioImporter = true } else { requestLogicProjectImport() }
             }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
@@ -314,7 +338,7 @@ struct ContentView: View {
                             showsHistory = true
                         } label: {
                             HStack(spacing: 10) {
-                                AccentIcon(systemName: "music.note", color: AppTheme.cyan, size: 32)
+                                AccentIcon(systemName: "music.note", color: AppTheme.cyan, size: 30)
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(entry.projectName).font(.subheadline.weight(.semibold)).lineLimit(1)
                                     Text([
@@ -414,11 +438,11 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
         .padding(.horizontal, 9)
         .padding(.vertical, 6)
-        .background(color.opacity(0.10))
+        .background(Color.primary.opacity(0.04))
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(color.opacity(0.16), lineWidth: 1)
+                .stroke(Color.primary.opacity(0.055), lineWidth: 1)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(L10n.format("%@: %@", title, value))
@@ -552,7 +576,7 @@ struct ContentView: View {
             .accessibilityElement(children: .contain)
             .accessibilityLabel(showsHistory ? L10n.text("Song history details") : workspaceTitle)
         }
-        .background(Color.black.opacity(0.08))
+        .background(Color.black.opacity(0.10))
         .overlay {
             if isTargeted {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -591,16 +615,16 @@ struct ContentView: View {
                     Label("Audio Tags", systemImage: "tag.fill").tag(WorkspaceMode.metadata)
                 }
                 .pickerStyle(.segmented)
-                .frame(width: 390)
+                .frame(width: 360)
             }
         }
         .padding(.horizontal, 22)
         .padding(.vertical, 14)
         .background {
             if reduceTransparency {
-                Color(red: 0.07, green: 0.07, blue: 0.11)
+                Color(red: 0.065, green: 0.067, blue: 0.078)
             } else {
-                Rectangle().fill(.ultraThinMaterial)
+                Color.white.opacity(0.025)
             }
         }
     }
@@ -627,23 +651,25 @@ struct ContentView: View {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 5) {
                         Text(model.selectedNote?.title ?? String(localized: "Lyrics"))
-                            .font(.system(size: 30, weight: .bold, design: .rounded))
+                            .font(.title.weight(.bold))
                         Text(L10n.format("%d sections • automatic editing and saving", model.sections.count))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Button(model.selectedNote?.isDraft == true ? L10n.text("Add to a Logic Copy") : L10n.text("Logic Copy"), systemImage: "doc.on.doc.fill") {
-                        flushHistorySave()
-                        confirmsLogicWrite = true
+                    HStack(spacing: 8) {
+                        Button(model.selectedNote?.isDraft == true ? L10n.text("Add to a Logic Copy") : L10n.text("Logic Copy"), systemImage: "doc.on.doc.fill") {
+                            flushHistorySave()
+                            confirmsLogicWrite = true
+                        }
+                        .buttonStyle(.bordered)
+                        .help(L10n.text("Create a .logicx copy containing these lyrics without changing the original"))
+                        .disabled(model.selectedNote?.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false)
+                        Button(model.didCopy ? L10n.text("Copied") : L10n.text("Copy All"), systemImage: model.didCopy ? "checkmark" : "doc.on.doc") {
+                            model.copySelectedNote()
+                        }
+                        .buttonStyle(.borderedProminent)
                     }
-                    .buttonStyle(.bordered)
-                    .help(L10n.text("Create a .logicx copy containing these lyrics without changing the original"))
-                    .disabled(model.selectedNote?.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false)
-                    Button(model.didCopy ? L10n.text("Copied") : L10n.text("Copy All"), systemImage: model.didCopy ? "checkmark" : "doc.on.doc") {
-                        model.copySelectedNote()
-                    }
-                    .buttonStyle(.borderedProminent)
                     .controlSize(.large)
                 }
 
@@ -673,11 +699,11 @@ struct ContentView: View {
                         scheduleHistorySave(value)
                     }
                 ))
-                    .font(.system(size: 17, weight: .regular, design: .rounded))
+                    .font(.system(size: 17, weight: .regular))
                     .lineSpacing(7)
                     .scrollContentBackground(.hidden)
                     .frame(maxWidth: .infinity, minHeight: 500, alignment: .leading)
-                    .appPanel(radius: 22, padding: 28)
+                    .appPanel(radius: 16, padding: 24)
                     .accessibilityLabel(L10n.text("Lyrics editor"))
                     .accessibilityHint(L10n.text("Edit the lyrics. Changes are saved automatically in local history."))
             }
@@ -688,28 +714,22 @@ struct ContentView: View {
     }
 
     private var heroDropZone: some View {
-        VStack(spacing: 24) {
-            ZStack {
-                Circle().fill(AppTheme.accent.opacity(0.12)).frame(width: 130, height: 130)
-                Circle().stroke(AppTheme.cyan.opacity(0.25), lineWidth: 1).frame(width: 105, height: 105)
-                Image(systemName: "waveform.and.mic")
-                    .font(.system(size: 46, weight: .light))
-                    .foregroundStyle(
-                        LinearGradient(colors: [AppTheme.accent, AppTheme.cyan], startPoint: .topLeading, endPoint: .bottomTrailing)
-                    )
-                    .accessibilityHidden(true)
-            }
+        VStack(spacing: 20) {
+            AccentIcon(systemName: "waveform.and.mic", color: AppTheme.accent, size: 68)
             VStack(spacing: 8) {
                 Text("Your Lyrics, Directly from Logic")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .font(.title.weight(.bold))
                 Text("Drop a .logicx project. No audio file is uploaded or modified.")
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
             }
-            Button("Open a Logic Pro Project", systemImage: "folder.badge.plus") { showImporter = true }
+            Button("Open a Logic Pro Project", systemImage: "folder.badge.plus") {
+                requestLogicProjectImport()
+            }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
         }
-        .padding(50)
+        .padding(44)
     }
 
     private var loadingState: some View {
@@ -739,9 +759,8 @@ struct ContentView: View {
     private var toolbar: some ToolbarContent {
         ToolbarItemGroup {
             Button(selectedMode == .metadata ? L10n.text("Open Audio") : L10n.text("Open"), systemImage: "folder") {
-                if selectedMode == .metadata { showAudioImporter = true } else { showImporter = true }
+                if selectedMode == .metadata { showAudioImporter = true } else { requestLogicProjectImport() }
             }
-            .keyboardShortcut("o", modifiers: .command)
             .accessibilityLabel(selectedMode == .metadata ? L10n.text("Open Audio") : L10n.text("Open"))
             .accessibilityHint(selectedMode == .metadata
                 ? L10n.text("Open an MP3 or WAV file")
@@ -866,8 +885,29 @@ struct ContentView: View {
         showsHistory = false
     }
 
+    private func requestLogicProjectImport() {
+        AppLog.ui.debug("Logic project picker requested")
+        showImporter = true
+    }
+
+    private func handleImporterFailure(_ error: Error, kind: ImportKind) {
+        let cocoaError = error as NSError
+        if cocoaError.domain == NSCocoaErrorDomain,
+           cocoaError.code == CocoaError.Code.userCancelled.rawValue {
+            AppLog.ui.debug("File picker cancelled kind=\(kind.logName, privacy: .public)")
+            return
+        }
+        let errorType = String(describing: type(of: error))
+        AppLog.ui.error(
+            "File picker failed kind=\(kind.logName, privacy: .public) error_type=\(errorType, privacy: .public)"
+        )
+        model.errorMessage = String(format: kind.failureFormat, error.localizedDescription)
+    }
+
     private func openLogicProject(_ url: URL) {
         flushHistorySave()
+        selectedMode = .lyrics
+        showsHistory = false
         model.open(url)
     }
 

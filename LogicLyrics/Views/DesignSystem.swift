@@ -1,25 +1,24 @@
 import SwiftUI
 
 enum AppTheme {
-    static let accent = Color(red: 0.46, green: 0.36, blue: 0.96)
-    static let cyan = Color(red: 0.18, green: 0.72, blue: 0.88)
-    static let coral = Color(red: 0.97, green: 0.42, blue: 0.50)
-    static let green = Color(red: 0.24, green: 0.76, blue: 0.58)
+    static let accent = Color(red: 0.36, green: 0.53, blue: 0.78)
+    static let cyan = Color(red: 0.32, green: 0.62, blue: 0.70)
+    static let coral = Color(red: 0.76, green: 0.43, blue: 0.48)
+    static let green = Color(red: 0.34, green: 0.64, blue: 0.49)
 
     static let background = LinearGradient(
         colors: [
-            Color(red: 0.055, green: 0.06, blue: 0.09),
-            Color(red: 0.085, green: 0.075, blue: 0.14),
-            Color(red: 0.045, green: 0.07, blue: 0.10)
+            Color(red: 0.052, green: 0.055, blue: 0.065),
+            Color(red: 0.066, green: 0.069, blue: 0.080)
         ],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
+        startPoint: .top,
+        endPoint: .bottom
     )
 }
 
 struct AppPanel: ViewModifier {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    var radius: CGFloat = 18
+    var radius: CGFloat = 14
     var padding: CGFloat = 18
 
     func body(content: Content) -> some View {
@@ -27,17 +26,16 @@ struct AppPanel: ViewModifier {
             .padding(padding)
             .background {
                 if reduceTransparency {
-                    Color(red: 0.08, green: 0.08, blue: 0.12)
+                    Color(red: 0.085, green: 0.087, blue: 0.10)
                 } else {
-                    Rectangle().fill(.ultraThinMaterial)
+                    Color.white.opacity(0.035)
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                    .stroke(Color.white.opacity(0.065), lineWidth: 1)
             }
-            .shadow(color: .black.opacity(0.18), radius: 20, y: 10)
     }
 }
 
@@ -54,18 +52,15 @@ struct AccentIcon: View {
 
     var body: some View {
         Image(systemName: systemName)
-            .font(.system(size: size * 0.44, weight: .semibold))
-            .foregroundStyle(.white)
+            .font(.system(size: size * 0.42, weight: .medium))
+            .foregroundStyle(color)
             .frame(width: size, height: size)
-            .background(
-                LinearGradient(
-                    colors: [color, color.opacity(0.68)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .clipShape(RoundedRectangle(cornerRadius: size * 0.30, style: .continuous))
-            .shadow(color: color.opacity(0.32), radius: 10, y: 5)
+            .background(color.opacity(0.11))
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.27, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: size * 0.27, style: .continuous)
+                    .stroke(color.opacity(0.16), lineWidth: 1)
+            }
             .accessibilityHidden(true)
     }
 }
@@ -76,13 +71,19 @@ struct CapsuleStatus: View {
     var color = AppTheme.green
 
     var body: some View {
-        Label(L10n.text(text), systemImage: systemName)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(color)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(color.opacity(0.13))
+        HStack(spacing: 6) {
+            Image(systemName: systemName)
+                .foregroundStyle(color)
+                .accessibilityHidden(true)
+            Text(L10n.text(text))
+                .foregroundStyle(.secondary)
+        }
+            .font(.caption.weight(.medium))
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(Color.white.opacity(0.04))
             .clipShape(Capsule())
+            .overlay { Capsule().stroke(Color.white.opacity(0.055), lineWidth: 1) }
             .accessibilityElement(children: .combine)
     }
 }
@@ -98,7 +99,7 @@ struct ProcessingOverlay: View {
             ZStack {
                 Color.black.opacity(0.48).ignoresSafeArea()
                 VStack(spacing: 14) {
-                    ProgressView().controlSize(.large).tint(AppTheme.cyan)
+                    ProgressView().controlSize(.large).tint(AppTheme.accent)
                     Text(message).font(.headline).multilineTextAlignment(.center)
                     TimelineView(.periodic(from: .now, by: 1)) { context in
                         Text(elapsed(from: startedAt, to: context.date))
@@ -113,7 +114,7 @@ struct ProcessingOverlay: View {
                 .frame(minWidth: 280)
                 .background {
                     if reduceTransparency {
-                        Color(red: 0.08, green: 0.08, blue: 0.12)
+                        Color(red: 0.085, green: 0.087, blue: 0.10)
                     } else {
                         Rectangle().fill(.regularMaterial)
                     }

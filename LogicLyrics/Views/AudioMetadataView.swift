@@ -46,7 +46,7 @@ struct AudioMetadataView: View {
         HStack(spacing: 16) {
             AccentIcon(systemName: "waveform.badge.plus", color: AppTheme.cyan, size: 48)
             VStack(alignment: .leading, spacing: 4) {
-                Text("Audio Metadata").font(.system(size: 30, weight: .bold, design: .rounded))
+                Text("Audio Metadata").font(.title.weight(.bold))
                 Text("Tag a Suno export without re-encoding or changing the sound.").foregroundStyle(.secondary)
             }
             Spacer()
@@ -144,9 +144,14 @@ struct AudioMetadataView: View {
                     .font(.caption).foregroundStyle(model.message == nil ? Color.secondary : AppTheme.green)
             }
             Spacer()
-            Button("Choose MP3/WAV", systemImage: "waveform") { model.selectAudio() }.buttonStyle(.bordered)
-            Button("Write Metadata", systemImage: "tag.fill") { model.write(lyrics: lyrics) }
-                .buttonStyle(.borderedProminent).disabled(model.sourceURL == nil || model.isWriting)
+            HStack(spacing: 8) {
+                Button("Choose MP3/WAV", systemImage: "waveform") { model.selectAudio() }
+                    .buttonStyle(.bordered)
+                Button("Write Metadata", systemImage: "tag.fill") { model.write(lyrics: lyrics) }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(model.sourceURL == nil || model.isWriting)
+            }
+            .controlSize(.large)
             if model.isWriting { ProgressView().controlSize(.small) }
         }
         .appPanel(radius: 18, padding: 18)

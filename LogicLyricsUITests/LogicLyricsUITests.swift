@@ -6,6 +6,31 @@ final class LogicLyricsUITests: XCTestCase {
     }
 
     @MainActor
+    func testFileMenuOpensLogicProjectPicker() {
+        let app = launchApp()
+        defer { app.terminate() }
+
+        let fileMenu = app.menuBars.menuBarItems["File"]
+        XCTAssertTrue(fileMenu.waitForExistence(timeout: 3))
+        fileMenu.click()
+
+        let openProject = app.menuItems["Open Logic Pro Project…"]
+        XCTAssertTrue(openProject.waitForExistence(timeout: 3))
+        XCTAssertTrue(openProject.isEnabled)
+        openProject.click()
+
+        let sheet = app.sheets.firstMatch
+        let dialog = app.dialogs.firstMatch
+        XCTAssertTrue(
+            sheet.waitForExistence(timeout: 5) || dialog.waitForExistence(timeout: 1),
+            "The File menu command did not present the Logic project picker."
+        )
+        let picker = sheet.exists ? sheet : dialog
+        XCTAssertTrue(picker.buttons["Cancel"].exists)
+        picker.buttons["Cancel"].click()
+    }
+
+    @MainActor
     func testHistoryNavigationSearchAndMigrationActions() {
         let app = launchApp()
         defer { app.terminate() }
@@ -45,10 +70,19 @@ final class LogicLyricsUITests: XCTestCase {
         let plaid = element("history-row-11111111-1111-1111-1111-111111111111", in: app)
         XCTAssertTrue(plaid.waitForExistence(timeout: 5))
         plaid.click()
-        XCTAssertTrue(element("history-open-project", in: app).waitForExistence(timeout: 3))
-        XCTAssertFalse(element("history-open-project", in: app).label.isEmpty)
-        XCTAssertFalse(element("history-locate-project", in: app).label.isEmpty)
-        XCTAssertFalse(element("history-revert-edit", in: app).label.isEmpty)
+        let openProject = element("history-open-project", in: app)
+        let locateProject = element("history-locate-project", in: app)
+        let revertEdit = element("history-revert-edit", in: app)
+        let deleteEntry = element("history-delete", in: app)
+        XCTAssertTrue(openProject.waitForExistence(timeout: 3))
+        XCTAssertFalse(openProject.label.isEmpty)
+        XCTAssertFalse(locateProject.label.isEmpty)
+        XCTAssertFalse(revertEdit.label.isEmpty)
+        XCTAssertFalse(deleteEntry.label.isEmpty)
+        for action in [locateProject, revertEdit, deleteEntry] {
+            XCTAssertEqual(action.frame.midY, openProject.frame.midY, accuracy: 1)
+            XCTAssertEqual(action.frame.height, openProject.frame.height, accuracy: 1)
+        }
         XCTAssertFalse(element("history-transfer-menu", in: app).label.isEmpty)
         XCTAssertFalse(element("toolbar-export", in: app).exists)
         try app.performAccessibilityAudit(for: [.sufficientElementDescription, .elementDetection]) { issue in
