@@ -81,6 +81,7 @@ final class LogicLyricsUITests: XCTestCase {
             app.buttons.matching(identifier: "toolbar-open").firstMatch.label.isEmpty
         )
         XCTAssertFalse(element("recent-songs-section", in: app).label.isEmpty)
+        XCTAssertEqual(element("lyric-sections-grid", in: app).label, "Lyric sections")
         XCTAssertEqual(element("section-copy-0", in: app).label, "Copy Verse 1 section")
         try app.performAccessibilityAudit(for: [.sufficientElementDescription, .elementDetection]) { issue in
             if let element = issue.element {

@@ -336,6 +336,7 @@
 "Copy Lyrics" = "Copier les paroles";
 "Lyrics text" = "Texte des paroles";
 "Sections" = "Sections";
+"Lyric sections" = "Sections des paroles";
 "%d detected" = "%d détectées";
 "No Project Notes Found" = "Aucune note de projet trouvée";
 "This Logic alternative does not currently contain readable Project Notes." = "Cette alternative Logic ne contient actuellement aucune note de projet lisible.";

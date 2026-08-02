@@ -31,9 +31,20 @@ jobs:
         env:
           LOGICLYRICS_NONINTERACTIVE: "1"
           LOGICLYRICS_DESTINATION: ${{ runner.temp }}/LogicLyrics.app
+          LOGICLYRICS_CORE_COVERAGE: "1"
+          LOGICLYRICS_CORE_COVERAGE_MINIMUM: "0"
         run: |
           chmod +x BUILD.command LogicLyrics/Resources/UPDATE.command
           ./BUILD.command
+
+      - name: Upload critical reader coverage
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: LogicLyrics-core-coverage
+          path: .build/light/CoreCoverage.json
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Run macOS UI, accessibility and window-layout tests
         id: ui_tests

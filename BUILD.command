@@ -116,14 +116,30 @@ if ! /usr/bin/cmp -s "$DECLARED_SOURCES" "$DISCOVERED_SOURCES"; then
 fi
 
 CORE_TEST="$BUILD_ROOT/CoreRegressionTests"
+CORE_TEST_FLAGS=(
+    -O
+    -strict-concurrency=complete
+    -warn-concurrency
+    -sdk "$SDK_PATH"
+    -target "$TARGET"
+    -framework AppKit
+    -framework SwiftUI
+)
+if [[ "${LOGICLYRICS_CORE_COVERAGE:-0}" == "1" ]]; then
+    CORE_TEST_FLAGS=(
+        -Onone
+        -profile-generate
+        -profile-coverage-mapping
+        -strict-concurrency=complete
+        -warn-concurrency
+        -sdk "$SDK_PATH"
+        -target "$TARGET"
+        -framework AppKit
+        -framework SwiftUI
+    )
+fi
 "$SWIFTC" \
-    -O \
-    -strict-concurrency=complete \
-    -warn-concurrency \
-    -sdk "$SDK_PATH" \
-    -target "$TARGET" \
-    -framework AppKit \
-    -framework SwiftUI \
+    "${CORE_TEST_FLAGS[@]}" \
     -o "$CORE_TEST" \
     "$SCRIPT_DIR/LogicLyrics/Model/ExtractedNote.swift" \
     "$SCRIPT_DIR/LogicLyrics/Model/Localization.swift" \
@@ -139,7 +155,28 @@ CORE_TEST="$BUILD_ROOT/CoreRegressionTests"
     "$SCRIPT_DIR/LogicLyrics/ViewModel/ProjectViewModel.swift" \
     "$SCRIPT_DIR/Tests/CoreRegressionTests.swift" \
     || fail "The regression tests could not be compiled."
-"$CORE_TEST" || fail "A critical regression test failed."
+if [[ "${LOGICLYRICS_CORE_COVERAGE:-0}" == "1" ]]; then
+    /bin/rm -f "$BUILD_ROOT"/core-*.profraw(N)
+    LLVM_PROFILE_FILE="$BUILD_ROOT/core-%p.profraw" "$CORE_TEST" \
+        || fail "A critical regression test failed."
+    COVERAGE_PROFILES=("$BUILD_ROOT"/core-*.profraw(N))
+    (( ${#COVERAGE_PROFILES} > 0 )) || fail "Core tests did not produce a coverage profile."
+    COVERAGE_DATA="$BUILD_ROOT/CoreRegressionTests.profdata"
+    COVERAGE_REPORT="$BUILD_ROOT/CoreCoverage.json"
+    /usr/bin/xcrun llvm-profdata merge -sparse "${COVERAGE_PROFILES[@]}" -o "$COVERAGE_DATA" \
+        || fail "Core coverage profiles could not be merged."
+    /usr/bin/xcrun llvm-cov export "$CORE_TEST" -instr-profile="$COVERAGE_DATA" \
+        > "$COVERAGE_REPORT" \
+        || fail "Core coverage could not be exported."
+    /usr/bin/python3 "$SCRIPT_DIR/Tools/check_swift_coverage.py" \
+        "$COVERAGE_REPORT" \
+        --minimum "${LOGICLYRICS_CORE_COVERAGE_MINIMUM:-100}" \
+        LogicLyrics/Model/LyricSection.swift \
+        LogicLyrics/Services/LogicProjectReader.swift \
+        || fail "Critical reader coverage is below the required threshold."
+else
+    "$CORE_TEST" || fail "A critical regression test failed."
+fi
 
 "$SWIFTC" \
     -parse-as-library \

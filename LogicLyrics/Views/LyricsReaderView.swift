@@ -182,6 +182,9 @@ struct LyricsReaderView: View {
                     }
                 }
             }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(L10n.text("Lyric sections"))
+            .accessibilityIdentifier("lyric-sections-grid")
         }
         .appPanel(radius: 16, padding: 18)
     }
