@@ -19,6 +19,7 @@ All notable user-facing changes are documented here. Releases use semantic versi
 - Added an independent pixel-level WCAG AA contrast measurement so macOS XCTest false positives are accepted only when the rendered UI proves a ratio of at least 4.5:1.
 - Forced the matching dark AppKit appearance for native title bars and replaced each visual history row with one explicit, localized VoiceOver button representation.
 - Removed the redundant low-contrast native navigation title and verifies that every history row maps to a labelled button.
+- Requires readable labels for every product-owned interactive element while recognizing macOS traffic-light controls by their stable native accessibility identifiers.
 
 ## 2.5.0 — build 34
 
