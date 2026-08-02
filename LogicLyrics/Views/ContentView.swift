@@ -274,6 +274,7 @@ struct ContentView: View {
                 Text(L10n.text("Lyrics from Logic, without the clutter"))
                     .font(.title.weight(.semibold))
                 Text(L10n.text("Open or drop a .logicx project to read its Project Notes, tempo and key."))
+                    .font(.callout.weight(.medium))
                     .foregroundStyle(AppTheme.secondaryText)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 520)

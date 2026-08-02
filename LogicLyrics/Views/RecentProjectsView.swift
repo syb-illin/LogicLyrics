@@ -14,7 +14,7 @@ struct RecentProjectsView: View {
                     .foregroundStyle(AppTheme.secondaryText)
                 Spacer()
                 Text(resultCountAccessibilityLabel)
-                    .font(.caption2.monospacedDigit().weight(.bold))
+                    .font(.caption.monospacedDigit().weight(.bold))
                     .foregroundStyle(AppTheme.secondaryText)
                     .accessibilityIdentifier("recent-songs-count")
             }
@@ -80,7 +80,9 @@ struct RecentProjectsView: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel(
+                            L10n.format("%@: %@", entry.projectName, metadata(for: entry))
+                        )
                         .accessibilityHint(L10n.text("Shows the lyrics saved from this Logic project."))
                         .accessibilityIdentifier("history-row-\(entry.id.uuidString.lowercased())")
                     }

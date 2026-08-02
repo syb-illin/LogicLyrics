@@ -109,6 +109,7 @@ final class LogicLyricsUITests: XCTestCase {
 
         let plaid = element("history-row-11111111-1111-1111-1111-111111111111", in: app)
         XCTAssertTrue(plaid.waitForExistence(timeout: 5))
+        XCTAssertFalse(plaid.label.isEmpty)
         plaid.click()
         let openProject = element("history-open-project", in: app)
         let copyLyrics = element("lyrics-copy-all", in: app)

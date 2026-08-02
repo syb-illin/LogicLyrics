@@ -85,9 +85,9 @@ struct CapsuleStatus: View {
             Text(text)
                 .foregroundStyle(AppTheme.secondaryText)
         }
-            .font(.caption.weight(.medium))
+            .font(.callout.weight(.semibold))
             .padding(.horizontal, 9)
-            .padding(.vertical, 5)
+            .padding(.vertical, 6)
             .background(Color.white.opacity(0.04))
             .clipShape(Capsule())
             .overlay { Capsule().stroke(Color.white.opacity(0.055), lineWidth: 1) }
