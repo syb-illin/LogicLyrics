@@ -5,6 +5,7 @@ import SwiftUI
 @MainActor
 struct LogicLyricsApp: App {
     @StateObject private var updater = UpdateService()
+    @Environment(\.openWindow) private var openWindow
 
     init() {
         NSApplication.shared.appearance = NSAppearance(named: .darkAqua)
@@ -29,15 +30,7 @@ struct LogicLyricsApp: App {
             LogicProjectCommands()
             CommandGroup(replacing: .appInfo) {
                 Button(L10n.text("About Logic Lyrics")) {
-                    let credits = NSAttributedString(
-                        string: L10n.text("Reads tempo, key and lyrics directly from Logic Pro Project Notes without modifying your project."),
-                        attributes: [.foregroundColor: NSColor.secondaryLabelColor]
-                    )
-                    NSApplication.shared.orderFrontStandardAboutPanel(options: [
-                        .applicationName: "Logic Lyrics",
-                        .applicationVersion: Self.versionLabel,
-                        .credits: credits
-                    ])
+                    openWindow(id: "about")
                 }
                 .keyboardShortcut("a", modifiers: [.command, .option])
                 .accessibilityIdentifier("about-menu-item")
@@ -55,6 +48,13 @@ struct LogicLyricsApp: App {
             AppSettingsView()
                 .environmentObject(updater)
         }
+
+        Window(L10n.text("About Logic Lyrics"), id: "about") {
+            AboutView(versionLabel: Self.versionLabel)
+                .preferredColorScheme(.dark)
+        }
+        .defaultSize(width: 440, height: 360)
+        .windowResizability(.contentSize)
     }
 
     private static var versionLabel: String {
@@ -76,6 +76,43 @@ struct LogicLyricsApp: App {
             return CGSize(width: 1_440, height: 900)
         }
         return nil
+    }
+}
+
+private struct AboutView: View {
+    let versionLabel: String
+
+    var body: some View {
+        VStack(spacing: 18) {
+            Image(nsImage: NSApplication.shared.applicationIconImage)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 104, height: 104)
+                .accessibilityHidden(true)
+
+            VStack(spacing: 6) {
+                Text(L10n.text("Logic Lyrics"))
+                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+
+                Text(versionLabel)
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color.white.opacity(0.78))
+            }
+
+            Text(L10n.text("Reads tempo, key and lyrics directly from Logic Pro Project Notes without modifying your project."))
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundStyle(Color.white.opacity(0.88))
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: 340)
+        }
+        .padding(32)
+        .frame(width: 440, minHeight: 330)
+        .background(Color(red: 0.055, green: 0.055, blue: 0.09))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(L10n.text("About Logic Lyrics"))
+        .accessibilityIdentifier("about-view")
     }
 }
 

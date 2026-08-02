@@ -282,6 +282,10 @@ final class LogicLyricsUITests: XCTestCase {
             "The localized About menu item was not exposed."
         )
         aboutItem.click()
+        XCTAssertTrue(
+            element("about-view", in: app).waitForExistence(timeout: 3),
+            "The accessible About window did not appear."
+        )
     }
 
     @MainActor
