@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "capturedAt": "2026-08-02T16:55:38.553261Z",
+  "capturedAt": "2026-08-03T06:41:01.849668Z",
   "repository": {
     "fullName": "syb-illin/LogicLyrics",
     "url": "https://github.com/syb-illin/LogicLyrics",
@@ -9,13 +9,48 @@
     "stars": 0,
     "forks": 0,
     "watchers": 0,
-    "openIssues": 0
+    "openIssues": 1
   },
   "downloads": {
-    "app": 10,
-    "allAssets": 25
+    "app": 11,
+    "allAssets": 26
   },
   "releases": [
+    {
+      "tag": "v2.5.1",
+      "name": "Logic Lyrics v2.5.1",
+      "publishedAt": "2026-08-02T17:01:23Z",
+      "url": "https://github.com/syb-illin/LogicLyrics/releases/tag/v2.5.1",
+      "prerelease": false,
+      "appDownloads": 1,
+      "allAssetDownloads": 1,
+      "assets": [
+        {
+          "name": "LogicLyrics-macOS-source.zip",
+          "downloads": 0,
+          "size": 4448126,
+          "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.5.1/LogicLyrics-macOS-source.zip"
+        },
+        {
+          "name": "LogicLyrics-macOS-source.zip.sha256",
+          "downloads": 0,
+          "size": 95,
+          "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.5.1/LogicLyrics-macOS-source.zip.sha256"
+        },
+        {
+          "name": "LogicLyrics.app.zip",
+          "downloads": 1,
+          "size": 1779556,
+          "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.5.1/LogicLyrics.app.zip"
+        },
+        {
+          "name": "LogicLyrics.app.zip.sha256",
+          "downloads": 0,
+          "size": 86,
+          "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.5.1/LogicLyrics.app.zip.sha256"
+        }
+      ]
+    },
     {
       "tag": "v2.5.0",
       "name": "Logic Lyrics v2.5.0",
@@ -590,6 +625,28 @@
         "watchers": 0,
         "openIssues": 0,
         "releases": {
+          "v2.5.0": 1,
+          "v2.4.0": 0,
+          "v2.3.0": 1,
+          "v2.2.5": 2,
+          "v2.2.4": 2,
+          "v2.2.3": 1,
+          "v2.2.2": 1,
+          "v2.2.1": 1,
+          "v2.2.0": 1
+        }
+      },
+      {
+        "date": "2026-08-03",
+        "capturedAt": "2026-08-03T06:41:01.849668Z",
+        "appDownloads": 11,
+        "allAssetDownloads": 26,
+        "stars": 0,
+        "forks": 0,
+        "watchers": 0,
+        "openIssues": 1,
+        "releases": {
+          "v2.5.1": 1,
           "v2.5.0": 1,
           "v2.4.0": 0,
           "v2.3.0": 1,
