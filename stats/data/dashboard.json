@@ -1,19 +1,19 @@
 {
   "schemaVersion": 1,
-  "capturedAt": "2026-08-13T05:13:05.430990Z",
+  "capturedAt": "2026-08-14T05:09:58.682117Z",
   "repository": {
     "fullName": "syb-illin/LogicLyrics",
     "url": "https://github.com/syb-illin/LogicLyrics",
     "description": "Native macOS app that extracts and structures Logic Pro lyrics, creates Suno-ready prompts, and manages MP3/WAV metadata locally.",
     "defaultBranch": "main",
-    "stars": 0,
+    "stars": 1,
     "forks": 0,
     "watchers": 0,
     "openIssues": 1
   },
   "downloads": {
-    "app": 11,
-    "allAssets": 26
+    "app": 12,
+    "allAssets": 27
   },
   "releases": [
     {
@@ -22,8 +22,8 @@
       "publishedAt": "2026-08-02T17:01:23Z",
       "url": "https://github.com/syb-illin/LogicLyrics/releases/tag/v2.5.1",
       "prerelease": false,
-      "appDownloads": 1,
-      "allAssetDownloads": 1,
+      "appDownloads": 2,
+      "allAssetDownloads": 2,
       "assets": [
         {
           "name": "LogicLyrics-macOS-source.zip",
@@ -39,7 +39,7 @@
         },
         {
           "name": "LogicLyrics.app.zip",
-          "downloads": 1,
+          "downloads": 2,
           "size": 1779556,
           "url": "https://github.com/syb-illin/LogicLyrics/releases/download/v2.5.1/LogicLyrics.app.zip"
         },
@@ -867,6 +867,28 @@
         "openIssues": 1,
         "releases": {
           "v2.5.1": 1,
+          "v2.5.0": 1,
+          "v2.4.0": 0,
+          "v2.3.0": 1,
+          "v2.2.5": 2,
+          "v2.2.4": 2,
+          "v2.2.3": 1,
+          "v2.2.2": 1,
+          "v2.2.1": 1,
+          "v2.2.0": 1
+        }
+      },
+      {
+        "date": "2026-08-14",
+        "capturedAt": "2026-08-14T05:09:58.682117Z",
+        "appDownloads": 12,
+        "allAssetDownloads": 27,
+        "stars": 1,
+        "forks": 0,
+        "watchers": 0,
+        "openIssues": 1,
+        "releases": {
+          "v2.5.1": 2,
           "v2.5.0": 1,
           "v2.4.0": 0,
           "v2.3.0": 1,
